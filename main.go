@@ -27,7 +27,7 @@ const (
 func main() {
 	// Create a new instance of the server
 
-	fmt.Println("Webhook Test 1")
+	fmt.Println("Webhook Test 2")
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)

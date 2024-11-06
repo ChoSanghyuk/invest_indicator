@@ -86,3 +86,7 @@ func hasDailyCache() bool {
 		return true
 	}
 }
+
+func setDailyCache() {
+	dailyCache = time.Now()
+}

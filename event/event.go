@@ -402,7 +402,9 @@ func (e Event) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64) (msg 
 				})
 			}
 
-			if r < marketLevel.MinVolatileAssetRate() {
+			if !hasDailyCache() {
+				setDailyCache()
+			} else {
 				sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 					k,
 					"부족",

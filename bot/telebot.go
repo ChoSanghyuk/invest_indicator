@@ -21,7 +21,7 @@ func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
 	if err != nil {
 		return nil, err
 	}
-	bot.Debug = true
+	// bot.Debug = true
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60

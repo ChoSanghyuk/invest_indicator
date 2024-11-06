@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"invest/app"
 
 	"invest/bot"
@@ -26,6 +27,7 @@ const (
 func main() {
 	// Create a new instance of the server
 
+	fmt.Println("Webhook Test 1")
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)

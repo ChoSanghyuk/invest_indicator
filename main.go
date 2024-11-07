@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"invest/app"
 
 	"invest/bot"
@@ -27,7 +26,6 @@ const (
 func main() {
 	// Create a new instance of the server
 
-	fmt.Println("Webhook Test 3")
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)
@@ -81,6 +79,7 @@ func main() {
 		app.Run(db, scraper)
 	}()
 
+	teleBot.SendMessage("LAUNCHED SUCCESSFULLY")
 	for true {
 		msg := <-ch
 		teleBot.SendMessage(msg)

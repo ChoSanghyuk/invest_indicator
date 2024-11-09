@@ -15,22 +15,6 @@ var marketLevelList = []string{"MAJOR_BEAR", "BEAR", "VOLATILIY", "BULL", "MAJOR
 func (c MarketLevel) MaxVolatileAssetRate() float64 {
 	switch c {
 	case MAJOR_BEAR:
-		return 0.3
-	case BEAR:
-		return 0.4
-	case VOLATILIY:
-		return 0.5
-	case BULL:
-		return 0.6
-	case MAJOR_BULL:
-		return 0.7
-	}
-	return 0
-}
-
-func (c MarketLevel) MinVolatileAssetRate() float64 {
-	switch c {
-	case MAJOR_BEAR:
 		return 0.2
 	case BEAR:
 		return 0.3
@@ -40,6 +24,22 @@ func (c MarketLevel) MinVolatileAssetRate() float64 {
 		return 0.5
 	case MAJOR_BULL:
 		return 0.6
+	}
+	return 0
+}
+
+func (c MarketLevel) MinVolatileAssetRate() float64 {
+	switch c {
+	case MAJOR_BEAR:
+		return 0.1
+	case BEAR:
+		return 0.2
+	case VOLATILIY:
+		return 0.3
+	case BULL:
+		return 0.4
+	case MAJOR_BULL:
+		return 0.5
 	}
 	return 0
 }

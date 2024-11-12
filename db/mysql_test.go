@@ -306,3 +306,10 @@ func TestRetrieveInvestSummary(t *testing.T) {
 	}
 	t.Log(investSummary)
 }
+
+func TestUpdateInvestSummary(t *testing.T) {
+	err := stg.UpdateInvestSummary(1, 1, -4, 500)
+	if err != nil {
+		t.Error(err)
+	}
+}

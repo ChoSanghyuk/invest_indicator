@@ -369,6 +369,8 @@ func (s Storage) RetrieveInvestSummaryByFundIdAssetId(fundId uint, assetId uint)
 	return &investSummary, nil
 }
 
+// memo. struct를 사용해서 Updates하는 경우에는 0이 아닌 필드만 업데이트. 이로인해 Invest 매도 기록하면서, 전체 수량이 0이 되어 업데이트 안 되는 현상 발생
+// => 업데이트 필드 명시 필요
 func (s Storage) UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error {
 
 	var investSummary m.InvestSummary
@@ -390,7 +392,7 @@ func (s Storage) UpdateInvestSummary(fundId uint, assetId uint, change float64, 
 		investSummary.Count += change
 		investSummary.Sum += change * price
 
-		result = s.db.Model(&investSummary).Updates(investSummary)
+		result = s.db.Model(&investSummary).Select("Count", "Sum").Updates(investSummary)
 	}
 	if result.Error != nil {
 		return result.Error

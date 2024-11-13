@@ -68,8 +68,7 @@ func (t TeleBot) Listen(ch chan string) {
 				/market/indicators/{date?}
 				`
 			case "/form":
-				ch <- `
-				Asset
+				ch <- `Asset
 				{
 				  ("id" : , )
 				  "name": "",
@@ -81,22 +80,22 @@ func (t TeleBot) Listen(ch chan string) {
 				  "ema": ,
 				  "sel_price": ,
 				  "buy_price": 
-				}
+				}`
 
-				Invest
+				ch <- `Invest
 				{
 				  "fund_id" : ,
 				  "asset_id" : ,
 				  "price" : ,
 				  "count" :
 				}
-
-				AddFunds
+				`
+				ch <- `AddFunds
 				{
 				  "name" : ""
 				}
-				
-				SaveMarketStatus
+				`
+				ch <- `SaveMarketStatus
 				{
 				  "status" : 
 				}

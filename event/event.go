@@ -402,9 +402,7 @@ func (e Event) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64) (msg 
 				})
 			}
 
-			if !hasDailyCache() {
-				setDailyCache()
-			} else {
+			if r < marketLevel.MinVolatileAssetRate() {
 				sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 					k,
 					"부족",
@@ -418,6 +416,9 @@ func (e Event) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64) (msg 
 			slices.SortFunc(os, func(a, b priority) int {
 				return cmp.Compare(a.score, b.score)
 			})
+			if !hasDailyCache() {
+				setDailyCache()
+			}
 			setPortCache(false) // 매도 포트폴리오 메시지 캐시 갱신
 		}
 

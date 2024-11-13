@@ -97,6 +97,9 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 	resp := make([]fundAssetsResponse, len(funds))
 
 	for i, f := range funds {
+		if f.Count == 0 {
+			continue
+		}
 		resp[i] = fundAssetsResponse{
 			FundId:    f.FundID,
 			AssetId:   f.AssetID,

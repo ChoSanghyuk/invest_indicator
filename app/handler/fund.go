@@ -94,19 +94,19 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 		return fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
 	}
 
-	resp := make([]fundAssetsResponse, len(funds))
+	resp := make([]fundAssetsResponse, 0, len(funds))
 
-	for i, f := range funds {
+	for _, f := range funds {
 		if f.Count == 0 {
 			continue
 		}
-		resp[i] = fundAssetsResponse{
+		resp = append(resp, fundAssetsResponse{
 			FundId:    f.FundID,
 			AssetId:   f.AssetID,
 			AssetName: f.Asset.Name,
 			Count:     f.Count,
 			Sum:       f.Sum,
-		}
+		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(resp)

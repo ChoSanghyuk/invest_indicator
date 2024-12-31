@@ -320,3 +320,127 @@ https://generalcoder.tistory.com/29
 | 데이터를 제3자가 가로챌 경우, 그 내용을 쉽게 읽을 수 있음 | 데이터를 가로채도 내용을 읽을 수 없음                       |
 | SSL/TLS 인증서를 사용 X                                   | SSL/TLS 인증서를 사용하여 통신을 암호화                     |
 
+
+
+### 자동 실행 파일 설정
+
+#### 1. git push 시, 서버 자동 재기동 설정
+
+1. web hook 설정
+
+   - {Repository} => Settings => Webhooks => Add webhook
+
+   - push event 시마다 특정 url에 이벤트 POST 설정
+
+2. auto_deploy 서버 설정
+
+   - webhook을 받아서 자동 배포 스크립트 실행 서버 생성
+
+     ```go
+     app := fiber.New()
+     
+     app.Post("/invest_indicator", func(c *fiber.Ctx) error {
+       cmd := exec.Command("./auto_invest_indicator.sh")
+       if err := cmd.Run(); err != nil {
+         return c.SendString(err.Error())
+       }
+       return nil
+     })
+     
+     app.Listen(":10000")
+     ```
+
+3. 자동 배포 스크립트 작성
+
+   ```bash
+   #!/bin/sh
+   cd ~/workspace/invest_indicator
+   git pull origin main
+   /home/cho/go/bin/go build -o invest_indicator
+   PID=$(cat pidfile.txt 2>/dev/null)
+   if kill -0 $PID 2>/dev/null; then echo "Process $PID is running. Kill process"; kill $PID; fi
+   ./invest_indicator &
+   echo $! > pidfile.txt
+   ```
+
+   - 동작
+     - 이벤트 받을 시, git pull로 소스 코드 업데이트
+     - 이전 프로그램의 PID 정보를 pidfile.txt에 저장하고 있다가, 재배포 필요 시 해당 PID 종료 후 기동
+       - 저장된 PID에 프로그램 없을 시, pass
+   - :bulb: TIP
+     - 스크립트 첫줄에 `#!/bin/sh` 필수
+     - 스크립트는 실행 가능한 파일로 설정 : `chmod +x {my script}`
+
+#### 2. 서버 재부팅 시 자동 기동 소스
+
+1. 자동 기동 스크립트 작성
+
+   ```bash
+   #!/bin/sh
+   docker start mysql
+   cd ~/workspace/personal_projects/auto_deploy
+   
+   for file in ./auto*; do
+     if [ -x "$file" ]; then
+       "$file"
+     fi
+   done
+   ```
+
+   - 'auto'로 시작하는 파일들을 전부 실행
+
+2. 재부팅 시 자동 실행 등록
+
+   - 크론 탭 등록 파일 열기 : `crontab -e`
+   - 등록 : `@reboot /path/to/your/file_or_script`
+   - 저장 + 나가기 : `CTRL + O` + `CTRL + X`
+   - 확인 : `crontab -l`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

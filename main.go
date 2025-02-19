@@ -8,9 +8,6 @@ import (
 	"invest/db"
 	"invest/event"
 	"invest/scrape"
-	"strconv"
-
-	"log"
 
 	"github.com/robfig/cron"
 )
@@ -33,32 +30,18 @@ func main() {
 
 	ch := make(chan string)
 
-	chatId, err := strconv.ParseInt(conf.Telegram.ChatId, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	teleBot, err := bot.NewTeleBot(conf.Telegram.Token, chatId)
+	botConf, err := conf.BotConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	for {
-		key := teleBot.InitKey()
-		err = conf.InitKIS(key)
-
-		if err != nil {
-			teleBot.SendMessage(err.Error())
-		} else {
-			break
-		}
+	teleBot, err := bot.NewTeleBot(botConf)
+	if err != nil {
+		panic(err)
 	}
-
-	go func() {
-		teleBot.Listen(ch)
-	}()
 
 	scraper := scrape.NewScraper(conf,
-		scrape.WithKIS(conf.KisAppKey(), conf.KisAppSecret()),
+		scrape.WithKIS(conf.KisConfig(teleBot)), // todo. 여기에 봇을 집어넣고, config struct 반환
 	)
 
 	db, err := db.NewStorage(conf.Dsn())
@@ -76,13 +59,8 @@ func main() {
 	c.Start()
 
 	go func() {
-		app.Run(db, scraper)
+		app.Run(conf.App.Port, db, scraper)
 	}()
 
-	teleBot.SendMessage("LAUNCHED SUCCESSFULLY")
-	for true {
-		msg := <-ch
-		teleBot.SendMessage(msg)
-		log.Println(msg)
-	}
+	teleBot.Run(ch)
 }

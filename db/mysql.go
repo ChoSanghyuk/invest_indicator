@@ -181,6 +181,7 @@ func (s Storage) RetrieveAssetIdByCode(code string) uint {
 	return asset.ID
 }
 
+// todo. currency 조정 필요해 보임
 func (s Storage) SaveAssetInfo(name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error) {
 
 	asset := m.Asset{
@@ -451,6 +452,8 @@ func (s Storage) SaveEmaHist(assetId uint, price float64) error {
 }
 
 /*
+todo. ema 계산 db pkg 말고 다른 곳에서 수행
+todo. ema 무조건 200이 아니게끔 (신규 상장 종목에 대해서 차이가 생김)
 a =  2/N+1
 EMAt = a*PRICEt + (1-a)EMAy
 */

@@ -3,7 +3,10 @@ package config
 import (
 	_ "embed"
 	"fmt"
+	"invest/bot"
+	"invest/scrape"
 	"invest/util"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,6 +15,9 @@ import (
 var configByte []byte
 
 type Config struct {
+	App struct {
+		Port int `yaml:"port"`
+	} `yaml:"app"`
 	Api      map[string]apiConfig   `yaml:"api"`
 	Crawl    map[string]crawlConfig `yaml:"crawl"`
 	Telegram struct {
@@ -59,6 +65,19 @@ func NewConfig() (*Config, error) {
 	return &ConfigInfo, nil
 }
 
+func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
+
+	chatId, err := strconv.ParseInt(c.Telegram.ChatId, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &bot.TeleBotConfig{
+		Token:  c.Telegram.Token,
+		ChatId: chatId,
+	}, nil
+}
+
 func (c Config) InitKIS(key string) (err error) {
 	*c.Key.KIS["appkey"], err = decrypt([]byte(key), *c.Key.KIS["appkey"])
 	if err != nil {
@@ -72,13 +91,39 @@ func (c Config) InitKIS(key string) (err error) {
 	return nil
 }
 
-func (c Config) KisAppKey() string {
-	return *c.Key.KIS["appkey"]
+type KeyPasser interface {
+	InitKey(err error) string
 }
 
-func (c Config) KisAppSecret() string {
-	return *c.Key.KIS["appsecret"]
+func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
+
+	var appKey string
+	var appSecret string
+	var err error
+
+	for appKey == "" || appSecret == "" || err != nil {
+		key := keyPasser.InitKey(err)
+		appKey, err = decrypt([]byte(key), *c.Key.KIS["appkey"])
+		if err != nil {
+			continue
+		}
+
+		appSecret, err = decrypt([]byte(key), *c.Key.KIS["appsecret"])
+	}
+
+	return &scrape.KisConfig{
+		AppKey:    appKey,
+		AppSecret: appSecret,
+	}
 }
+
+// func (c Config) KisAppKey() string {
+// 	return *c.Key.KIS["appkey"]
+// }
+
+// func (c Config) KisAppSecret() string {
+// 	return *c.Key.KIS["appsecret"]
+// }
 
 func (c Config) Dsn() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)

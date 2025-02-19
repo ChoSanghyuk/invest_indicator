@@ -44,11 +44,16 @@ func NewScraper(t transmitter, options ...func(*Scraper)) *Scraper {
 	return s
 }
 
-func WithKIS(appKey string, appSecret string) func(*Scraper) {
+type KisConfig struct {
+	AppKey    string
+	AppSecret string
+}
+
+func WithKIS(conf *KisConfig) func(*Scraper) {
 
 	return func(s *Scraper) {
-		s.kis.appKey = appKey
-		s.kis.appSecret = appSecret
+		s.kis.appKey = conf.AppKey
+		s.kis.appSecret = conf.AppSecret
 	}
 }
 

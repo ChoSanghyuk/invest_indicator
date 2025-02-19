@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Run(stg *db.Storage, scraper *scrape.Scraper) {
+func Run(port int, stg *db.Storage, scraper *scrape.Scraper) {
 
 	app := fiber.New()
 
@@ -22,16 +22,9 @@ func Run(stg *db.Storage, scraper *scrape.Scraper) {
 
 		fmt.Println("Shutting Down")
 		panic("SHUTDOWN")
-		// go func() {
-		// 	if err := app.Shutdown(); err != nil {
-		// 		panic("SHUTDOWN ERROR")
-		// 	}
-		// }()
-		// return c.SendString("Shutting Down")
 	})
 
-	app.Listen(":3000")
-
+	app.Listen(fmt.Sprintf(":%d", port))
 }
 
 /*

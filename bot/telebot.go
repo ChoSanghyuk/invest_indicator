@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -15,9 +16,14 @@ type TeleBot struct {
 	updates tgbotapi.UpdatesChannel
 }
 
-func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
+type TeleBotConfig struct {
+	Token  string
+	ChatId int64
+}
 
-	bot, err := tgbotapi.NewBotAPI(token)
+func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
+
+	bot, err := tgbotapi.NewBotAPI(conf.Token) // memo. Go automatically dereferences struct pointers when accessing fields
 	if err != nil {
 		return nil, err
 	}
@@ -29,13 +35,32 @@ func NewTeleBot(token string, chatId int64) (*TeleBot, error) {
 
 	return &TeleBot{
 		bot:     bot,
-		chatId:  chatId,
+		chatId:  conf.ChatId,
 		updates: updates,
 	}, nil
 }
 
-func (t TeleBot) InitKey() string {
-	t.SendMessage("Enter decrypt key for invest server")
+func (t TeleBot) Run(ch chan string) {
+	t.SendMessage("LAUNCHED SUCCESSFULLY")
+
+	go func() {
+		t.listen(ch)
+	}()
+
+	for true {
+		msg := <-ch
+		t.SendMessage(msg)
+		log.Println(msg)
+	}
+}
+
+func (t TeleBot) InitKey(msg error) string {
+
+	if msg == nil {
+		t.SendMessage("Enter decrypt key for invest server")
+	} else {
+		t.SendMessage(msg.Error())
+	}
 	update := <-t.updates
 
 	return update.Message.Text
@@ -45,7 +70,7 @@ func (t TeleBot) SendMessage(msg string) {
 	t.bot.Send(tgbotapi.NewMessage(t.chatId, msg))
 }
 
-func (t TeleBot) Listen(ch chan string) {
+func (t TeleBot) listen(ch chan string) {
 
 	for update := range t.updates {
 		if update.Message != nil {

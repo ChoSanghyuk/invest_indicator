@@ -1,21 +1,28 @@
 package scrape
 
 import (
-	"invest/config"
 	"testing"
 )
 
+// todo. test 작성
+type transmitterMock struct {
+}
+
+func (t transmitterMock) ApiBaseUrl(target string) string {
+	return ""
+}
+func (t transmitterMock) ApiHeader(target string) map[string]string {
+	return nil
+}
+func (t transmitterMock) CrawlUrlCasspath(target string) (url string, cssPath string) {
+	return "", ""
+}
+
 func TestKis(t *testing.T) {
 
-	conf, err := config.NewConfig()
-	if err != nil {
-		panic(err)
-	}
-	conf.InitKIS("")
-
 	s := NewScraper(
-		conf,
-		WithKIS(conf.KisAppKey(), conf.KisAppSecret()),
+		transmitterMock{},
+		WithKIS(&KisConfig{}),
 	)
 
 	t.Run("Token Generate", func(t *testing.T) {

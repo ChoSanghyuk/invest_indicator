@@ -262,7 +262,7 @@ EMAt = a*PRICEt + (1-a)EMAy
 - docker container
 
 ```sh
-$ docker run -v /invest/db:/var/lib/mysql --name investDb -e MYSQL_ROOT_PASSWORD=root -d -p 3306:3306 mysql --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+$ docker run -v /invest/db:/var/lib/mysql --name investDb -e MYSQL_ROOT_PASSWORD={password} -d -p 3306:3306 mysql --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 ```
 
 :bulb: root 계정은 기본값으로 localhost로부터의 연결만 가능

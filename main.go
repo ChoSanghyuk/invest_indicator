@@ -8,21 +8,11 @@ import (
 	"invest/db"
 	"invest/event"
 	"invest/scrape"
-
-	"github.com/robfig/cron"
-)
-
-const (
-	AssetSpec  = "0 */15 8-23 * * 1-5"
-	CoinSpec   = "0 */15 8-23 * * 0,6"
-	EstateSpec = "0 */15 9-17 * * 1-5"
-	IndexSpec  = "0 3 8 * * 1-5" // todo. 9시 3분이랑 8시 3분이랑 값이 같은지 확인
-	EmaSpec    = "0 3 9 * * 2-6" // 화~토
 )
 
 func main() {
-	// Create a new instance of the server
 
+	// Create a new instance of the server
 	conf, err := config.NewConfig()
 	if err != nil {
 		panic(err)
@@ -48,15 +38,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	event := event.NewEvent(db, scraper, scraper)
 
-	c := cron.New()
-	c.AddFunc(AssetSpec, func() { event.AssetEvent(ch) })
-	c.AddFunc(CoinSpec, func() { event.CoinEvent(ch) })
-	c.AddFunc(EstateSpec, func() { event.RealEstateEvent(ch) })
-	c.AddFunc(IndexSpec, func() { event.IndexEvent(ch) })
-	c.AddFunc(EmaSpec, func() { event.EmaUpdateEvent(ch) })
-	c.Start()
+	event := event.NewEvent(db, scraper, scraper)
+	event.Run(ch)
 
 	go func() {
 		app.Run(conf.App.Port, db, scraper)

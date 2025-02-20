@@ -28,7 +28,7 @@ type Config struct {
 		KIS map[string]*string `yaml:"KIS"`
 	} `yaml:"key"`
 
-	Db struct { // "root:root@tcp(127.0.0.1:3300)/investdb?charset=utf8mb4&parseTime=True&loc=Local"
+	Db struct {
 		User     string `yaml:"user"`
 		Password string `yaml:"pwd"`
 		IP       string `yaml:"ip"`
@@ -91,6 +91,7 @@ func (c Config) InitKIS(key string) (err error) {
 	return nil
 }
 
+// 복호화 키 전달
 type KeyPasser interface {
 	InitKey(err error) string
 }
@@ -116,14 +117,6 @@ func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 		AppSecret: appSecret,
 	}
 }
-
-// func (c Config) KisAppKey() string {
-// 	return *c.Key.KIS["appkey"]
-// }
-
-// func (c Config) KisAppSecret() string {
-// 	return *c.Key.KIS["appsecret"]
-// }
 
 func (c Config) Dsn() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)

@@ -140,7 +140,7 @@ func (t TeleBot) listen(ch chan string) {
 
 func httpsend(path string) (string, error) {
 
-	url := "http://localhost:3000" + path
+	url := "http://localhost:50001" + path
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 
 	client := &http.Client{}

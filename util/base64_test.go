@@ -8,7 +8,7 @@ import (
 
 func TestBase64(t *testing.T) {
 
-	e := base64.StdEncoding.EncodeToString([]byte(""))
+	e := base64.StdEncoding.EncodeToString([]byte("6843207302:AAEiM3o1P28mbIb3dN1vwFyYDjlpGd7VZN8"))
 	fmt.Println(e)
 	d, err := base64.StdEncoding.DecodeString("")
 	if err != nil {

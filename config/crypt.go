@@ -3,8 +3,10 @@ package config
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"io"
 )
 
 // AES 복호화 함수
@@ -27,4 +29,26 @@ func decrypt(key []byte, cryptoText string) (string, error) {
 	stream.XORKeyStream(ciphertext, ciphertext)
 
 	return string(ciphertext), nil
+}
+
+// Encrypt function corresponding to decrypt
+func encrypt(key []byte, plaintext string) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate a random IV (Initialization Vector)
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	// Encrypt using CFB mode
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
+
+	// Convert to hex string
+	return hex.EncodeToString(ciphertext), nil
 }

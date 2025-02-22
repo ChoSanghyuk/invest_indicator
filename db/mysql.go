@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"invest/model"
+	m "invest/model"
 	"math"
 	"time"
 
@@ -33,25 +33,11 @@ func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
 	}, nil
 }
 
-func (s Storage) RetreiveFundsSummaryOrderByFundId() ([]InvestSummary, error) {
+func (s Storage) RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error) {
 
-	var fundsSummary []InvestSummary
+	var fundsSummary []m.InvestSummary
 
-	result := s.db.Model(&InvestSummary{}).Preload("Fund").Preload("Asset").Order("fund_id").Find(&fundsSummary)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return fundsSummary, nil
-
-}
-
-func (s Storage) RetreiveFundSummaryByFundId(id uint) ([]InvestSummary, error) {
-
-	var fundsSummary []InvestSummary
-
-	result := s.db.Model(&InvestSummary{}).Preload("Asset").Where("fund_id", id).Find(&fundsSummary) // .Order("asset_id")
+	result := s.db.Model(&m.InvestSummary{}).Preload("Fund").Preload("Asset").Order("fund_id").Find(&fundsSummary)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -61,11 +47,11 @@ func (s Storage) RetreiveFundSummaryByFundId(id uint) ([]InvestSummary, error) {
 
 }
 
-func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]InvestSummary, error) {
+func (s Storage) RetreiveFundSummaryByFundId(id uint) ([]m.InvestSummary, error) {
 
-	var fundsSummary []InvestSummary
+	var fundsSummary []m.InvestSummary
 
-	result := s.db.Model(&InvestSummary{}).Where("asset_id", id).Find(&fundsSummary) // .Order("asset_id")
+	result := s.db.Model(&m.InvestSummary{}).Preload("Asset").Where("fund_id", id).Find(&fundsSummary) // .Order("asset_id")
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -75,11 +61,25 @@ func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]InvestSummary, error) 
 
 }
 
-func (s Storage) RetreiveAFundInvestsById(id uint) ([]Invest, error) {
-	var invets []Invest
+func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error) {
 
-	result := s.db.Model(&Invest{}).
-		Where(&Invest{FundID: id}, "fund_id").
+	var fundsSummary []m.InvestSummary
+
+	result := s.db.Model(&m.InvestSummary{}).Where("asset_id", id).Find(&fundsSummary) // .Order("asset_id")
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return fundsSummary, nil
+
+}
+
+func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
+	var invets []m.Invest
+
+	result := s.db.Model(&m.Invest{}).
+		Where(&m.Invest{FundID: id}, "fund_id").
 		Preload("Asset").
 		Find(&invets) // .Order("asset_id")
 
@@ -90,8 +90,8 @@ func (s Storage) RetreiveAFundInvestsById(id uint) ([]Invest, error) {
 	return invets, nil
 }
 
-func (s Storage) RetreiveInvestHistOfFundById(id uint) (*Fund, error) {
-	var fund Fund
+func (s Storage) RetreiveInvestHistOfFundById(id uint) (*m.Fund, error) {
+	var fund m.Fund
 
 	result := s.db.First(&fund, id)
 	if result.Error != nil {
@@ -103,7 +103,7 @@ func (s Storage) RetreiveInvestHistOfFundById(id uint) (*Fund, error) {
 
 func (s Storage) SaveFund(name string) error {
 
-	result := s.db.Create(&Fund{
+	result := s.db.Create(&m.Fund{
 		Name: name,
 	})
 
@@ -114,30 +114,30 @@ func (s Storage) SaveFund(name string) error {
 	return nil
 }
 
-func (s Storage) RetrieveAssetList() ([]Asset, error) {
+func (s Storage) RetrieveAssetList() ([]m.Asset, error) {
 
-	var assets []Asset
+	var assets []m.Asset
 
-	result := s.db.Model(&Asset{}).Select("id", "name").Find(&assets)
+	result := s.db.Model(&m.Asset{}).Select("id", "name").Find(&assets)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return assets, nil
 }
 
-func (s Storage) RetrieveTotalAssets() ([]Asset, error) {
-	var assets []Asset
+func (s Storage) RetrieveTotalAssets() ([]m.Asset, error) {
+	var assets []m.Asset
 
-	result := s.db.Model(&Asset{}).Find(&assets)
+	result := s.db.Model(&m.Asset{}).Find(&assets)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return assets, nil
 }
 
-func (s Storage) RetrieveAsset(id uint) (*Asset, error) {
+func (s Storage) RetrieveAsset(id uint) (*m.Asset, error) {
 
-	var asset Asset
+	var asset m.Asset
 
 	result := s.db.First(&asset, id) // memo. First, Last와 같은 메소드는 대상이 없을 때 error 반환
 	if result.Error != nil {
@@ -147,11 +147,11 @@ func (s Storage) RetrieveAsset(id uint) (*Asset, error) {
 	return &asset, nil
 }
 
-func (s Storage) RetrieveAssetHist(id uint) ([]Invest, error) {
+func (s Storage) RetrieveAssetHist(id uint) ([]m.Invest, error) {
 
-	var invests []Invest
+	var invests []m.Invest
 
-	result := s.db.Model(&Invest{}).Where("asset_id = ?", id).Preload("Asset").Find(&invests)
+	result := s.db.Model(&m.Invest{}).Where("asset_id = ?", id).Preload("Asset").Find(&invests)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -160,9 +160,9 @@ func (s Storage) RetrieveAssetHist(id uint) ([]Invest, error) {
 }
 
 func (s Storage) RetrieveAssetIdByName(name string) uint {
-	var asset Asset
+	var asset m.Asset
 
-	result := s.db.Model(&Asset{}).Where("name", name).Select("id").Find(&asset)
+	result := s.db.Model(&m.Asset{}).Where("name", name).Select("id").Find(&asset)
 	if result.Error != nil || result.RowsAffected == 0 {
 		return 0
 	}
@@ -171,9 +171,9 @@ func (s Storage) RetrieveAssetIdByName(name string) uint {
 }
 
 func (s Storage) RetrieveAssetIdByCode(code string) uint {
-	var asset Asset
+	var asset m.Asset
 
-	result := s.db.Model(&Asset{}).Where("code", code).Select("id").Find(&asset)
+	result := s.db.Model(&m.Asset{}).Where("code", code).Select("id").Find(&asset)
 	if result.Error != nil || result.RowsAffected == 0 { // memo. RowsAffected selete된 갯수 파악 가능
 		return 0
 	}
@@ -182,9 +182,9 @@ func (s Storage) RetrieveAssetIdByCode(code string) uint {
 }
 
 // todo. currency 조정 필요해 보임
-func (s Storage) SaveAssetInfo(name string, category model.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error) {
+func (s Storage) SaveAssetInfo(name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error) {
 
-	asset := Asset{
+	asset := m.Asset{
 		Name:      name,
 		Category:  category,
 		Code:      code,
@@ -205,9 +205,9 @@ func (s Storage) SaveAssetInfo(name string, category model.Category, code string
 }
 
 // When updating with struct, GORM will only update non-zero fields. You might want to use map to update attributes or use Select to specify fields to update
-func (s Storage) UpdateAssetInfo(id uint, name string, category model.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error {
+func (s Storage) UpdateAssetInfo(id uint, name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error {
 
-	result := s.db.Updates(Asset{
+	result := s.db.Updates(m.Asset{
 		ID:        id,
 		Name:      name,
 		Category:  category,
@@ -228,7 +228,7 @@ func (s Storage) UpdateAssetInfo(id uint, name string, category model.Category, 
 
 func (s Storage) DeleteAssetInfo(id uint) error {
 
-	result := s.db.Delete(&Asset{}, id)
+	result := s.db.Delete(&m.Asset{}, id)
 
 	if result.Error != nil {
 		return result.Error
@@ -237,9 +237,9 @@ func (s Storage) DeleteAssetInfo(id uint) error {
 	return nil
 }
 
-func (s Storage) RetrieveMarketStatus(date string) (*Market, error) {
+func (s Storage) RetrieveMarketStatus(date string) (*m.Market, error) {
 
-	var market Market
+	var market m.Market
 
 	if date == "" {
 		result := s.db.Last(&market) // Preload("Asset")
@@ -256,10 +256,10 @@ func (s Storage) RetrieveMarketStatus(date string) (*Market, error) {
 	return &market, nil
 }
 
-func (s Storage) RetrieveMarketIndicator(date string) (*DailyIndex, *CliIndex, error) {
+func (s Storage) RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error) {
 
-	var dailyIdx DailyIndex
-	var cliIdx CliIndex
+	var dailyIdx m.DailyIndex
+	var cliIdx m.CliIndex
 
 	if date == "" {
 		result := s.db.Last(&dailyIdx) // Preload("Asset")
@@ -289,7 +289,7 @@ func (s Storage) RetrieveMarketIndicator(date string) (*DailyIndex, *CliIndex, e
 
 func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) error {
 
-	result := s.db.Create(&DailyIndex{
+	result := s.db.Create(&m.DailyIndex{
 		CreatedAt:      datatypes.Date(time.Now()),
 		FearGreedIndex: fearGreedIndex,
 		NasDaq:         nasdaq,
@@ -303,7 +303,7 @@ func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) e
 
 func (s Storage) SaveMarketStatus(status uint) error {
 
-	result := s.db.Create(&Market{
+	result := s.db.Create(&m.Market{
 		CreatedAt: datatypes.Date(time.Now()),
 		Status:    status,
 	})
@@ -314,9 +314,9 @@ func (s Storage) SaveMarketStatus(status uint) error {
 	return nil
 }
 
-func (s Storage) RetrieveInvestHist(fundId uint, assetId uint, start string, end string) ([]Invest, error) {
+func (s Storage) RetrieveInvestHist(fundId uint, assetId uint, start string, end string) ([]m.Invest, error) {
 
-	query := s.db.Model(&Invest{}) // Note. 필수가 아니더라도, 처음에 모델을 명시하는 것이 good practice
+	query := s.db.Model(&m.Invest{}) // Note. 필수가 아니더라도, 처음에 모델을 명시하는 것이 good practice
 
 	if fundId != 0 {
 		query.Where("fund_id = ?", fundId)
@@ -331,7 +331,7 @@ func (s Storage) RetrieveInvestHist(fundId uint, assetId uint, start string, end
 		query.Where("created_at <= ?", end)
 	}
 
-	var investHist []Invest
+	var investHist []m.Invest
 
 	result := query.Preload("Asset").Find(&investHist)
 	if result.Error != nil {
@@ -343,7 +343,7 @@ func (s Storage) RetrieveInvestHist(fundId uint, assetId uint, start string, end
 
 func (s Storage) SaveInvest(fundId uint, assetId uint, price float64, count float64) error {
 
-	result := s.db.Create(&Invest{
+	result := s.db.Create(&m.Invest{
 		FundID:  fundId,
 		AssetID: assetId,
 		Price:   price,
@@ -356,10 +356,10 @@ func (s Storage) SaveInvest(fundId uint, assetId uint, price float64, count floa
 	return nil
 }
 
-func (s Storage) RetrieveInvestSummaryByFundIdAssetId(fundId uint, assetId uint) (*InvestSummary, error) {
-	var investSummary InvestSummary
+func (s Storage) RetrieveInvestSummaryByFundIdAssetId(fundId uint, assetId uint) (*m.InvestSummary, error) {
+	var investSummary m.InvestSummary
 
-	result := s.db.Model(&InvestSummary{}).
+	result := s.db.Model(&m.InvestSummary{}).
 		Where("fund_id = ?", fundId).
 		Where("asset_id = ?", assetId).
 		First(&investSummary) // Preload("Asset")
@@ -374,21 +374,21 @@ func (s Storage) RetrieveInvestSummaryByFundIdAssetId(fundId uint, assetId uint)
 // => 업데이트 필드 명시 필요
 func (s Storage) UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error {
 
-	var investSummary InvestSummary
-	result := s.db.Model(&InvestSummary{}).
+	var investSummary m.InvestSummary
+	result := s.db.Model(&m.InvestSummary{}).
 		Where("fund_id = ?", fundId).
 		Where("asset_id = ?", assetId).
 		Find(&investSummary) // memo. Select는 필드 지정하는 용도. 조회에서 구조체에 넣으려면 Find 사용
 
 	if result.RowsAffected == 0 {
-		investSummary = InvestSummary{
+		investSummary = m.InvestSummary{
 			FundID:  fundId,
 			AssetID: assetId,
 			Count:   change,
 			Sum:     change * price,
 		}
 
-		result = s.db.Model(&InvestSummary{}).Create(&investSummary)
+		result = s.db.Model(&m.InvestSummary{}).Create(&investSummary)
 	} else {
 		investSummary.Count += change
 		investSummary.Sum += change * price
@@ -404,9 +404,9 @@ func (s Storage) UpdateInvestSummary(fundId uint, assetId uint, change float64, 
 
 func (s Storage) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) error {
 	// 조회한 InvestSummary를 sum만 변경
-	var investSummary InvestSummary
+	var investSummary m.InvestSummary
 
-	result := s.db.Model(&InvestSummary{}).
+	result := s.db.Model(&m.InvestSummary{}).
 		Where("fund_id = ?", fundId).
 		Where("asset_id = ?", assetId).
 		First(&investSummary)
@@ -420,7 +420,7 @@ func (s Storage) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) 
 
 func (s Storage) RetreiveLatestEma(assetId uint) (float64, error) {
 
-	var ema EmaHist
+	var ema m.EmaHist
 	// result := s.db.Where("asset_id", assetId).Order("date desc").First(&ema)
 	result := s.db.Where("asset_id", assetId).Last(&ema)
 	if result.Error != nil {
@@ -437,7 +437,7 @@ func (s Storage) SaveEmaHist(assetId uint, price float64) error {
 		emay = price
 	}
 
-	var ema = EmaHist{
+	var ema = m.EmaHist{
 		AssetID: assetId,
 		Date:    datatypes.Date(time.Now()),
 		Ema:     ema(price, emay),

@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	m "invest/model"
+	"invest/model"
 	"log"
 	"testing"
 	"time"
@@ -35,12 +35,12 @@ func init() {
 }
 
 func TestMigration(t *testing.T) {
-	// db.AutoMigrate(&m.EmaHist{})
-	db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.Invest{}, &m.InvestSummary{}, &m.Market{}, &m.DailyIndex{}, &m.CliIndex{}, &m.EmaHist{})
+	// db.AutoMigrate(&EmaHist{})
+	db.AutoMigrate(&Fund{}, &Asset{}, &Invest{}, &InvestSummary{}, &Market{}, &DailyIndex{}, &CliIndex{}, &EmaHist{})
 }
 
 func TestCreate(t *testing.T) {
-	fund := m.Fund{
+	fund := Fund{
 		Name: "개인",
 	}
 
@@ -55,21 +55,21 @@ func TestCreate(t *testing.T) {
 
 func TestCreateAsset(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("bitcoin", m.DomesticCoin, "KRW-BTC", "WON", 98000000, 68000000, 88000000, 70000000)
+	_, err := stg.SaveAssetInfo("bitcoin", model.DomesticCoin, "KRW-BTC", "WON", 98000000, 68000000, 88000000, 70000000)
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = stg.SaveAssetInfo("gold", m.Gold, "M04020000", "WON", 111360, 80100, 0, 103630)
+	_, err = stg.SaveAssetInfo("gold", model.Gold, "M04020000", "WON", 111360, 80100, 0, 103630)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func TestRetrieve(t *testing.T) {
-	var asset m.Asset
+	var asset Asset
 
-	result := db.Model(&m.Asset{}).Where("id", 99).Find(&asset)
+	result := db.Model(&Asset{}).Where("id", 99).Find(&asset)
 	fmt.Println(result.RowsAffected)
 	if result.Error != nil || result.RowsAffected == 0 {
 		return
@@ -82,11 +82,11 @@ time.Time{}.Local() => '0000-00-00 00:00:00' 라서 Date 타입 및 Timestamp �
 time.Now() => '2024-08-16 08:47:20.346' Date 타입 및 Timestamp 성공
 */
 func TestTime(t *testing.T) {
-	db.AutoMigrate(&m.Sample{})
+	db.AutoMigrate(&Sample{})
 
 	// date, _ := time.Parse("2006-01-02", "2021-11-22")
 
-	d := m.Sample{
+	d := Sample{
 		Date: datatypes.Date(time.Now()),
 		Time: time.Now(),
 	}
@@ -95,7 +95,7 @@ func TestTime(t *testing.T) {
 }
 
 func TestSelectFirst(t *testing.T) {
-	var dailyIdx m.DailyIndex
+	var dailyIdx DailyIndex
 
 	result := db.Where("created_at = ?", "2024-09-21").Select(&dailyIdx)
 	if result.Error != nil {

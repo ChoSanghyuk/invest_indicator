@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	m "invest/model"
+	"invest/model"
 	"log"
 	"testing"
 
@@ -63,7 +63,7 @@ func TestSaveFund(t *testing.T) {
 		t.Error(err)
 	}
 
-	var fund m.Fund
+	var fund Fund
 
 	stg.db.Last(&fund)
 	t.Logf("%+v", fund)
@@ -99,13 +99,13 @@ func TestRetrieveAssetHist(t *testing.T) {
 	t.Log(rtn)
 }
 func TestSaveAssetInfo(t *testing.T) {
-	id, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	id, err := stg.SaveAssetInfo("테스트", model.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
 	if err != nil {
 		t.Error(err)
 	}
 	fmt.Println(id)
 
-	var asset m.Asset
+	var asset Asset
 
 	stg.db.Last(&asset)
 	t.Logf("%+v", asset)
@@ -118,12 +118,12 @@ func TestSaveAssetInfo(t *testing.T) {
 }
 func TestUpdateAssetInfo(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	_, err := stg.SaveAssetInfo("테스트", model.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
 	if err != nil {
 		t.Error(err)
 	}
 
-	var asset m.Asset
+	var asset Asset
 
 	stg.db.Last(&asset)
 	t.Logf("%+v", asset)
@@ -144,12 +144,12 @@ func TestUpdateAssetInfo(t *testing.T) {
 }
 func TestDeleteAssetInfo(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	_, err := stg.SaveAssetInfo("테스트", model.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
 	if err != nil {
 		t.Error(err)
 	}
 
-	var asset m.Asset
+	var asset Asset
 	stg.db.Last(&asset)
 	t.Logf("%+v", asset)
 
@@ -158,7 +158,7 @@ func TestDeleteAssetInfo(t *testing.T) {
 		t.Error(err)
 	}
 
-	var asset2 m.Asset
+	var asset2 Asset
 	stg.db.Select(&asset2, asset.ID)
 	t.Logf("%+v", asset2)
 
@@ -222,7 +222,7 @@ func TestSaveMarketStatus(t *testing.T) {
 		t.Error(err)
 	}
 
-	var mk m.Market
+	var mk Market
 
 	stg.db.Last(&mk)
 	t.Logf("%+v", mk)
@@ -260,7 +260,7 @@ func TestSaveInvest(t *testing.T) {
 		t.Error(err)
 	}
 
-	var invest m.Invest
+	var invest Invest
 
 	stg.db.Last(&invest)
 	t.Logf("%+v", invest)
@@ -295,8 +295,8 @@ func TestRetrieveInvestSummary(t *testing.T) {
 	fundId := 1
 	assetId := 12
 
-	var investSummary m.InvestSummary
-	result := db.Model(&m.InvestSummary{}).
+	var investSummary InvestSummary
+	result := db.Model(&InvestSummary{}).
 		Where("fund_id = ?", fundId).
 		Where("asset_id = ?", assetId).
 		Find(&investSummary)

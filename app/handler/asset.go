@@ -28,9 +28,42 @@ func (h *AssetHandler) InitRoute(app *fiber.App) {
 	router.Post("/", h.AddAsset)
 	router.Put("/", h.UpdateAsset)
 	router.Delete("/", h.DeleteAsset)
+	router.Get("", h.Assets)
 	router.Get("/list", h.AssetList)
 	router.Get("/:id<\\d+>", h.Asset)
 	router.Get("/:id<\\d+>/hist", h.AssetHist)
+}
+
+func (h *AssetHandler) Assets(c *fiber.Ctx) error {
+
+	assets, err := h.r.RetrieveAssetList()
+	if err != nil {
+		return fmt.Errorf("RetrieveAssetList 오류 발생. %w", err)
+	}
+
+	rtn := make([]assetResponse, len(assets))
+
+	for i, a := range assets {
+		asset, err := h.r.RetrieveAsset(a.ID)
+		if err != nil {
+			return fmt.Errorf("RetrieveAsset 오류 발생. %w", err)
+		}
+
+		rtn[i] = assetResponse{
+			ID:        asset.ID,
+			Name:      asset.Name,
+			Category:  asset.Category.String(),
+			Code:      asset.Code,
+			Currency:  asset.Currency,
+			Top:       asset.Top,
+			Bottom:    asset.Bottom,
+			SellPrice: asset.SellPrice,
+			BuyPrice:  asset.BuyPrice,
+		}
+
+	}
+
+	return c.Status(fiber.StatusOK).JSON(rtn)
 }
 
 func (h *AssetHandler) AddAsset(c *fiber.Ctx) error {

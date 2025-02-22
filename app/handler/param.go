@@ -65,15 +65,15 @@ type assetListResponse struct {
 }
 
 type assetResponse struct {
-	ID        uint
-	Name      string
-	Category  string
-	Code      string
-	Currency  string
-	Top       float64
-	Bottom    float64
-	SellPrice float64
-	BuyPrice  float64
+	ID        uint    `json:"id"`
+	Name      string  `json:"name"`
+	Category  string  `json:"category"`
+	Code      string  `json:"code"`
+	Currency  string  `json:"currency"`
+	Top       float64 `json:"top"`
+	Bottom    float64 `json:"bottom"`
+	SellPrice float64 `json:"sell_price"`
+	BuyPrice  float64 `json:"buy_price"`
 }
 
 type HistResponse struct {

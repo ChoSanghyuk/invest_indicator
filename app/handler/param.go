@@ -72,8 +72,8 @@ type assetResponse struct {
 	Currency  string  `json:"currency"`
 	Top       float64 `json:"top"`
 	Bottom    float64 `json:"bottom"`
-	SellPrice float64 `json:"sell_price"`
-	BuyPrice  float64 `json:"buy_price"`
+	SellPrice float64 `json:"sell"`
+	BuyPrice  float64 `json:"buy"`
 }
 
 type HistResponse struct {

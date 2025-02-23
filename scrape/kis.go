@@ -3,7 +3,6 @@ package scrape
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,8 +32,6 @@ func (s *Scraper) KisToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	log.Println(token.AccessToken)
 
 	s.kis.accessToken = token.AccessToken
 	s.kis.tokenExpired = token.Expired

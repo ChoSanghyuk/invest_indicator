@@ -18,7 +18,7 @@ type AddFundReq struct {
 
 type AddAssetReq struct {
 	Name      string  `json:"name" validate:"required"`
-	Category  uint    `json:"category" validate:"required,category"`
+	Category  string  `json:"category" validate:"required,category"`
 	Code      string  `json:"code"`
 	Currency  string  `json:"currency" validate:"required"`
 	Top       float64 `json:"top"`
@@ -31,7 +31,7 @@ type AddAssetReq struct {
 type UpdateAssetReq struct {
 	ID        uint    `json:"id" validate:"required"`
 	Name      string  `json:"name"`
-	Category  uint    `json:"category"`
+	Category  string  `json:"category"`
 	Code      string  `json:"code"`
 	Currency  string  `json:"currency"`
 	Top       float64 `json:"top"`

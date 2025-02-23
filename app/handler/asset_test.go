@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"invest/app/middleware"
+	"invest/model"
 	"io"
 	"net/http"
 	"testing"
@@ -57,7 +58,7 @@ func TestAssetHandler(t *testing.T) {
 		t.Run("성공 테스트", func(t *testing.T) {
 			param := AddAssetReq{
 				Name:      "종목",
-				Category:  5,
+				Category:  model.Category(5).String(),
 				Code:      "code",
 				Currency:  "WON",
 				SellPrice: 480,
@@ -70,7 +71,7 @@ func TestAssetHandler(t *testing.T) {
 		t.Run("실패 테스트 - 필수 파라미터 미존재", func(t *testing.T) {
 			param := AddAssetReq{
 				// Name:      "종목",
-				Category:  5,
+				Category:  model.Category(5).String(),
 				Code:      "code",
 				Currency:  "WON",
 				SellPrice: 480,
@@ -89,7 +90,7 @@ func TestAssetHandler(t *testing.T) {
 			param := UpdateAssetReq{
 				ID:        1,
 				Name:      "종목",
-				Category:  5,
+				Category:  model.Category(5).String(),
 				Code:      "code",
 				Currency:  "WON",
 				Top:       500,
@@ -105,7 +106,7 @@ func TestAssetHandler(t *testing.T) {
 			param := UpdateAssetReq{
 				// ID:        1,
 				Name:      "종목",
-				Category:  5,
+				Category:  model.Category(5).String(),
 				Code:      "code",
 				Currency:  "WON",
 				Top:       500,

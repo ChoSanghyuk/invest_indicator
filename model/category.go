@@ -56,3 +56,7 @@ func IsValidCategory(c string) bool {
 func CategoryLength() uint64 {
 	return uint64(len(categoryList))
 }
+
+func CategoryList() []string {
+	return categoryList
+}

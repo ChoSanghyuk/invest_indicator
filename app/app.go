@@ -17,7 +17,7 @@ func Run(port int, stg *db.Storage, scraper *scrape.Scraper) {
 	handler.NewFundHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewMarketHandler(stg, stg).InitRoute(app)
-
+	handler.NewCategoryHandler().InitRoute(app)
 	app.Get("/shutdown", func(c *fiber.Ctx) error {
 
 		fmt.Println("Shutting Down")

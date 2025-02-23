@@ -19,5 +19,5 @@ func NewCategoryHandler() *CategoryHandler {
 }
 
 func (h *CategoryHandler) GetCategories(c *fiber.Ctx) error {
-	return c.JSON(model.CategoryList)
+	return c.JSON(model.CategoryList())
 }

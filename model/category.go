@@ -44,6 +44,15 @@ func (c Category) IsStable() bool {
 	}
 }
 
+func IsValidCategory(c string) bool {
+	for _, category := range categoryList {
+		if c == category {
+			return true
+		}
+	}
+	return false
+}
+
 func CategoryLength() uint64 {
 	return uint64(len(categoryList))
 }

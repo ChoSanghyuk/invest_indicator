@@ -34,7 +34,8 @@ func init() {
 	})
 
 	myValidator.RegisterValidation("category", func(fl validator.FieldLevel) bool {
-		return fl.Field().Uint() >= 1 && fl.Field().Uint() <= model.CategoryLength()
+
+		return model.IsValidCategory(fl.Field().String())
 	})
 }
 

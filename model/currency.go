@@ -18,3 +18,7 @@ func (c Currency) String() string {
 func IsCurrency(t string) bool {
 	return slices.Contains(currencyList, t)
 }
+
+func CurrencyList() []string {
+	return currencyList
+}

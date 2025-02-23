@@ -8,8 +8,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/robfig/cron"
 )
 
 type Event struct {
@@ -34,14 +32,14 @@ const (
 	EmaSpec    = "0 3 9 * * 2-6" // 화~토
 )
 
-func (e Event) Run(ch chan<- string) {
-	c := cron.New()
-	c.AddFunc(AssetSpec, func() { e.AssetEvent(ch) })
-	c.AddFunc(CoinSpec, func() { e.CoinEvent(ch) })
-	c.AddFunc(EstateSpec, func() { e.RealEstateEvent(ch) })
-	c.AddFunc(IndexSpec, func() { e.IndexEvent(ch) })
-	c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(ch) })
-	c.Start()
+func (e Event) Run(ch chan<- string) { // todo. 주석해제 필요
+	// c := cron.New()
+	// c.AddFunc(AssetSpec, func() { e.AssetEvent(ch) })
+	// c.AddFunc(CoinSpec, func() { e.CoinEvent(ch) })
+	// c.AddFunc(EstateSpec, func() { e.RealEstateEvent(ch) })
+	// c.AddFunc(IndexSpec, func() { e.IndexEvent(ch) })
+	// c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(ch) })
+	// c.Start()
 }
 
 var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"

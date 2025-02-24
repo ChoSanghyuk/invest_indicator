@@ -28,6 +28,7 @@ func (h *FundHandler) InitRoute(app *fiber.App) {
 	router.Post("/", h.AddFund)
 	router.Get("/:id/hist", h.FundHist)
 	router.Get("/:id/assets", h.FundAssets)
+	router.Get("/:id/portion", h.FundPortion)
 }
 
 // 총 자금 금액
@@ -100,12 +101,17 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 		if f.Count == 0 {
 			continue
 		}
+
 		resp = append(resp, fundAssetsResponse{
-			FundId:    f.FundID,
-			AssetId:   f.AssetID,
-			AssetName: f.Asset.Name,
-			Count:     f.Count,
-			Sum:       f.Sum,
+			Name:         f.Asset.Name,
+			Amount:       fmt.Sprintf("%f", f.Sum),
+			AmountDollar: "",
+			ProfitRate:   "", // todo ProfitRate 계산 로직 추가
+			Division:     f.Asset.Category.String(),
+			Quantity:     fmt.Sprintf("%f", f.Count),
+			Price:        "",
+			PriceDollar:  "",
+			IsStable:     f.Asset.Category.IsStable(),
 		})
 	}
 
@@ -137,4 +143,40 @@ func (h *FundHandler) FundHist(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fundHists)
+}
+
+func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return fmt.Errorf("파라미터 id 조회 시 오류 발생. %w", err)
+	}
+
+	funds, err := h.r.RetreiveFundSummaryByFundId(uint(id))
+	if err != nil {
+		return fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
+	}
+
+	stableAmount := 0.0
+	volatileAmount := 0.0
+
+	for _, f := range funds {
+		if f.Count == 0 {
+			continue
+		}
+
+		if f.Asset.Category.IsStable() {
+			stableAmount += f.Sum
+		} else {
+			volatileAmount += f.Sum
+		}
+	}
+	fmt.Print(stableAmount / (stableAmount + volatileAmount))
+	stablePortion := int((stableAmount / (stableAmount + volatileAmount)) * 100)
+	resp := fundPortionResponse{
+		Stable:   stablePortion,
+		Volatile: 100 - stablePortion,
+	}
+
+	return c.Status(fiber.StatusOK).JSON(resp)
+
 }

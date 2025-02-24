@@ -86,9 +86,23 @@ type HistResponse struct {
 }
 
 type fundAssetsResponse struct {
-	FundId    uint    `json:"fund_id"`
-	AssetId   uint    `json:"asset_id"`
-	AssetName string  `json:"asset_name"`
-	Count     float64 `json:"count"`
-	Sum       float64 `json:"sum"`
+	// FundId       uint    `json:"fund_id"`
+	// AssetId      uint    `json:"asset_id"`
+	// AssetName    string  `json:"asset_name"`
+	// Count        float64 `json:"count"`
+	// Sum          float64 `json:"sum"`
+	Name         string `json:"name"`
+	Amount       string `json:"amount"`
+	AmountDollar string `json:"amount_dollar"`
+	ProfitRate   string `json:"profit_rate"`
+	Division     string `json:"division"`
+	Quantity     string `json:"quantity"`
+	Price        string `json:"price"`
+	PriceDollar  string `json:"price_dollar"`
+	IsStable     bool   `json:"isStable"`
+}
+
+type fundPortionResponse struct {
+	Stable   int `json:"stable"`
+	Volatile int `json:"volatile"`
 }

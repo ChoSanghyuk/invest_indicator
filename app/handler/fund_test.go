@@ -100,7 +100,24 @@ func TestFundHandler(t *testing.T) {
 			}
 			t.Logf("\n%+v\n", resp)
 		})
+	})
 
+	t.Run("자금 비중 조회", func(t *testing.T) {
+		t.Run("성공 테스트", func(t *testing.T) {
+			readerMock.isli = []m.InvestSummary{
+				{ID: 1, FundID: 1, Fund: m.Fund{Name: "공용자금"}, Asset: m.Asset{Category: m.Dollar}, AssetID: 1, Count: 10, Sum: 10000},
+				{ID: 2, FundID: 1, Fund: m.Fund{Name: "공용자금"}, Asset: m.Asset{Category: m.Dollar}, AssetID: 2, Count: 10, Sum: 12000},
+				{ID: 3, FundID: 1, Fund: m.Fund{Name: "공용자금"}, Asset: m.Asset{Category: m.Leverage}, AssetID: 3, Count: 10, Sum: 15000},
+				// {ID: 4, FundID: 2, Fund: m.Fund{Name: "퇴직연금"}, Asset: m.Asset{Category: m.Dollar}, AssetID: 1, Count: 10, Sum: 10000},
+				// {ID: 5, FundID: 2, Fund: m.Fund{Name: "퇴직연금"}, Asset: m.Asset{Category: m.Leverage}, AssetID: 2, Count: 10, Sum: 20000},
+			}
+
+			var resp fundPortionResponse
+
+			err := sendReqeust(app, "/funds/1/portion", "GET", nil, &resp)
+			assert.NoError(t, err)
+			t.Logf("\n%+v\n", resp)
+		})
 	})
 
 	app.Shutdown()

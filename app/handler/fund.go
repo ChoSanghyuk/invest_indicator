@@ -111,7 +111,7 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 			PriceDollar: "",
 			IsStable:    f.Asset.Category.IsStable(),
 		}
-		if f.Asset.Currency == model.Won.String() {
+		if f.Asset.Currency == model.KRW.String() {
 			fundAsset.Amount = fmt.Sprintf("%f", f.Sum)
 		} else {
 			fundAsset.Amount = fmt.Sprintf("%f", f.Sum*h.e.ExchageRate())

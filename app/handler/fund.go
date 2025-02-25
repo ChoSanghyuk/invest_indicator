@@ -106,16 +106,16 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 			Name:        f.Asset.Name,
 			ProfitRate:  "", // todo ProfitRate 계산 로직 추가
 			Division:    f.Asset.Category.String(),
-			Quantity:    fmt.Sprintf("%f", f.Count),
+			Quantity:    fmt.Sprintf("%.2f", f.Count),
 			Price:       "",
 			PriceDollar: "",
 			IsStable:    f.Asset.Category.IsStable(),
 		}
 		if f.Asset.Currency == model.KRW.String() {
-			fundAsset.Amount = fmt.Sprintf("%f", f.Sum)
+			fundAsset.Amount = fmt.Sprintf("%.2f", f.Sum)
 		} else {
-			fundAsset.Amount = fmt.Sprintf("%f", f.Sum*h.e.ExchageRate())
-			fundAsset.AmountDollar = fmt.Sprintf("%f", f.Sum)
+			fundAsset.Amount = fmt.Sprintf("%.2f", f.Sum*h.e.ExchageRate())
+			fundAsset.AmountDollar = fmt.Sprintf("%.2f", f.Sum)
 
 		}
 
@@ -170,11 +170,18 @@ func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
 		if f.Count == 0 {
 			continue
 		}
+		v := 0.0
+		if f.Asset.Currency == model.KRW.String() {
+			v = f.Sum
+		} else {
+			v = f.Sum * h.e.ExchageRate()
+
+		}
 
 		if f.Asset.Category.IsStable() {
-			stableAmount += f.Sum
+			stableAmount += v
 		} else {
-			volatileAmount += f.Sum
+			volatileAmount += v
 		}
 	}
 

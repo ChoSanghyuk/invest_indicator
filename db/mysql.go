@@ -89,17 +89,23 @@ func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
 
 	return invets, nil
 }
+func (s Storage) RetrieveFundInvestsByIdAndRange(fundID uint, startDate, endDate string) ([]m.Invest, error) {
+	var invests []m.Invest
 
-func (s Storage) RetreiveInvestHistOfFundById(id uint) (*m.Fund, error) {
-	var fund m.Fund
-
-	result := s.db.First(&fund, id)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return &fund, nil
+	err := s.db.Where("fund_id = ? AND created_at BETWEEN ? AND ?", fundID, startDate, endDate).Find(&invests).Error
+	return invests, err
 }
+
+// func (s Storage) RetreiveInvestHistOfFundById(id uint) (*m.Fund, error) {
+// 	var fund m.Fund
+
+// 	result := s.db.First(&fund, id)
+// 	if result.Error != nil {
+// 		return nil, result.Error
+// 	}
+
+// 	return &fund, nil
+// }
 
 func (s Storage) SaveFund(name string) error {
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	m "invest/model"
 	"log"
+	"os"
 	"testing"
 
 	"gorm.io/gorm"
@@ -13,7 +14,18 @@ var stg *Storage
 
 func init() {
 
-	dsn := "root:root@tcp(127.0.0.1:3306)/investdb?charset=utf8mb4&parseTime=True&loc=Local"
+	user := os.Getenv("db_user")
+	password := os.Getenv("db_password")
+	ip := os.Getenv("db_ip")
+	if ip == "" {
+		ip = "127.0.0.1:3306"
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/investdb?charset=utf8mb4&parseTime=True&loc=Local",
+		user,
+		password,
+		ip,
+	)
 	s, err := NewStorage(dsn, &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
@@ -48,14 +60,27 @@ func TestRetreiveAFundInvestsById(t *testing.T) {
 	}
 	t.Log(rtn)
 }
-func TestRetreiveInvestHistOfFundById(t *testing.T) {
 
-	rtn, err := stg.RetreiveInvestHistOfFundById(1)
+func TestRetrieveFundInvestsByIdAndRange(t *testing.T) {
+	fundId := 1
+	startDate := "2024-01-01"
+	endDate := "2024-12-31"
+
+	rtn, err := stg.RetrieveFundInvestsByIdAndRange(uint(fundId), startDate, endDate)
 	if err != nil {
-		t.Error(t)
+		t.Error(err)
 	}
 	t.Log(rtn)
 }
+
+// func TestRetreiveInvestHistOfFundById(t *testing.T) {
+
+//		rtn, err := stg.RetreiveInvestHistOfFundById(1)
+//		if err != nil {
+//			t.Error(t)
+//		}
+//		t.Log(rtn)
+//	}
 func TestSaveFund(t *testing.T) {
 
 	err := stg.SaveFund("테스트")

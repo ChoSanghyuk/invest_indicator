@@ -133,10 +133,15 @@ func (h *FundHandler) FundHist(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 id 조회 시 오류 발생. %w", err)
 	}
 
-	invests, err := h.r.RetreiveAFundInvestsById(uint(id))
+	var invests []model.Invest
+
+	invests, err = h.r.RetreiveAFundInvestsById(uint(id))
 	if err != nil {
 		return fmt.Errorf("RetreiveAFundInvestsById 시 오류 발생. %w", err)
 	}
+
+	h.r.RetrieveFundInvestsByIdAndRange()
+
 	fundHists := make([]HistResponse, len(invests))
 	for i, iv := range invests {
 		fundHists[i] = HistResponse{

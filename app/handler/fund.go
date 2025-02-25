@@ -102,17 +102,24 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 			continue
 		}
 
-		resp = append(resp, fundAssetsResponse{
-			Name:         f.Asset.Name,
-			Amount:       fmt.Sprintf("%f", f.Sum),
-			AmountDollar: "",
-			ProfitRate:   "", // todo ProfitRate 계산 로직 추가
-			Division:     f.Asset.Category.String(),
-			Quantity:     fmt.Sprintf("%f", f.Count),
-			Price:        "",
-			PriceDollar:  "",
-			IsStable:     f.Asset.Category.IsStable(),
-		})
+		fundAsset := fundAssetsResponse{
+			Name:        f.Asset.Name,
+			ProfitRate:  "", // todo ProfitRate 계산 로직 추가
+			Division:    f.Asset.Category.String(),
+			Quantity:    fmt.Sprintf("%f", f.Count),
+			Price:       "",
+			PriceDollar: "",
+			IsStable:    f.Asset.Category.IsStable(),
+		}
+		if f.Asset.Currency == model.Won.String() {
+			fundAsset.Amount = fmt.Sprintf("%f", f.Sum)
+		} else {
+			fundAsset.Amount = fmt.Sprintf("%f", f.Sum*h.e.ExchageRate())
+			fundAsset.AmountDollar = fmt.Sprintf("%f", f.Sum)
+
+		}
+
+		resp = append(resp, fundAsset)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(resp)

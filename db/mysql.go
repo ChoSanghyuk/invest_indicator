@@ -92,7 +92,10 @@ func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
 func (s Storage) RetrieveFundInvestsByIdAndRange(fundID uint, startDate, endDate string) ([]m.Invest, error) {
 	var invests []m.Invest
 
-	err := s.db.Where("fund_id = ? AND created_at BETWEEN ? AND ?", fundID, startDate, endDate).Find(&invests).Error
+	err := s.db.Where("fund_id = ? AND created_at BETWEEN ? AND ?", fundID, startDate, endDate).
+		Preload("Asset").
+		Find(&invests).
+		Error
 	return invests, err
 }
 

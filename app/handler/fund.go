@@ -155,7 +155,7 @@ func (h *FundHandler) FundHist(c *fiber.Ctx) error {
 			AssetName: iv.Asset.Name,
 			Count:     iv.Count,
 			Price:     iv.Price,
-			CreatedAt: iv.CreatedAt.Format("200601021504"),
+			CreatedAt: iv.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
 

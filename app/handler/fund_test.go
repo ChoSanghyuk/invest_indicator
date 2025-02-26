@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"fmt"
 	"invest/app/middleware"
 	m "invest/model"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 func TestFundHandler(t *testing.T) {
@@ -72,6 +75,35 @@ func TestFundHandler(t *testing.T) {
 
 			for _, iv := range resp {
 				if iv.FundID != 1 {
+					t.Error()
+				}
+			}
+			t.Logf("\n%+v\n", resp)
+		})
+
+	})
+
+	t.Run("이력_조회_날짜", func(t *testing.T) {
+		t.Run("성공 테스트", func(t *testing.T) {
+
+			readerMock.il = []m.Invest{
+				{ID: 1, FundID: 1, AssetID: 1, Price: 7800, Count: 5, Model: gorm.Model{CreatedAt: time.Now()}},
+				{ID: 2, FundID: 2, AssetID: 1, Price: 7800, Count: 3, Model: gorm.Model{CreatedAt: time.Now().AddDate(0, -1, 0)}},
+			}
+
+			var resp []HistResponse
+			err := sendReqeust(app,
+				fmt.Sprintf("/funds/1/hist?start=%s&end=%s",
+					time.Now().AddDate(0, 0, -1),
+					time.Now().AddDate(0, 0, 1),
+				),
+				"GET",
+				nil,
+				&resp)
+			assert.NoError(t, err)
+
+			for _, iv := range resp {
+				if iv.FundId != 1 {
 					t.Error()
 				}
 			}

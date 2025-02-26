@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	m "invest/model"
+	"strings"
 	"time"
 
 	"gorm.io/datatypes"
@@ -156,6 +157,21 @@ func (mock FundRetrieverMock) RetreiveAFundInvestsById(id uint) ([]m.Invest, err
 	var rtn []m.Invest
 	for _, iv := range mock.il {
 		if iv.FundID == id {
+			rtn = append(rtn, iv)
+		}
+	}
+	return rtn, nil
+}
+func (mock FundRetrieverMock) RetrieveFundInvestsByIdAndRange(id uint, start, end string) ([]m.Invest, error) {
+	if mock.err != nil {
+		return nil, mock.err
+	}
+
+	var rtn []m.Invest
+	for _, iv := range mock.il {
+		if iv.FundID == id &&
+			strings.Compare(iv.CreatedAt.Format("2006-01-02"), start) == 1 &&
+			strings.Compare(iv.CreatedAt.Format("2006-01-02"), end) == -1 {
 			rtn = append(rtn, iv)
 		}
 	}

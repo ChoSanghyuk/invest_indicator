@@ -296,6 +296,20 @@ func (s Storage) RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliInde
 	return &dailyIdx, &cliIdx, nil
 }
 
+func (s Storage) RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error) {
+
+	var indexes []m.DailyIndex
+
+	endDate := time.Now().Format("2006-01-02")
+	startDate := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+
+	err := s.db.Where("created_at BETWEEN ? AND ?", startDate, endDate).
+		Find(&indexes).
+		Error
+	return indexes, err
+
+}
+
 func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) error {
 
 	result := s.db.Create(&m.DailyIndex{

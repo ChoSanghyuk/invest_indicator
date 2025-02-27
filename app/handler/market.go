@@ -23,6 +23,7 @@ func (h *MarketHandler) InitRoute(app *fiber.App) {
 	router := app.Group("/market")
 	router.Get("/:date?", h.Market)
 	router.Get("/indicators/:date?", h.MarketIndicator)
+	router.Get("/weekly_indicators", h.WeekMarketIndicators)
 	router.Post("/", h.ChangeMarketStatus)
 }
 
@@ -35,12 +36,12 @@ func (h *MarketHandler) Market(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 유효성 검사 시 오류 발생. 올바르지 않은 date 포맷. %s", date)
 	}
 
-	assets, err := h.r.RetrieveMarketStatus(date)
+	market, err := h.r.RetrieveMarketStatus(date)
 	if err != nil {
 		return fmt.Errorf("RetrieveMarketStatus 오류 발생. %w", err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(assets)
+	return c.Status(fiber.StatusOK).JSON(market)
 }
 
 func (h *MarketHandler) MarketIndicator(c *fiber.Ctx) error {
@@ -58,6 +59,28 @@ func (h *MarketHandler) MarketIndicator(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON([]any{dailyIdx, cliIdx})
+}
+
+func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
+
+	weekIdx, err := h.r.RetrieveMarketIndicatorWeek()
+	if err != nil {
+		return fmt.Errorf("RetrieveMarketIndicatorWeek 오류 발생. %w", err)
+	}
+
+	fg := make([]uint, 7)
+	nd := make([]float64, 7)
+
+	for i, idx := range weekIdx {
+		fg[i] = idx.FearGreedIndex
+		nd[i] = idx.NasDaq
+	}
+
+	return c.Status(fiber.StatusOK).
+		JSON(WeekMarketIndicators{
+			FearGreedWeek: fg,
+			NasdaqWeek:    nd,
+		})
 }
 
 func (h *MarketHandler) ChangeMarketStatus(c *fiber.Ctx) error {

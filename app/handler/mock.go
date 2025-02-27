@@ -233,6 +233,10 @@ func (mock MaketRetrieverMock) RetrieveMarketIndicator(date string) (*m.DailyInd
 		}, nil
 }
 
+func (mock MaketRetrieverMock) RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error) {
+	return nil, nil
+}
+
 type MarketSaverMock struct {
 	err error
 }

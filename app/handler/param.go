@@ -106,3 +106,26 @@ type fundPortionResponse struct {
 	Stable   int `json:"stable"`
 	Volatile int `json:"volatile"`
 }
+
+type WeekMarketIndicators struct {
+	FearGreedWeek []uint    `json:"fear_greed"`
+	NasdaqWeek    []float64 `json:"nasdaq"`
+}
+
+// type FearGreedIndexResponse struct {
+// 	Value      uint      `json:"value"`
+// 	Status     string    `json:"status"`
+// 	WeeklyData []float64 `json:"weeklyData"`
+// }
+
+// type NasdaqResponse struct {
+// 	Value      float64   `json:"value"`
+// 	Change     float64   `json:"change"`
+// 	WeeklyData []float64 `json:"weeklyData"`
+// }
+
+// type SP500Response struct {
+// 	Value      float64   `json:"value"`
+// 	Change     float64   `json:"change"`
+// 	WeeklyData []float64 `json:"weeklyData"`
+// }

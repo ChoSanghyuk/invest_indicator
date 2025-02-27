@@ -21,9 +21,9 @@ func NewMarketHandler(r MaketRetriever, w MarketSaver) *MarketHandler {
 func (h *MarketHandler) InitRoute(app *fiber.App) {
 
 	router := app.Group("/market")
-	router.Get("/:date?", h.Market)
-	router.Get("/indicators/:date?", h.MarketIndicator)
 	router.Get("/weekly_indicators", h.WeekMarketIndicators)
+	router.Get("/indicators/:date?", h.MarketIndicator)
+	router.Get("/:date?", h.Market)
 	router.Post("/", h.ChangeMarketStatus)
 }
 

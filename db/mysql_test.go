@@ -230,6 +230,15 @@ func TestRetrieveMarketIndicator(t *testing.T) {
 		t.Log(*rtn1)
 		t.Log(*rtn2)
 	})
+
+	t.Run("일주일치", func(t *testing.T) {
+		rtn, err := stg.RetrieveMarketIndicatorWeek()
+		if err != nil {
+			t.Error(t)
+		}
+		t.Log(rtn)
+
+	})
 }
 
 func TestSaveDailyMarketIndicator(t *testing.T) {

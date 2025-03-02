@@ -70,16 +70,19 @@ func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
 
 	fg := make([]uint, 7)
 	nd := make([]float64, 7)
+	sp := make([]float64, 7)
 
 	for i, idx := range weekIdx {
 		fg[i] = idx.FearGreedIndex
 		nd[i] = idx.NasDaq
+		sp[i] = idx.Sp500
 	}
 
 	return c.Status(fiber.StatusOK).
 		JSON(WeekMarketIndicators{
 			FearGreedWeek: fg,
 			NasdaqWeek:    nd,
+			Sp500Week:     sp,
 		})
 }
 

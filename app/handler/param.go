@@ -110,6 +110,7 @@ type fundPortionResponse struct {
 type WeekMarketIndicators struct {
 	FearGreedWeek []uint    `json:"fear_greed"`
 	NasdaqWeek    []float64 `json:"nasdaq"`
+	Sp500Week     []float64 `json:"sp500"`
 }
 
 // type FearGreedIndexResponse struct {

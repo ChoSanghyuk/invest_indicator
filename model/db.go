@@ -62,6 +62,7 @@ type DailyIndex struct {
 	CreatedAt      datatypes.Date `gorm:"primaryKey"`
 	FearGreedIndex uint
 	NasDaq         float64
+	Sp500          float64
 }
 
 type CliIndex struct {

@@ -17,7 +17,7 @@ type Storage interface {
 	RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error)
 
 	RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error)
-	SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) error
+	SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error
 
 	RetreiveLatestEma(assetId uint) (float64, error)
 	SaveEmaHist(assetId uint, price float64) error
@@ -33,5 +33,6 @@ type DailyPoller interface {
 	ClosingPrice(category m.Category, code string) (float64, error)
 	FearGreedIndex() (uint, error)
 	Nasdaq() (float64, error)
+	Sp500() (float64, error)
 	CliIdx() (float64, error)
 }

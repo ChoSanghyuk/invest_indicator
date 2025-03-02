@@ -198,8 +198,15 @@ func (e Event) IndexEvent(c chan<- string) {
 		return
 	}
 
+	// 3. SP 지수 조회
+	sp500, err := e.dp.Sp500()
+	if err != nil {
+		c <- fmt.Sprintf("S&P 500 Index 조회 시 오류 발생. %s", err.Error())
+		return
+	}
+
 	// 오늘분 저장
-	err = e.stg.SaveDailyMarketIndicator(fgi, nasdaq)
+	err = e.stg.SaveDailyMarketIndicator(fgi, nasdaq, sp500)
 	if err != nil {
 		c <- fmt.Sprintf("Nasdaq Index 저장 시 오류 발생. %s", err.Error())
 	}

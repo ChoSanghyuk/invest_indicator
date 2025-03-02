@@ -195,13 +195,30 @@ func (s *Scraper) FearGreedIndex() (uint, error) {
 
 func (s *Scraper) Nasdaq() (float64, error) {
 
-	return s.kisNasdaqIndex()
+	return s.kisIndex(Nasdaq)
+}
+
+func (s *Scraper) Sp500() (float64, error) {
+
+	return s.kisIndex(Sp500)
 }
 
 // todo. 현재로는 크롤링/API 못 찾음
 func (s *Scraper) CliIdx() (float64, error) {
 	// need Chromedp
 	return 0, nil
+}
+
+// todo. refactor scraper 변경 필요
+func (s *Scraper) Buy(category m.Category, code string) error {
+
+	switch category {
+	case m.ForeignStock, m.ForeignETF:
+		err := s.kisForeignBuy(code, 0)
+		return err
+	}
+
+	return nil
 }
 
 // depre

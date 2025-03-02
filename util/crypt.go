@@ -1,4 +1,4 @@
-package config
+package util
 
 import (
 	"crypto/aes"
@@ -10,7 +10,7 @@ import (
 )
 
 // AES 복호화 함수
-func decrypt(key []byte, cryptoText string) (string, error) {
+func Decrypt(key []byte, cryptoText string) (string, error) {
 	ciphertext, _ := hex.DecodeString(cryptoText)
 
 	block, err := aes.NewCipher(key)
@@ -32,7 +32,7 @@ func decrypt(key []byte, cryptoText string) (string, error) {
 }
 
 // Encrypt function corresponding to decrypt
-func encrypt(key []byte, plaintext string) (string, error) {
+func Encrypt(key []byte, plaintext string) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err

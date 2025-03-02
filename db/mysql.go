@@ -300,10 +300,14 @@ func (s Storage) RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error) {
 
 	var indexes []m.DailyIndex
 
-	endDate := time.Now().Format("2006-01-02")
-	startDate := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	// endDate := time.Now().Format("2006-01-02")
+	// startDate := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	// err := s.db.Where("created_at BETWEEN ? AND ?", startDate, endDate).
+	// 	Find(&indexes).
+	// 	Error
 
-	err := s.db.Where("created_at BETWEEN ? AND ?", startDate, endDate).
+	err := s.db.Order("created_at DESC").
+		Limit(7).
 		Find(&indexes).
 		Error
 	return indexes, err

@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"os"
 	"testing"
 )
 
@@ -20,9 +21,16 @@ func (t transmitterMock) CrawlUrlCasspath(target string) (url string, cssPath st
 
 func TestKis(t *testing.T) {
 
+	appkey := os.Getenv("appkey")
+	appsecret := os.Getenv("appsecret")
+	token := os.Getenv("token")
 	s := NewScraper(
 		transmitterMock{},
-		WithKIS(&KisConfig{}),
+		WithKIS(&KisConfig{
+			AppKey:    appkey,
+			AppSecret: appsecret,
+		}),
+		WithToken(token),
 	)
 
 	t.Run("Token Generate", func(t *testing.T) {

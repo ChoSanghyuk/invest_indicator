@@ -1,4 +1,4 @@
-package config
+package util
 
 import (
 	"os"
@@ -20,7 +20,7 @@ func TestEncrypt(t *testing.T) {
 	key := os.Getenv("key")
 	plain := os.Getenv("plain")
 
-	encrypted, err := encrypt([]byte(key), plain)
+	encrypted, err := Encrypt([]byte(key), plain)
 	if err != nil {
 		t.Error(err)
 	}
@@ -32,7 +32,7 @@ func TestDecrypt(t *testing.T) {
 	key := os.Getenv("key")
 	cipher := os.Getenv("cipher")
 
-	decrypted, err := decrypt([]byte(key), cipher)
+	decrypted, err := Decrypt([]byte(key), cipher)
 	if err != nil {
 		t.Error(err)
 	}

@@ -79,12 +79,12 @@ func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
 }
 
 func (c Config) InitKIS(key string) (err error) {
-	*c.Key.KIS["appkey"], err = decrypt([]byte(key), *c.Key.KIS["appkey"])
+	*c.Key.KIS["appkey"], err = util.Decrypt([]byte(key), *c.Key.KIS["appkey"])
 	if err != nil {
 		return err
 	}
 
-	*c.Key.KIS["appsecret"], err = decrypt([]byte(key), *c.Key.KIS["appsecret"])
+	*c.Key.KIS["appsecret"], err = util.Decrypt([]byte(key), *c.Key.KIS["appsecret"])
 	if err != nil {
 		return err
 	}
@@ -104,12 +104,12 @@ func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 
 	for appKey == "" || appSecret == "" || err != nil {
 		key := keyPasser.InitKey(err)
-		appKey, err = decrypt([]byte(key), *c.Key.KIS["appkey"])
+		appKey, err = util.Decrypt([]byte(key), *c.Key.KIS["appkey"])
 		if err != nil {
 			continue
 		}
 
-		appSecret, err = decrypt([]byte(key), *c.Key.KIS["appsecret"])
+		appSecret, err = util.Decrypt([]byte(key), *c.Key.KIS["appsecret"])
 	}
 
 	return &scrape.KisConfig{

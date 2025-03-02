@@ -229,7 +229,7 @@ type Index string
 
 const (
 	Nasdaq = "COMP"
-	Sp500  = "PSPX"
+	Sp500  = "SPX"
 )
 
 // todo. transmitter 필요한가??

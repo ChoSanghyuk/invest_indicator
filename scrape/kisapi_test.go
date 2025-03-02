@@ -49,8 +49,16 @@ func TestKis(t *testing.T) {
 		t.Log(pp, cp, err)
 	})
 
-	t.Run("Foreign Index", func(t *testing.T) {
-		pp, err := s.kisNasdaqIndex()
+	t.Run("Nasdaq Index", func(t *testing.T) {
+		pp, err := s.kisIndex(Nasdaq)
+		if err != nil {
+			t.Error(err)
+		}
+		t.Log(pp)
+	})
+
+	t.Run("S&P 500 Index", func(t *testing.T) {
+		pp, err := s.kisIndex(Sp500)
 		if err != nil {
 			t.Error(err)
 		}

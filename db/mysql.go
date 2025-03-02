@@ -310,12 +310,13 @@ func (s Storage) RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error) {
 
 }
 
-func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) error {
+func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error {
 
 	result := s.db.Create(&m.DailyIndex{
 		CreatedAt:      datatypes.Date(time.Now()),
 		FearGreedIndex: fearGreedIndex,
 		NasDaq:         nasdaq,
+		Sp500:          sp500,
 	})
 	if result.Error != nil {
 		return result.Error

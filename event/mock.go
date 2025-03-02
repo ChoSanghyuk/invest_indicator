@@ -63,7 +63,7 @@ func (m StorageMock) RetrieveMarketIndicator(date string) (*md.DailyIndex, *md.C
 	return nil, nil, nil
 }
 
-func (m StorageMock) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64) error {
+func (m StorageMock) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error {
 	if m.err != nil {
 		return m.err
 	}
@@ -121,6 +121,9 @@ func (m DailyPollerMock) FearGreedIndex() (uint, error) {
 	return 0, nil
 }
 func (m DailyPollerMock) Nasdaq() (float64, error) {
+	return 0, nil
+}
+func (m DailyPollerMock) Sp500() (float64, error) {
 	return 0, nil
 }
 func (m DailyPollerMock) CliIdx() (float64, error) {

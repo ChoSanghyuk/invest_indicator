@@ -243,7 +243,7 @@ func TestRetrieveMarketIndicator(t *testing.T) {
 
 func TestSaveDailyMarketIndicator(t *testing.T) {
 
-	err := stg.SaveDailyMarketIndicator(20, 183.35)
+	err := stg.SaveDailyMarketIndicator(20, 183.35, 234.354)
 	if err != nil {
 		t.Error(err)
 	}

@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/robfig/cron"
 )
 
 type Event struct {
@@ -28,18 +30,18 @@ const (
 	AssetSpec  = "0 */15 8-23 * * 1-5"
 	CoinSpec   = "0 */15 8-23 * * 0,6"
 	EstateSpec = "0 */15 9-17 * * 1-5"
-	IndexSpec  = "0 3 8 * * 1-5" // todo. 9시 3분이랑 8시 3분이랑 값이 같은지 확인
-	EmaSpec    = "0 3 9 * * 2-6" // 화~토
+	IndexSpec  = "0 40 8 * * 1-5" // todo. 9시 3분이랑 8시 3분이랑 값이 같은지 확인
+	EmaSpec    = "0 3 9 * * 2-6"  // 화~토
 )
 
 func (e Event) Run(ch chan<- string) { // todo. 주석해제 필요
-	// c := cron.New()
-	// c.AddFunc(AssetSpec, func() { e.AssetEvent(ch) })
-	// c.AddFunc(CoinSpec, func() { e.CoinEvent(ch) })
-	// c.AddFunc(EstateSpec, func() { e.RealEstateEvent(ch) })
-	// c.AddFunc(IndexSpec, func() { e.IndexEvent(ch) })
-	// c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(ch) })
-	// c.Start()
+	c := cron.New()
+	c.AddFunc(AssetSpec, func() { e.AssetEvent(ch) })
+	c.AddFunc(CoinSpec, func() { e.CoinEvent(ch) })
+	c.AddFunc(EstateSpec, func() { e.RealEstateEvent(ch) })
+	c.AddFunc(IndexSpec, func() { e.IndexEvent(ch) })
+	c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(ch) })
+	c.Start()
 }
 
 var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"

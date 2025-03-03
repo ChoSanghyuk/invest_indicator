@@ -46,5 +46,5 @@ func main() {
 		app.Run(conf.App.Port, db, scraper)
 	}()
 
-	teleBot.Run(ch)
+	teleBot.Run(ch, conf.App.Port)
 }

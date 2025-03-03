@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -40,11 +41,11 @@ func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
 	}, nil
 }
 
-func (t TeleBot) Run(ch chan string) {
+func (t TeleBot) Run(ch chan string, port int) {
 	t.SendMessage("LAUNCHED SUCCESSFULLY")
 
 	go func() {
-		t.listen(ch)
+		t.communicate(ch, port)
 	}()
 
 	for true {
@@ -70,7 +71,7 @@ func (t TeleBot) SendMessage(msg string) {
 	t.bot.Send(tgbotapi.NewMessage(t.chatId, msg))
 }
 
-func (t TeleBot) listen(ch chan string) {
+func (t TeleBot) communicate(ch chan string, port int) {
 
 	for update := range t.updates {
 		if update.Message != nil {
@@ -126,7 +127,7 @@ func (t TeleBot) listen(ch chan string) {
 				}
 				`
 			default:
-				rtn, err := httpsend(txt)
+				rtn, err := httpsend("http://localhost:" + strconv.Itoa(port) + txt)
 				if err != nil {
 					ch <- err.Error()
 				} else {
@@ -138,9 +139,9 @@ func (t TeleBot) listen(ch chan string) {
 	}
 }
 
-func httpsend(path string) (string, error) {
+func httpsend(url string) (string, error) {
 
-	url := "http://localhost:50001" + path
+	// url := "http://localhost:50001" + path
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 
 	client := &http.Client{}

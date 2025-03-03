@@ -1,42 +1,17 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	m "invest/model"
-	"log"
 	"testing"
 	"time"
 
 	"gorm.io/datatypes"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
-
-var db *gorm.DB
-
-func init() {
-
-	dsn := "root:root@tcp(127.0.0.1:3306)/investdb?charset=utf8mb4&parseTime=True&loc=Local"
-	sqlDB, err := sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db, err = gorm.Open(mysql.New(mysql.Config{
-		Conn: sqlDB,
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func TestMigration(t *testing.T) {
 	// db.AutoMigrate(&m.EmaHist{})
-	db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.Invest{}, &m.InvestSummary{}, &m.Market{}, &m.DailyIndex{}, &m.CliIndex{}, &m.EmaHist{})
+	stg.db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.Invest{}, &m.InvestSummary{}, &m.Market{}, &m.DailyIndex{}, &m.CliIndex{}, &m.EmaHist{})
 }
 
 func TestCreate(t *testing.T) {
@@ -44,7 +19,7 @@ func TestCreate(t *testing.T) {
 		Name: "개인",
 	}
 
-	result := db.Create(&fund)
+	result := stg.db.Create(&fund)
 
 	if result.Error != nil {
 		t.Fatal(result.Error)
@@ -53,23 +28,10 @@ func TestCreate(t *testing.T) {
 	t.Log("Rows Affected", result.RowsAffected)
 }
 
-func TestCreateAsset(t *testing.T) {
-
-	_, err := stg.SaveAssetInfo("bitcoin", m.DomesticCoin, "KRW-BTC", "WON", 98000000, 68000000, 88000000, 70000000)
-	if err != nil {
-		t.Error(err)
-	}
-
-	_, err = stg.SaveAssetInfo("gold", m.Gold, "M04020000", "WON", 111360, 80100, 0, 103630)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestRetrieve(t *testing.T) {
 	var asset m.Asset
 
-	result := db.Model(&m.Asset{}).Where("id", 99).Find(&asset)
+	result := stg.db.Model(&m.Asset{}).Where("id", 99).Find(&asset)
 	fmt.Println(result.RowsAffected)
 	if result.Error != nil || result.RowsAffected == 0 {
 		return
@@ -82,7 +44,7 @@ time.Time{}.Local() => '0000-00-00 00:00:00' 라서 Date 타입 및 Timestamp �
 time.Now() => '2024-08-16 08:47:20.346' Date 타입 및 Timestamp 성공
 */
 func TestTime(t *testing.T) {
-	db.AutoMigrate(&m.Sample{})
+	stg.db.AutoMigrate(&m.Sample{})
 
 	// date, _ := time.Parse("2006-01-02", "2021-11-22")
 
@@ -91,16 +53,33 @@ func TestTime(t *testing.T) {
 		Time: time.Now(),
 	}
 
-	db.Debug().Create(&d)
+	stg.db.Debug().Create(&d)
 }
 
 func TestSelectFirst(t *testing.T) {
 	var dailyIdx m.DailyIndex
 
-	result := db.Where("created_at = ?", "2024-09-21").Select(&dailyIdx)
+	result := stg.db.Where("created_at = ?", "2024-09-21").Select(&dailyIdx)
 	if result.Error != nil {
 		t.Error(result.Error)
 	}
 
 	fmt.Printf("%+v", dailyIdx)
+}
+
+func TestRetrieveInvestSummary(t *testing.T) {
+
+	fundId := 1
+	assetId := 12
+
+	var investSummary m.InvestSummary
+	result := stg.db.Model(&m.InvestSummary{}).
+		Where("fund_id = ?", fundId).
+		Where("asset_id = ?", assetId).
+		Find(&investSummary)
+
+	if result.RowsAffected == 0 {
+		t.Error("RowsAffected : 0")
+	}
+	t.Log(investSummary)
 }

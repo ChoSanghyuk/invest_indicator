@@ -99,6 +99,19 @@ func TestSaveFund(t *testing.T) {
 	stg.db.Delete(&fund)
 }
 
+func TestCreateAsset(t *testing.T) {
+
+	_, err := stg.SaveAssetInfo("bitcoin", m.DomesticCoin, "KRW-BTC", "WON", 98000000, 68000000, 88000000, 70000000)
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = stg.SaveAssetInfo("gold", m.Gold, "M04020000", "WON", 111360, 80100, 0, 103630)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestRetrieveAssetList(t *testing.T) {
 
 	rtn, err := stg.RetrieveAssetList()
@@ -322,23 +335,6 @@ func TestSaveEmaHist(t *testing.T) {
 	// 	t.Error(err)
 	// }
 
-}
-
-func TestRetrieveInvestSummary(t *testing.T) {
-
-	fundId := 1
-	assetId := 12
-
-	var investSummary m.InvestSummary
-	result := db.Model(&m.InvestSummary{}).
-		Where("fund_id = ?", fundId).
-		Where("asset_id = ?", assetId).
-		Find(&investSummary)
-
-	if result.RowsAffected == 0 {
-		t.Error("RowsAffected : 0")
-	}
-	t.Log(investSummary)
 }
 
 func TestUpdateInvestSummary(t *testing.T) {

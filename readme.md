@@ -396,7 +396,7 @@ https://generalcoder.tistory.com/29
    - 저장 + 나가기 : `CTRL + O` + `CTRL + X`
    - 확인 : `crontab -l`
 
-
+.
 
 
 

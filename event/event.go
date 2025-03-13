@@ -165,7 +165,6 @@ func (e Event) EmaUpdateEvent(c chan<- string) {
 		}
 		e.stg.SaveEmaHist(a.ID, cp)
 	}
-
 }
 
 func (e Event) RealEstateEvent(c chan<- string) {
@@ -225,7 +224,6 @@ func (e Event) IndexEvent(c chan<- string) {
 	} else {
 		c <- fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq)
 	}
-
 }
 
 /**********************************************************************************************************************

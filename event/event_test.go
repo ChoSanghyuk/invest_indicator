@@ -12,7 +12,11 @@ func TestEventbuySellMsg(t *testing.T) {
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
 
-	evt := NewEvent(stg, scrp, dp)
+	evt := NewEventHandler(EventHandlerConfig{
+		Storage:     stg,
+		RtPoller:    scrp,
+		DailyPoller: dp,
+	})
 
 	pm := make(map[uint]float64)
 
@@ -71,7 +75,11 @@ func TestEventportfolioMsg(t *testing.T) {
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
 
-	evt := NewEvent(stg, scrp, dp)
+	evt := NewEventHandler(EventHandlerConfig{
+		Storage:     stg,
+		RtPoller:    scrp,
+		DailyPoller: dp,
+	})
 
 	/*
 		매도 필요상황

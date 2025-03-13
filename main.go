@@ -39,8 +39,13 @@ func main() {
 		panic(err)
 	}
 
-	event := event.NewEvent(db, scraper, scraper)
-	event.Run(ch)
+	eventHandler := event.NewEventHandler(event.EventHandlerConfig{
+		Storage:     db,
+		RtPoller:    scraper,
+		DailyPoller: scraper,
+		Channel:     ch,
+	})
+	eventHandler.Run()
 
 	go func() {
 		app.Run(conf.App.Port, db, scraper)

@@ -12,20 +12,35 @@ import (
 	"github.com/robfig/cron"
 )
 
-type Event struct {
-	stg Storage
-	rt  RtPoller
-	dp  DailyPoller
+type EventHandler struct {
+	stg    Storage
+	rt     RtPoller
+	dp     DailyPoller
+	ch     chan<- string
+	events []*Event
 }
 
-func NewEvent(stg Storage, rtPoller RtPoller, dailyPoller DailyPoller) *Event {
-	return &Event{
-		stg: stg,
-		rt:  rtPoller,
-		dp:  dailyPoller,
+type EventHandlerConfig struct {
+	Storage     Storage
+	RtPoller    RtPoller
+	DailyPoller DailyPoller
+	Channel     chan<- string
+}
+
+func NewEventHandler(conf EventHandlerConfig) *EventHandler {
+
+	eh := &EventHandler{
+		stg: conf.Storage,
+		rt:  conf.RtPoller,
+		dp:  conf.DailyPoller,
+		ch:  conf.Channel,
 	}
+	eh.registerEvents()
+	return eh
 }
 
+// todo 시간 조정
+// pricemap 로컬 변수로 두고, asset event랑 포트폴 event 분리시키기
 const (
 	AssetSpec  = "0 */15 8-23 * * 1-5"
 	CoinSpec   = "0 */15 8-23 * * 0,6"
@@ -34,14 +49,51 @@ const (
 	EmaSpec    = "0 3 9 * * 2-6"  // 화~토
 )
 
-func (e Event) Run(ch chan<- string) { // todo. 주석해제 필요
+func (e EventHandler) Run() { // todo. 주석해제 필요
 	c := cron.New()
-	c.AddFunc(AssetSpec, func() { e.AssetEvent(ch) })
-	c.AddFunc(CoinSpec, func() { e.CoinEvent(ch) })
-	c.AddFunc(EstateSpec, func() { e.RealEstateEvent(ch) })
-	c.AddFunc(IndexSpec, func() { e.IndexEvent(ch) })
-	c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(ch) })
+	c.AddFunc(AssetSpec, func() { e.AssetEvent(e.ch) })
+	c.AddFunc(CoinSpec, func() { e.CoinEvent(e.ch) })
+	c.AddFunc(EstateSpec, func() { e.RealEstateEvent(e.ch) })
+	c.AddFunc(IndexSpec, func() { e.IndexEvent(e.ch) })
+	c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(e.ch) })
 	c.Start()
+}
+
+func (e EventHandler) Events() []*Event {
+	return e.events
+}
+
+func (e EventHandler) StatusChange(id int, active bool) error {
+
+	done := false
+	for _, ev := range e.events {
+		if ev.Id == id {
+			ev.Active = active
+			done = true
+			break
+		}
+	}
+	if !done {
+		return fmt.Errorf("미존재 Id : %d", id)
+	}
+
+	return nil
+}
+
+func (e EventHandler) Launch(id int) error {
+
+	for _, ev := range e.events {
+		if ev.Id == id {
+			if ev.Active {
+				ev.Event(e.ch)
+				return nil
+			} else {
+				return fmt.Errorf("비활성화 이벤트 Id: %d", id)
+			}
+		}
+	}
+
+	return nil
 }
 
 var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
@@ -63,7 +115,7 @@ var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자�
   - 갱신된 investSummary list
 */
 
-func (e Event) AssetEvent(c chan<- string) {
+func (e EventHandler) AssetEvent(c chan<- string) {
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
@@ -113,7 +165,7 @@ func (e Event) AssetEvent(c chan<- string) {
 
 }
 
-func (e Event) CoinEvent(c chan<- string) {
+func (e EventHandler) CoinEvent(c chan<- string) {
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
@@ -139,7 +191,7 @@ func (e Event) CoinEvent(c chan<- string) {
 	}
 }
 
-func (e Event) EmaUpdateEvent(c chan<- string) {
+func (e EventHandler) EmaUpdateEvent(c chan<- string) {
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
@@ -167,7 +219,7 @@ func (e Event) EmaUpdateEvent(c chan<- string) {
 	}
 }
 
-func (e Event) RealEstateEvent(c chan<- string) {
+func (e EventHandler) RealEstateEvent(c chan<- string) {
 
 	rtn, err := e.rt.RealEstateStatus()
 	if err != nil {
@@ -182,7 +234,7 @@ func (e Event) RealEstateEvent(c chan<- string) {
 	}
 }
 
-func (e Event) IndexEvent(c chan<- string) {
+func (e EventHandler) IndexEvent(c chan<- string) {
 
 	// 1. 공포 탐욕 지수
 	fgi, err := e.dp.FearGreedIndex()
@@ -230,7 +282,7 @@ func (e Event) IndexEvent(c chan<- string) {
 *********************************************Inner Function************************************************************
 **********************************************************************************************************************/
 
-func (e Event) buySellMsg(assetId uint, pm map[uint]float64) (msg string, err error) {
+func (e EventHandler) buySellMsg(assetId uint, pm map[uint]float64) (msg string, err error) {
 
 	// 자산 정보 조회
 	a, err := e.stg.RetrieveAsset(assetId)
@@ -265,7 +317,7 @@ func (e Event) buySellMsg(assetId uint, pm map[uint]float64) (msg string, err er
 	return
 }
 
-func (e Event) hasIt(id uint) bool {
+func (e EventHandler) hasIt(id uint) bool {
 	li, err := e.stg.RetreiveFundSummaryByAssetId(id)
 	if err != nil {
 		return true // db 문제로 오류 발생 시, 우선 보유 가정
@@ -283,7 +335,7 @@ func (e Event) hasIt(id uint) bool {
 
 }
 
-func (e Event) updateFundSummarys(list []m.InvestSummary, pm map[uint]float64) (err error) {
+func (e EventHandler) updateFundSummarys(list []m.InvestSummary, pm map[uint]float64) (err error) {
 	for i := range len(list) {
 		is := &list[i]
 		is.Sum = pm[is.AssetID] * float64(is.Count)
@@ -304,7 +356,7 @@ type priority struct {
 	score float64
 }
 
-func (e Event) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64) (msg string, err error) {
+func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64) (msg string, err error) {
 	// 현재 시장 단계 조회
 	market, err := e.stg.RetrieveMarketStatus("")
 	if err != nil {

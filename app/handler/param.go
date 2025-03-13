@@ -130,3 +130,18 @@ type WeekMarketIndicators struct {
 // 	Change     float64   `json:"change"`
 // 	WeeklyData []float64 `json:"weeklyData"`
 // }
+
+type EventResponse struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Active      bool   `json:"active"`
+}
+
+type EventStatusChangeRequest struct {
+	Id     int  `json:"id"`
+	Active bool `json:"active"`
+}
+
+type EventLaunchRequest struct {
+	Id int `json:"id"`
+}

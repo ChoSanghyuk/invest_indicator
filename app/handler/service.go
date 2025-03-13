@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"invest/event"
 	m "invest/model"
 )
 
@@ -55,4 +56,16 @@ type InvestSaver interface {
 
 type ExchageRateGetter interface {
 	ExchageRate() float64
+}
+
+type EventRetriever interface {
+	Events() []*event.Event
+}
+
+type EventLauncher interface {
+	Launch(id int) error
+}
+
+type EventStatusChanger interface {
+	StatusChange(id int, active bool) error
 }

@@ -24,6 +24,7 @@ func TestKis(t *testing.T) {
 	appkey := os.Getenv("appkey")
 	appsecret := os.Getenv("appsecret")
 	token := os.Getenv("token")
+
 	s := NewScraper(
 		transmitterMock{},
 		WithKIS(&KisConfig{
@@ -87,6 +88,15 @@ func TestKis(t *testing.T) {
 			t.Error(err)
 		}
 		t.Log(pp, cp)
+	})
+
+	t.Run("Foreign Period Price", func(t *testing.T) {
+		ap, n, err := s.kisForeignAvg("NAS-TSLA")
+		if err != nil {
+			t.Error(err)
+		}
+		t.Log(ap)
+		t.Log(n)
 	})
 
 }

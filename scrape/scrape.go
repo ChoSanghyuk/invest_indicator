@@ -115,6 +115,19 @@ func (s *Scraper) TopBottomPrice(category m.Category, code string) (hp float64, 
 	return 0, 0, errors.New("최고/최저 호출 API 미존재")
 }
 
+func (s *Scraper) AvgPrice(category m.Category, code string) (ap float64, n int, err error) {
+	switch category {
+	case m.DomesticStock:
+		stock, err := s.kisDomesticStockPrice(code)
+		return stock.ap, 200, err
+	case m.DomesticETF:
+		ap, n, err = s.kisForeignAvg(code)
+		return ap, n, err
+	}
+
+	return 0, 0, errors.New("평균 가격 호출 API 미존재")
+}
+
 func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, err error) {
 
 	switch category {

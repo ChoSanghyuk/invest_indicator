@@ -3,6 +3,7 @@ package scrape
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,7 +33,7 @@ func (s *Scraper) KisToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	fmt.Println(token.AccessToken)
 	s.kis.accessToken = token.AccessToken
 	s.kis.tokenExpired = token.Expired
 
@@ -60,6 +61,7 @@ func (s *Scraper) kisDomesticStockPrice(code string) (StockPrice, error) {
 	if url == "" {
 		return StockPrice{}, errors.New("URL 미존재")
 	}
+
 	url = fmt.Sprintf(url, code)
 
 	token, err := s.KisToken()
@@ -269,6 +271,7 @@ func (s *Scraper) kisIndex(idx Index) (float64, error) { // todo 반복 코드 �
 	}
 
 	if rtn.RtCd != "0" {
+		fmt.Printf("%+v\n", rtn)
 		return 0, errors.New("나스닥 인덱스 API 조회 실패 코드 반환")
 	}
 
@@ -338,6 +341,78 @@ func (s *Scraper) kisDomesticEtfPrice(code string) (StockPrice, error) {
 		hp: hp,
 		lp: lp,
 	}, nil
+}
+
+type Output2 struct {
+	Date  string `json:"xymd"`
+	Price string `json:"clos"`
+}
+
+// todo
+type KisPeriodResp struct {
+	Msg     string            `json:"msg1"`
+	MsgCd   string            `json:"msg_cd"`
+	Output  map[string]string `json:"output1"` // value가 string 타입으로 넘어오기에 바로 파싱 X
+	Output2 []Output2         `json:"output2"` // value가 string 타입으로 넘어오기에 바로 파싱 X
+	RtCd    string            `json:"rt_cd"`
+}
+
+func (s *Scraper) kisForeignAvg(code string) (ap float64, n int, err error) {
+	sum := 0.0
+	day := time.Now().Format("20060102")
+
+loop:
+	url := "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/dailyprice?EXCD=%s&SYMB=%s&GUBN=0&BYMD=%s&MODP=0"
+
+	parmas := strings.Split(code, "-")
+	url = fmt.Sprintf(url, parmas[0], parmas[1], day) // Nas
+
+	token, err := s.KisToken()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var rtn KisPeriodResp
+
+	header := map[string]string{
+		"Content-Type":  "application/json",
+		"authorization": "Bearer " + token,
+		"appkey":        s.kis.appKey,
+		"appsecret":     s.kis.appSecret,
+		"tr_id":         "HHDFS76240000",
+	}
+
+	err = sendRequest(url, http.MethodGet, header, nil, &rtn)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if rtn.RtCd != "0" {
+		return 0, 0, errors.New("해외 주식기간별 시세 API 실패 코드 반환")
+	}
+
+	if len(rtn.Output2) == 0 {
+		return 0, 0, errors.New("해외 주식기간별 시세 API 기간 데이터 없음")
+	}
+
+	for _, r := range rtn.Output2 {
+		p, err := strconv.ParseFloat(r.Price, 64) // 연중 최고가
+		if err != nil {
+			return 0, 0, err
+		}
+		sum += p
+	}
+	n += len(rtn.Output2)
+
+	if n == 100 {
+		parsedDay, _ := time.Parse("20060102", rtn.Output2[n-1].Date)
+		day = parsedDay.AddDate(0, 0, -1).Format("20060102")
+		goto loop
+	}
+
+	x := sum / float64(n)
+
+	return math.Round(x*100) / 100, n, nil
 }
 
 func (s *Scraper) kisForeignBuy(code string, qty uint) error {

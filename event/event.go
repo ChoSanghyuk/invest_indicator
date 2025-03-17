@@ -39,23 +39,26 @@ func NewEventHandler(conf EventHandlerConfig) *EventHandler {
 	return eh
 }
 
-// todo 시간 조정
 // pricemap 로컬 변수로 두고, asset event랑 포트폴 event 분리시키기
 const (
-	AssetSpec  = "0 */15 8-23 * * 1-5"
+	AssetSpec  = "0 */15 9-23 * * 1-5"
+	RcmdSpec   = "0 0 8 * * 1-5"
 	CoinSpec   = "0 */15 8-23 * * 0,6"
 	EstateSpec = "0 */15 9-17 * * 1-5"
-	IndexSpec  = "0 40 8 * * 1-5" // todo. 9시 3분이랑 8시 3분이랑 값이 같은지 확인
-	EmaSpec    = "0 3 9 * * 2-6"  // 화~토
+	IndexSpec  = "0 0 8 * * 1-5"
+	EmaSpec    = "0 0 8 * * 2-6" // 화~토
 )
+
+const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 
 func (e EventHandler) Run() { // todo. 주석해제 필요
 	c := cron.New()
-	c.AddFunc(AssetSpec, func() { e.AssetEvent(e.ch) })
-	c.AddFunc(CoinSpec, func() { e.CoinEvent(e.ch) })
-	c.AddFunc(EstateSpec, func() { e.RealEstateEvent(e.ch) })
-	c.AddFunc(IndexSpec, func() { e.IndexEvent(e.ch) })
-	c.AddFunc(EmaSpec, func() { e.EmaUpdateEvent(e.ch) })
+	c.AddFunc(AssetSpec, e.AssetEvent)
+	c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
+	c.AddFunc(CoinSpec, e.CoinEvent)
+	c.AddFunc(EstateSpec, e.RealEstateEvent)
+	c.AddFunc(IndexSpec, e.IndexEvent)
+	c.AddFunc(EmaSpec, e.EmaUpdateEvent)
 	c.Start()
 }
 
@@ -85,7 +88,7 @@ func (e EventHandler) Launch(id int) error {
 	for _, ev := range e.events {
 		if ev.Id == id {
 			if ev.Active {
-				ev.Event(e.ch)
+				ev.Event()
 				return nil
 			} else {
 				return fmt.Errorf("비활성화 이벤트 Id: %d", id)
@@ -95,8 +98,6 @@ func (e EventHandler) Launch(id int) error {
 
 	return nil
 }
-
-var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 
 /*
 작업 1. 자산의 현재가와 자산의 매도/매수 기준 비교하여 알림 전송
@@ -115,62 +116,29 @@ var portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자�
   - 갱신된 investSummary list
 */
 
-func (e EventHandler) AssetEvent(c chan<- string) {
+func (e EventHandler) AssetEvent() {
 
-	// 등록 자산 목록 조회
-	assetList, err := e.stg.RetrieveAssetList()
-	if err != nil {
-		c <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
-		return
-	}
-	priceMap := make(map[uint]float64) // assetId => price
-
-	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
-	for _, a := range assetList {
-		msg, err := e.buySellMsg(a.ID, priceMap)
-		if err != nil {
-			c <- fmt.Sprintf("[AssetEvent] buySellMsg시, 에러 발생. %s", err)
-			return
-		}
-		if msg != "" {
-			c <- msg
-		}
-	}
-
-	// 자금별 종목 투자 내역 조회
-	ivsmLi, err := e.stg.RetreiveFundsSummaryOrderByFundId()
-	if err != nil {
-		c <- fmt.Sprintf("[AssetEvent] RetreiveFundsSummaryOrderByFundId 시, 에러 발생. %s", err)
-		return
-	}
-	if len(ivsmLi) == 0 {
-		return
-	}
-
-	// 자금별/종목별 현재 총액 갱신
-	err = e.updateFundSummarys(ivsmLi, priceMap)
-	if err != nil {
-		c <- fmt.Sprintf("[AssetEvent] updateFundSummary 시, 에러 발생. %s", err)
-		return
-	}
+	priceMap := make(map[uint]float64)
+	ivsmLi := make([]m.InvestSummary, 0)
+	e.assetUpdate(priceMap, ivsmLi)
 
 	// 현재 시장 단계 이하로 변동 자산을 가지고 있는지 확인. (알림 전송)
 	msg, err := e.portfolioMsg(ivsmLi, priceMap)
 	if err != nil {
-		c <- fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err)
+		e.ch <- fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err)
 	}
 	if msg != "" {
-		c <- msg
+		e.ch <- msg
 	}
 
 }
 
-func (e EventHandler) CoinEvent(c chan<- string) {
+func (e EventHandler) CoinEvent() {
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
-		c <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ch <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
 		return
 	}
 	priceMap := make(map[uint]float64)
@@ -180,30 +148,78 @@ func (e EventHandler) CoinEvent(c chan<- string) {
 		if a.Category == m.DomesticCoin { // 코인에 대해서만 수행
 			msg, err := e.buySellMsg(a.ID, priceMap)
 			if err != nil {
-				c <- fmt.Sprintf("[AssetEvent] buySellMsg시, 에러 발생. %s", err)
+				e.ch <- fmt.Sprintf("[AssetEvent] buySellMsg시, 에러 발생. %s", err)
 				return
 			}
 			if msg != "" {
-				c <- msg
+				e.ch <- msg
 			}
 		}
 
 	}
 }
 
-func (e EventHandler) EmaUpdateEvent(c chan<- string) {
+func (e EventHandler) AssetRecommendEvent() {
+
+	pm := make(map[uint]float64)
+	ivsmLi := make([]m.InvestSummary, 0)
+	e.assetUpdate(pm, ivsmLi)
+
+	os := make([]priority, 0, len(ivsmLi))
+	err := e.loadOrderSlice(&os, pm)
+	if err != nil {
+		e.ch <- err.Error()
+	}
+	// li, err := e.stg.RetrieveTotalAssets()
+	// if err != nil {
+	// 	e.ch <- fmt.Sprintf("RetrieveTotalAssets, 에러 발생. %s", err.Error())
+	// 	return
+	// }
+	// os := make([]priority, 0, len(li)) // ordered slice
+	// // 매수 시기에는 전체 List 조회. Todo. 여러 자금에 대해서 공통적으로 반복 수행하게 될 수 있음.
+	// for _, a := range li {
+	// 	pp := pm[a.ID]
+	// 	ap, err := e.stg.RetreiveLatestEma(a.ID)
+	// 	if err != nil {
+	// 		e.ch <- fmt.Sprintf("RetreiveLatestEma, 에러 발생. ID: %d. %s", a.ID, err.Error())
+	// 		return
+	// 	}
+	// 	hp := a.Top
+	// 	os = append(os, priority{
+	// 		asset: &a,
+	// 		ap:    ap,
+	// 		pp:    pp,
+	// 		hp:    hp,
+	// 		score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
+	// 	})
+	// }
+
+	slices.SortFunc(os, func(a, b priority) int {
+		return cmp.Compare(a.score, b.score)
+	})
+
+	var sb strings.Builder
+	for _, p := range os {
+		sb.WriteString(fmt.Sprintf("AssetId : %d\n  AssetName : %s\n  PresentPrice : %.2f\n  WeighedAveragePrice : %.2f\n  HighestPrice : %.2f\n\n", p.asset.ID, p.asset.Name, p.pp, p.ap, p.hp))
+	}
+
+	e.ch <- sb.String()
+
+}
+
+func (e EventHandler) EmaUpdateEvent() {
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
-		c <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAssetList 시, 에러 발생. %s", err)
 		return
 	}
 
 	for _, a := range assetList {
 		asset, err := e.stg.RetrieveAsset(a.ID)
 		if err != nil {
-			c <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAsset 시, 에러 발생. %s", err)
+			e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAsset 시, 에러 발생. %s", err)
 			return
 		}
 		// EMA 갱신 제외
@@ -212,54 +228,54 @@ func (e EventHandler) EmaUpdateEvent(c chan<- string) {
 		}
 		cp, err := e.dp.ClosingPrice(asset.Category, asset.Code)
 		if err != nil {
-			c <- fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err)
+			e.ch <- fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err)
 			continue
 		}
 		e.stg.SaveEmaHist(a.ID, cp)
 	}
 }
 
-func (e EventHandler) RealEstateEvent(c chan<- string) {
+func (e EventHandler) RealEstateEvent() {
 
 	rtn, err := e.rt.RealEstateStatus()
 	if err != nil {
-		c <- fmt.Sprintf("[RealEstateEvent] 크롤링 시 오류 발생. %s", err.Error())
+		e.ch <- fmt.Sprintf("[RealEstateEvent] 크롤링 시 오류 발생. %s", err.Error())
 		return
 	}
 
 	if rtn != "예정지구 지정" {
-		c <- fmt.Sprintf("연신내 재개발 변동 사항 존재. 예정지구 지정 => %s", rtn)
+		e.ch <- fmt.Sprintf("연신내 재개발 변동 사항 존재. 예정지구 지정 => %s", rtn)
 	} else {
 		log.Printf("연신내 변동 사항 없음. 현재 단계: %s", rtn)
 	}
 }
 
-func (e EventHandler) IndexEvent(c chan<- string) {
+func (e EventHandler) IndexEvent() {
 
 	// 1. 공포 탐욕 지수
 	fgi, err := e.dp.FearGreedIndex()
 	if err != nil {
-		c <- fmt.Sprintf("공포 탐욕 지수 조회 시 오류 발생. %s", err.Error())
+		e.ch <- fmt.Sprintf("공포 탐욕 지수 조회 시 오류 발생. %s", err.Error())
 		return
 	}
 	// 2. Nasdaq 지수 조회
 	nasdaq, err := e.dp.Nasdaq()
 	if err != nil {
-		c <- fmt.Sprintf("Nasdaq Index 조회 시 오류 발생. %s", err.Error())
+		e.ch <- fmt.Sprintf("Nasdaq Index 조회 시 오류 발생. %s", err.Error())
 		return
 	}
 
 	// 3. SP 지수 조회
 	sp500, err := e.dp.Sp500()
 	if err != nil {
-		c <- fmt.Sprintf("S&P 500 Index 조회 시 오류 발생. %s", err.Error())
+		e.ch <- fmt.Sprintf("S&P 500 Index 조회 시 오류 발생. %s", err.Error())
 		return
 	}
 
 	// 오늘분 저장
 	err = e.stg.SaveDailyMarketIndicator(fgi, nasdaq, sp500)
 	if err != nil {
-		c <- fmt.Sprintf("Nasdaq Index 저장 시 오류 발생. %s", err.Error())
+		e.ch <- fmt.Sprintf("Nasdaq Index 저장 시 오류 발생. %s", err.Error())
 	}
 
 	// 어제꺼 조회
@@ -272,15 +288,54 @@ func (e EventHandler) IndexEvent(c chan<- string) {
 
 	di, _, err := e.stg.RetrieveMarketIndicator(former)
 	if err != nil {
-		c <- fmt.Sprintf("금일 공포 탐욕 지수 : %d\n금일 Nasdaq : %.2f", fgi, nasdaq)
+		e.ch <- fmt.Sprintf("금일 공포 탐욕 지수 : %d\n금일 Nasdaq : %.2f", fgi, nasdaq)
 	} else {
-		c <- fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq)
+		e.ch <- fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq)
 	}
 }
 
 /**********************************************************************************************************************
 *********************************************Inner Function************************************************************
 **********************************************************************************************************************/
+
+func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi []m.InvestSummary) {
+	// 등록 자산 목록 조회
+	assetList, err := e.stg.RetrieveAssetList()
+	if err != nil {
+		e.ch <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		return
+	}
+	// priceMap := make(map[uint]float64) // assetId => price
+
+	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
+	for _, a := range assetList {
+		msg, err := e.buySellMsg(a.ID, priceMap)
+		if err != nil {
+			e.ch <- fmt.Sprintf("[AssetEvent] buySellMsg시, 에러 발생. %s", err)
+			return
+		}
+		if msg != "" {
+			e.ch <- msg
+		}
+	}
+
+	// 자금별 종목 투자 내역 조회
+	ivsmLi, err = e.stg.RetreiveFundsSummaryOrderByFundId()
+	if err != nil {
+		e.ch <- fmt.Sprintf("[AssetEvent] RetreiveFundsSummaryOrderByFundId 시, 에러 발생. %s", err)
+		return
+	}
+	if len(ivsmLi) == 0 {
+		return
+	}
+
+	// 자금별/종목별 현재 총액 갱신
+	err = e.updateFundSummarys(ivsmLi, priceMap)
+	if err != nil {
+		e.ch <- fmt.Sprintf("[AssetEvent] updateFundSummary 시, 에러 발생. %s", err)
+		return
+	}
+}
 
 func (e EventHandler) buySellMsg(assetId uint, pm map[uint]float64) (msg string, err error) {
 
@@ -400,36 +455,46 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 
 	var sb strings.Builder
 	for k := range keySet {
-		os := make([]priority, 0) // ordered slice
 
 		if volatile[k]+stable[k] == 0 {
 			continue
 		}
+
 		r := volatile[k] / (volatile[k] + stable[k])
+		if hasPortCache(k) && !(r > marketLevel.MaxVolatileAssetRate()) && !(r < marketLevel.MinVolatileAssetRate()) {
+			continue
+		}
+		setPortCache(k)
 
-		if r > marketLevel.MaxVolatileAssetRate() && !hasPortCache(true) { // 매도 메시지
-			for _, ivsm := range ivsmLi {
-				if ivsm.FundID == k {
-					a := &ivsm.Asset
-					if a.Category == m.Won || a.Category == m.Dollar {
-						continue
-					}
-					pp := pm[a.ID]
-					ap, err := e.stg.RetreiveLatestEma(a.ID)
-					if err != nil {
-						return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
-					}
-					hp := a.Top
+		os := make([]priority, 0, len(ivsmLi)) // ordered slice
 
-					os = append(os, priority{
-						asset: a,
-						ap:    ap,
-						pp:    pp,
-						hp:    hp,
-						score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
-					})
-				}
+		if r > marketLevel.MaxVolatileAssetRate() { // 매도 메시지
+
+			err = e.loadOrderSlice(&os, pm)
+			if err != nil {
+				return "", err
 			}
+			// for _, ivsm := range ivsmLi {
+			// 	if ivsm.FundID == k {
+			// 		a := &ivsm.Asset
+			// 		if a.Category == m.Won || a.Category == m.Dollar {
+			// 			continue
+			// 		}
+			// 		pp := pm[a.ID]
+			// 		ap, err := e.stg.RetreiveLatestEma(a.ID)
+			// 		if err != nil {
+			// 			return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
+			// 		}
+			// 		hp := a.Top
+			// 		os = append(os, priority{
+			// 			asset: a,
+			// 			ap:    ap,
+			// 			pp:    pp,
+			// 			hp:    hp,
+			// 			score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
+			// 		})
+			// 	}
+			// }
 
 			sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 				k,
@@ -440,6 +505,7 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 				marketLevel.String(),
 				marketLevel.MaxVolatileAssetRate()),
 			)
+
 			slices.SortFunc(os, func(a, b priority) int {
 				if a.asset.Category.IsStable() == b.asset.Category.IsStable() {
 					return cmp.Compare(b.score, a.score) // 큰 게 앞으로
@@ -451,61 +517,91 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 					}
 				}
 			})
-			setPortCache(true) // 매수 포트폴리오 메시지 캐시 갱신
-		} else if !hasDailyCache() || (r < marketLevel.MinVolatileAssetRate() && !hasPortCache(false)) { // 매수 메시지
-			li, err := e.stg.RetrieveTotalAssets()
+		} else { // 매수 메시지
+			err = e.loadOrderSlice(&os, pm)
 			if err != nil {
-				return "", fmt.Errorf("RetrieveTotalAssets, 에러 발생. %w", err)
+				return "", err
 			}
+			// li, err := e.stg.RetrieveTotalAssets()
+			// if err != nil {
+			// 	return "", fmt.Errorf("RetrieveTotalAssets, 에러 발생. %w", err)
+			// }
+			// // 매수 시기에는 전체 List 조회. Todo. 여러 자금에 대해서 공통적으로 반복 수행하게 될 수 있음.
+			// for _, a := range li {
+			// 	if a.Category == m.Won || a.Category == m.Dollar {
+			// 		continue
+			// 	}
+			// 	pp := pm[a.ID]
+			// 	ap, err := e.stg.RetreiveLatestEma(a.ID)
+			// 	if err != nil {
+			// 		return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
+			// 	}
+			// 	hp := a.Top
+			// 	os = append(os, priority{
+			// 		asset: &a,
+			// 		ap:    ap,
+			// 		pp:    pp,
+			// 		hp:    hp,
+			// 		score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
+			// 	})
+			// }
 
-			// 매수 시기에는 전체 List 조회. Todo. 여러 자금에 대해서 공통적으로 반복 수행하게 될 수 있음.
-			for _, a := range li {
-				if a.Category == m.Won || a.Category == m.Dollar {
-					continue
-				}
-				pp := pm[a.ID]
-				ap, err := e.stg.RetreiveLatestEma(a.ID)
-				if err != nil {
-					return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
-				}
-				hp := a.Top
+			sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
+				k,
+				"부족",
+				r,
+				volatile[k],
+				volatile[k]+stable[k],
+				marketLevel.String(),
+				marketLevel.MaxVolatileAssetRate()),
+			)
 
-				os = append(os, priority{
-					asset: &a,
-					ap:    ap,
-					pp:    pp,
-					hp:    hp,
-					score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
-				})
-			}
-
-			if r < marketLevel.MinVolatileAssetRate() {
-				sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
-					k,
-					"부족",
-					r,
-					volatile[k],
-					volatile[k]+stable[k],
-					marketLevel.String(),
-					marketLevel.MaxVolatileAssetRate()),
-				)
-			}
 			slices.SortFunc(os, func(a, b priority) int {
 				return cmp.Compare(a.score, b.score)
 			})
-			if !hasDailyCache() {
-				setDailyCache()
-			}
-			setPortCache(false) // 매도 포트폴리오 메시지 캐시 갱신
 		}
 
 		for _, p := range os {
 			sb.WriteString(fmt.Sprintf("AssetId : %d\n  AssetName : %s\n  PresentPrice : %.2f\n  WeighedAveragePrice : %.2f\n  HighestPrice : %.2f\n\n", p.asset.ID, p.asset.Name, p.pp, p.ap, p.hp))
 		}
+
 	}
 
 	msg = sb.String()
 	return msg, nil
+}
+
+func (e EventHandler) loadOrderSlice(os *[]priority, pm map[uint]float64) error {
+	li, err := e.stg.RetrieveTotalAssets()
+	if err != nil {
+		return fmt.Errorf("RetrieveTotalAssets, 에러 발생. %w", err)
+	}
+
+	// 매수 시기에는 전체 List 조회. Todo. 여러 자금에 대해서 공통적으로 반복 수행하게 될 수 있음.
+	for _, a := range li {
+		if a.Category == m.Won || a.Category == m.Dollar {
+			continue
+		}
+		pp := pm[a.ID]
+		ap, err := e.stg.RetreiveLatestEma(a.ID)
+		if err != nil {
+			return fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
+		}
+		hp := a.Top
+
+		if ap == 0 || hp == 0 {
+			continue
+		}
+
+		*os = append(*os, priority{
+			asset: &a,
+			ap:    ap,
+			pp:    pp,
+			hp:    hp,
+			score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
+		})
+	}
+	return nil
 }
 
 /*

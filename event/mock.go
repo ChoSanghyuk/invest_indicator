@@ -78,7 +78,7 @@ func (m StorageMock) SaveEmaHist(assetId uint, price float64) error {
 }
 
 func (m StorageMock) RetrieveTotalAssets() ([]md.Asset, error) {
-	return nil, nil
+	return m.assets, nil
 }
 
 func (m StorageMock) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error) {

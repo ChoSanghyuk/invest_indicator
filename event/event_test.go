@@ -71,14 +71,23 @@ func TestEventbuySellMsg(t *testing.T) {
 
 func TestEventportfolioMsg(t *testing.T) {
 
-	stg := &StorageMock{}
+	stg := &StorageMock{
+		ma: map[uint]float64{
+			1: 300,
+		},
+		assets: []m.Asset{
+			{ID: 1, Name: "금", Category: m.Gold, Code: "1", Currency: "WON", SellPrice: 480, BuyPrice: 450, Top: 500},
+		},
+	}
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
+	ch := make(chan<- string)
 
 	evt := NewEventHandler(EventHandlerConfig{
 		Storage:     stg,
 		RtPoller:    scrp,
 		DailyPoller: dp,
+		Channel:     ch,
 	})
 
 	/*

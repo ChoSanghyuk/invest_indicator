@@ -191,18 +191,18 @@ func (s Storage) RetrieveAssetIdByCode(code string) uint {
 }
 
 // todo. currency 조정 필요해 보임
-func (s Storage) SaveAssetInfo(name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error) {
+func (s Storage) SaveAssetInfo(asset m.Asset) (uint, error) {
 
-	asset := m.Asset{
-		Name:      name,
-		Category:  category,
-		Code:      code,
-		Currency:  currency,
-		Top:       top,
-		Bottom:    bottom,
-		SellPrice: selPrice,
-		BuyPrice:  buyPrice,
-	}
+	// asset := m.Asset{
+	// 	Name:      name,
+	// 	Category:  category,
+	// 	Code:      code,
+	// 	Currency:  currency,
+	// 	Top:       top,
+	// 	Bottom:    bottom,
+	// 	SellPrice: selPrice,
+	// 	BuyPrice:  buyPrice,
+	// }
 
 	result := s.db.Create(&asset)
 
@@ -214,19 +214,9 @@ func (s Storage) SaveAssetInfo(name string, category m.Category, code string, cu
 }
 
 // When updating with struct, GORM will only update non-zero fields. You might want to use map to update attributes or use Select to specify fields to update
-func (s Storage) UpdateAssetInfo(id uint, name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error {
+func (s Storage) UpdateAssetInfo(asset m.Asset) error {
 
-	result := s.db.Updates(m.Asset{
-		ID:        id,
-		Name:      name,
-		Category:  category,
-		Code:      code,
-		Currency:  currency,
-		Top:       top,
-		Bottom:    bottom,
-		SellPrice: selPrice,
-		BuyPrice:  buyPrice,
-	})
+	result := s.db.Updates(asset)
 
 	if result.Error != nil {
 		return result.Error

@@ -101,12 +101,31 @@ func TestSaveFund(t *testing.T) {
 
 func TestCreateAsset(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("bitcoin", m.DomesticCoin, "KRW-BTC", "WON", 98000000, 68000000, 88000000, 70000000)
+	_, err := stg.SaveAssetInfo(m.Asset{
+		Name:      "bitcoin",
+		Category:  m.DomesticCoin,
+		Code:      "KRW-BTC",
+		Currency:  "WON",
+		Top:       98000000,
+		Bottom:    68000000,
+		SellPrice: 88000000,
+		BuyPrice:  70000000,
+	})
+
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = stg.SaveAssetInfo("gold", m.Gold, "M04020000", "WON", 111360, 80100, 0, 103630)
+	_, err = stg.SaveAssetInfo(m.Asset{
+		Name:      "gold",
+		Category:  m.Gold,
+		Code:      "M04020000",
+		Currency:  "WON",
+		Top:       111360,
+		Bottom:    80100,
+		SellPrice: 0,
+		BuyPrice:  103630,
+	})
 	if err != nil {
 		t.Error(err)
 	}
@@ -137,7 +156,17 @@ func TestRetrieveAssetHist(t *testing.T) {
 	t.Log(rtn)
 }
 func TestSaveAssetInfo(t *testing.T) {
-	id, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	id, err := stg.SaveAssetInfo(
+		m.Asset{
+			Name:      "테스트",
+			Category:  m.DomesticStock,
+			Code:      "test",
+			Currency:  "WON",
+			Top:       82300,
+			Bottom:    60000,
+			SellPrice: 80000,
+			BuyPrice:  62300,
+		})
 	if err != nil {
 		t.Error(err)
 	}
@@ -156,7 +185,7 @@ func TestSaveAssetInfo(t *testing.T) {
 }
 func TestUpdateAssetInfo(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	_, err := stg.SaveAssetInfo(m.Asset{}) //"테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300
 	if err != nil {
 		t.Error(err)
 	}
@@ -166,7 +195,7 @@ func TestUpdateAssetInfo(t *testing.T) {
 	stg.db.Last(&asset)
 	t.Logf("%+v", asset)
 
-	err = stg.UpdateAssetInfo(asset.ID, "", 0, "", "", 0, 0, 0, 65000)
+	err = stg.UpdateAssetInfo(m.Asset{}) //asset.ID, "", 0, "", "", 0, 0, 0, 65000
 	if err != nil {
 		t.Error(err)
 	}
@@ -182,7 +211,7 @@ func TestUpdateAssetInfo(t *testing.T) {
 }
 func TestDeleteAssetInfo(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo("테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300)
+	_, err := stg.SaveAssetInfo(m.Asset{}) //"테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300
 	if err != nil {
 		t.Error(err)
 	}

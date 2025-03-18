@@ -87,6 +87,7 @@ func hasDailyCache() bool {
 	}
 }
 
+// deprecated
 func setDailyCache() {
 	dailyCache = time.Now().Day()
 }

@@ -120,7 +120,7 @@ func (e EventHandler) AssetEvent() {
 
 	priceMap := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)
-	e.assetUpdate(priceMap, ivsmLi)
+	e.assetUpdate(priceMap, &ivsmLi)
 
 	// 현재 시장 단계 이하로 변동 자산을 가지고 있는지 확인. (알림 전송)
 	msg, err := e.portfolioMsg(ivsmLi, priceMap)
@@ -163,7 +163,7 @@ func (e EventHandler) AssetRecommendEvent() {
 
 	pm := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)
-	e.assetUpdate(pm, ivsmLi)
+	e.assetUpdate(pm, &ivsmLi) // memo. Map과 slice는 둘 다 reference type이므로, 함수에 넘긴 후의 변경 사항이 원본에도 반영. 단, slice의 경우 capacity를 넘기면 별도로 구성되어 원본 영향 X
 
 	os := make([]priority, 0, len(ivsmLi))
 	err := e.loadOrderSlice(&os, pm)
@@ -333,7 +333,7 @@ func (e EventHandler) IndexEvent() {
 *********************************************Inner Function************************************************************
 **********************************************************************************************************************/
 
-func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi []m.InvestSummary) {
+func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi *[]m.InvestSummary) {
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
@@ -355,17 +355,17 @@ func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi []m.InvestSu
 	}
 
 	// 자금별 종목 투자 내역 조회
-	ivsmLi, err = e.stg.RetreiveFundsSummaryOrderByFundId()
+	*ivsmLi, err = e.stg.RetreiveFundsSummaryOrderByFundId()
 	if err != nil {
 		e.ch <- fmt.Sprintf("[AssetEvent] RetreiveFundsSummaryOrderByFundId 시, 에러 발생. %s", err)
 		return
 	}
-	if len(ivsmLi) == 0 {
+	if len(*ivsmLi) == 0 {
 		return
 	}
 
 	// 자금별/종목별 현재 총액 갱신
-	err = e.updateFundSummarys(ivsmLi, priceMap)
+	err = e.updateFundSummarys(*ivsmLi, priceMap)
 	if err != nil {
 		e.ch <- fmt.Sprintf("[AssetEvent] updateFundSummary 시, 에러 발생. %s", err)
 		return

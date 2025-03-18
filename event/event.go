@@ -46,7 +46,7 @@ const (
 	CoinSpec   = "0 */15 8-23 * * 0,6"
 	EstateSpec = "0 */15 9-17 * * 1-5"
 	IndexSpec  = "0 0 8 * * 1-5"
-	EmaSpec    = "0 0 8 * * 2-6" // 화~토
+	EmaSpec    = "0 0 7 * * 2-6" // 화~토
 )
 
 const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"

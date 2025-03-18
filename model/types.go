@@ -30,6 +30,7 @@ type EmaHist struct {
 	Asset   Asset
 	Date    datatypes.Date
 	Ema     float64
+	NDays   uint
 }
 
 type Invest struct {

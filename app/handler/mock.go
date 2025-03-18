@@ -78,7 +78,7 @@ type AssetInfoSaverMock struct {
 	err error
 }
 
-func (mock AssetInfoSaverMock) SaveAssetInfo(name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error) {
+func (mock AssetInfoSaverMock) SaveAssetInfo(a m.Asset) (uint, error) {
 	fmt.Println("SaveAssetInfo Called")
 
 	if mock.err != nil {
@@ -86,7 +86,7 @@ func (mock AssetInfoSaverMock) SaveAssetInfo(name string, category m.Category, c
 	}
 	return 0, nil
 }
-func (mock AssetInfoSaverMock) UpdateAssetInfo(ID uint, name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error {
+func (mock AssetInfoSaverMock) UpdateAssetInfo(a m.Asset) error {
 	fmt.Println("UpdateAssetInfo Called")
 
 	if mock.err != nil {
@@ -103,24 +103,28 @@ func (mock AssetInfoSaverMock) DeleteAssetInfo(id uint) error {
 	return nil
 }
 
-func (mock AssetInfoSaverMock) SaveEmaHist(assetId uint, price float64) error {
+func (mock AssetInfoSaverMock) SaveEmaHist(newEma *m.EmaHist) error {
 	if mock.err != nil {
 		return mock.err
 	}
 	return nil
 }
 
-type TopBottomPriceGetterMock struct {
+type PriceGetterMock struct {
 	err error
 }
 
-func (mock TopBottomPriceGetterMock) TopBottomPrice(category m.Category, code string) (float64, float64, error) {
+func (mock PriceGetterMock) TopBottomPrice(category m.Category, code string) (float64, float64, error) {
 	fmt.Println("TopBottomPrice Called")
 
 	if mock.err != nil {
 		return 0, 0, mock.err
 	}
 	return 1000, 100, nil
+}
+
+func (mock PriceGetterMock) AvgPrice(category m.Category, code string) (ap float64, n uint, err error) {
+	return 0, 0, nil
 }
 
 /***************************** Fund ***********************************/

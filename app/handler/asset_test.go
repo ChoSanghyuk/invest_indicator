@@ -25,7 +25,7 @@ func TestAssetHandler(t *testing.T) {
 
 	readerMock := AssetRetrieverMock{}
 	writerMock := AssetInfoSaverMock{}
-	topBottomPriceGetterMock := TopBottomPriceGetterMock{}
+	topBottomPriceGetterMock := PriceGetterMock{}
 
 	f := NewAssetHandler(readerMock, writerMock, topBottomPriceGetterMock)
 	f.InitRoute(app)

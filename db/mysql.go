@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	m "invest/model"
-	"math"
 	"time"
 
 	"gorm.io/datatypes"
@@ -436,47 +435,37 @@ func (s Storage) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) 
 	return nil
 }
 
-func (s Storage) RetreiveLatestEma(assetId uint) (float64, error) {
+func (s Storage) RetreiveLatestEma(assetId uint) (*m.EmaHist, error) {
 
 	var ema m.EmaHist
 	// result := s.db.Where("asset_id", assetId).Order("date desc").First(&ema)
 	result := s.db.Where("asset_id", assetId).Last(&ema)
 	if result.Error != nil {
-		return 0, result.Error
+		return nil, result.Error
 	}
 
-	return ema.Ema, nil
+	return &ema, nil
 }
 
-func (s Storage) SaveEmaHist(assetId uint, price float64) error {
+func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 
-	emay, err := s.RetreiveLatestEma(assetId)
-	if err != nil {
-		emay = price
-	}
+	// ema, err := s.RetreiveLatestEma(assetId)
+	// RecentEma := ema.Ema
+	// if err != nil {
+	// 	RecentEma = price
+	// }
+	// var NewEma = m.EmaHist{
+	// 	AssetID: assetId,
+	// 	Date:    datatypes.Date(time.Now()),
+	// 	Ema:     CalEma(price, RecentEma),
+	// }
 
-	var ema = m.EmaHist{
-		AssetID: assetId,
-		Date:    datatypes.Date(time.Now()),
-		Ema:     ema(price, emay),
-	}
+	newEma.Date = datatypes.Date(time.Now())
 
-	result := s.db.Create(&ema)
+	result := s.db.Create(newEma)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	return nil
-}
-
-/*
-todo. ema 계산 db pkg 말고 다른 곳에서 수행
-todo. ema 무조건 200이 아니게끔 (신규 상장 종목에 대해서 차이가 생김)
-a =  2/N+1
-EMAt = a*PRICEt + (1-a)EMAy
-*/
-func ema(tp float64, emay float64) float64 {
-
-	a := 2.0 / (200 + 1)
-	return math.Round((a*tp+(1-a)*emay)*100) / 100
 }

@@ -92,6 +92,7 @@ func (t TeleBot) communicate(ch chan string, port int) {
 				/assets/{id}/hist
 				/market
 				/market/indicators/{date?}
+				/events
 				`
 			case "/form":
 				ch <- `Asset

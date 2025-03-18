@@ -25,14 +25,15 @@ type AssetRetriever interface {
 }
 
 type AssetInfoSaver interface {
-	SaveAssetInfo(name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) (uint, error)
-	UpdateAssetInfo(id uint, name string, category m.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error
+	SaveAssetInfo(asset m.Asset) (uint, error)
+	UpdateAssetInfo(asset m.Asset) error
 	DeleteAssetInfo(id uint) error
-	SaveEmaHist(assetId uint, price float64) error
+	SaveEmaHist(newEma *m.EmaHist) error
 }
 
-type TopBottomPriceGetter interface {
+type PriceGetter interface {
 	TopBottomPrice(category m.Category, code string) (float64, float64, error)
+	AvgPrice(category m.Category, code string) (ap float64, n uint, err error)
 }
 
 type MaketRetriever interface {

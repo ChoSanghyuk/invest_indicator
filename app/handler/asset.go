@@ -10,10 +10,10 @@ import (
 type AssetHandler struct {
 	r AssetRetriever
 	w AssetInfoSaver
-	p TopBottomPriceGetter
+	p PriceGetter
 }
 
-func NewAssetHandler(r AssetRetriever, w AssetInfoSaver, p TopBottomPriceGetter) *AssetHandler {
+func NewAssetHandler(r AssetRetriever, w AssetInfoSaver, p PriceGetter) *AssetHandler {
 	return &AssetHandler{
 		r: r,
 		w: w,
@@ -101,12 +101,32 @@ func (h *AssetHandler) AddAsset(c *fiber.Ctx) error {
 		param.BuyPrice = bottom
 	}
 
-	id, err := h.w.SaveAssetInfo(param.Name, category, param.Code, param.Currency, top, bottom, param.SellPrice, param.BuyPrice)
+	id, err := h.w.SaveAssetInfo(m.Asset{
+		Name:      param.Name,
+		Category:  category,
+		Code:      param.Code,
+		Currency:  param.Currency,
+		Top:       top,
+		Bottom:    bottom,
+		SellPrice: param.SellPrice,
+		BuyPrice:  param.BuyPrice,
+	})
 	if err != nil {
 		return fmt.Errorf("SaveAssetInfo 시 오류 발생. %w", err)
 	}
 
-	err = h.w.SaveEmaHist(id, param.Ema)
+	var ema float64
+	var n uint
+
+	if param.Ema == 0 {
+		ema, n, err = h.p.AvgPrice(category, param.Code)
+	}
+
+	err = h.w.SaveEmaHist(&m.EmaHist{
+		AssetID: id,
+		Ema:     ema,
+		NDays:   n,
+	})
 	if err != nil {
 		return fmt.Errorf("SaveEmaHist 시 오류 발생. %w", err)
 	}
@@ -132,7 +152,17 @@ func (h *AssetHandler) UpdateAsset(c *fiber.Ctx) error {
 		return fmt.Errorf("카테고리 변환 시 오류 발생. %w", err)
 	}
 
-	err = h.w.UpdateAssetInfo(param.ID, param.Name, category, param.Code, param.Currency, param.Top, param.Bottom, param.SellPrice, param.BuyPrice)
+	err = h.w.UpdateAssetInfo(m.Asset{
+		ID:        param.ID,
+		Name:      param.Name,
+		Category:  category,
+		Code:      param.Code,
+		Currency:  param.Currency,
+		Top:       param.Top,
+		Bottom:    param.Bottom,
+		SellPrice: param.SellPrice,
+		BuyPrice:  param.BuyPrice,
+	})
 	if err != nil {
 		return fmt.Errorf("UpdateAssetInfo 시 오류 발생. %w", err)
 	}

@@ -48,7 +48,7 @@ func main() {
 	eventHandler.Run()
 
 	go func() {
-		app.Run(conf.App.Port, db, scraper)
+		app.Run(conf.App.Port, db, scraper, eventHandler)
 	}()
 
 	teleBot.Run(ch, conf.App.Port)

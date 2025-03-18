@@ -1,7 +1,6 @@
 package event
 
 import (
-	m "invest/model"
 	md "invest/model"
 )
 
@@ -40,7 +39,7 @@ func (m StorageMock) RetrieveAsset(id uint) (*md.Asset, error) {
 	return &md.Asset{}, nil
 }
 
-func (m StorageMock) UpdateAssetInfo(id uint, name string, category md.Category, code string, currency string, top float64, bottom float64, selPrice float64, buyPrice float64) error {
+func (m StorageMock) UpdateAssetInfo(md.Asset) error {
 	return nil
 }
 
@@ -70,10 +69,13 @@ func (m StorageMock) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float6
 	return nil
 }
 
-func (m StorageMock) RetreiveLatestEma(assetId uint) (float64, error) {
-	return m.ma[assetId], nil
+func (m StorageMock) RetreiveLatestEma(assetId uint) (*md.EmaHist, error) {
+	return &md.EmaHist{
+		Ema: m.ma[assetId],
+	}, nil
 }
-func (m StorageMock) SaveEmaHist(assetId uint, price float64) error {
+
+func (m StorageMock) SaveEmaHist(newEma *md.EmaHist) error {
 	return nil
 }
 
@@ -81,7 +83,7 @@ func (m StorageMock) RetrieveTotalAssets() ([]md.Asset, error) {
 	return m.assets, nil
 }
 
-func (m StorageMock) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error) {
+func (m StorageMock) RetreiveFundSummaryByAssetId(id uint) ([]md.InvestSummary, error) {
 	return nil, nil
 }
 

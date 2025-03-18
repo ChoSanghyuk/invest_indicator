@@ -5,6 +5,7 @@ import (
 	"fmt"
 	m "invest/model"
 	"log"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -39,7 +40,6 @@ func NewEventHandler(conf EventHandlerConfig) *EventHandler {
 	return eh
 }
 
-// pricemap 로컬 변수로 두고, asset event랑 포트폴 event 분리시키기
 const (
 	AssetSpec  = "0 */15 9-23 * * 1-5"
 	RcmdSpec   = "0 0 8 * * 1-5"
@@ -51,7 +51,7 @@ const (
 
 const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 
-func (e EventHandler) Run() { // todo. 주석해제 필요
+func (e EventHandler) Run() {
 	c := cron.New()
 	c.AddFunc(AssetSpec, e.AssetEvent)
 	c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
@@ -231,8 +231,43 @@ func (e EventHandler) EmaUpdateEvent() {
 			e.ch <- fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err)
 			continue
 		}
-		e.stg.SaveEmaHist(a.ID, cp)
+
+		oldEma, err := e.stg.RetreiveLatestEma(a.ID)
+		if err != nil {
+			e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetreiveLatestEma 시, 에러 발생. %s", err)
+			continue
+		}
+
+		newEma := CalEma(oldEma, cp)
+		err = e.stg.SaveEmaHist(newEma)
+		if err != nil {
+			e.ch <- fmt.Sprintf("[EmaUpdateEvent] SaveEmaHist 시, 에러 발생. %s", err)
+			continue
+		}
 	}
+}
+
+/*
+a =  10/N+1
+EMAt = a*PRICEt + (1-a)EMAy
+*/
+func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
+
+	nDays := oldEma.NDays
+	a := 10.0 / (float64(nDays) + 1)
+	ema := math.Round((a*cp+(1-a)*oldEma.Ema)*100) / 100
+
+	if nDays < 200 {
+		nDays++
+	}
+
+	newEma = &m.EmaHist{
+		AssetID: oldEma.AssetID,
+		Ema:     ema,
+		NDays:   nDays,
+	}
+
+	return newEma
 }
 
 func (e EventHandler) RealEstateEvent() {
@@ -364,9 +399,15 @@ func (e EventHandler) buySellMsg(assetId uint, pm map[uint]float64) (msg string,
 
 	// 최고가/최저가 갱신 여부 판단
 	if a.Top < pp {
-		e.stg.UpdateAssetInfo(assetId, "", 0, "", "", pp, 0, 0, 0)
+		e.stg.UpdateAssetInfo(m.Asset{
+			ID:  assetId,
+			Top: pp,
+		})
 	} else if a.Bottom > pp {
-		e.stg.UpdateAssetInfo(assetId, "", 0, "", "", 0, pp, 0, 0)
+		e.stg.UpdateAssetInfo(m.Asset{
+			ID:     assetId,
+			Bottom: pp,
+		})
 	}
 
 	return
@@ -583,10 +624,11 @@ func (e EventHandler) loadOrderSlice(os *[]priority, pm map[uint]float64) error 
 			continue
 		}
 		pp := pm[a.ID]
-		ap, err := e.stg.RetreiveLatestEma(a.ID)
+		ema, err := e.stg.RetreiveLatestEma(a.ID)
 		if err != nil {
 			return fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
 		}
+		ap := ema.Ema
 		hp := a.Top
 
 		if ap == 0 || hp == 0 {

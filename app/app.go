@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"invest/app/handler"
 	"invest/db"
+	"invest/event"
 	"invest/scrape"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func Run(port int, stg *db.Storage, scraper *scrape.Scraper) {
+func Run(port int, stg *db.Storage, scraper *scrape.Scraper, eh *event.EventHandler) {
 
 	app := fiber.New()
 
@@ -18,6 +19,8 @@ func Run(port int, stg *db.Storage, scraper *scrape.Scraper) {
 	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewMarketHandler(stg, stg).InitRoute(app)
 	handler.NewCategoryHandler().InitRoute(app)
+	handler.NewEventHandler(eh, eh, eh).InitRoute(app)
+
 	app.Get("/shutdown", func(c *fiber.Ctx) error {
 
 		fmt.Println("Shutting Down")
@@ -32,7 +35,6 @@ memo. 커스텀 인코더 지정 가능.
 fiber.New(
 	fiber.Config(JSONEncoder: customJSONEncoder)
 )
-
 
 func customJSONEncoder(v interface{}) ([]byte, error) {
 	var buffer bytes.Buffer

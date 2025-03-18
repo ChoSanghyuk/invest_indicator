@@ -399,7 +399,12 @@ https://generalcoder.tistory.com/29
 .
 
 
-
+## 패치 노트
+- 25.03.16
+  - evemt API 추가. event 조회 및 on/off 기능
+- 25.03.17
+  - top price, ema 둘 중 하나라도 없으면 포트폴리오 추천 메시지에 포함 X
+  - asset 등록 시, ema 자동 계산
 
 
 

@@ -253,9 +253,17 @@ EMAt = a*PRICEt + (1-a)EMAy
 */
 func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
 
-	nDays := oldEma.NDays
-	a := 10.0 / (float64(nDays) + 1)
-	ema := math.Round((a*cp+(1-a)*oldEma.Ema)*100) / 100
+	var nDays uint
+	var ema float64
+
+	if oldEma.NDays < 200 {
+		ema = (cp + oldEma.Ema*float64(nDays)) / float64(nDays+1) // 200일 되기 전까진 exponential 미존재
+		nDays = oldEma.NDays + 1
+	} else {
+		nDays = 200
+		a := 2.0 / (float64(nDays) + 1) // 200일 이후 부터는 현재가에 가중치 부여.
+		ema = math.Round((a*cp+(1-a)*oldEma.Ema)*100) / 100
+	}
 
 	if nDays < 200 {
 		nDays++

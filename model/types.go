@@ -27,7 +27,7 @@ type Asset struct {
 type EmaHist struct {
 	ID      uint
 	AssetID uint
-	Asset   Asset
+	Asset   Asset `gorm:"foreignKey:AssetID;constraint:OnDelete:CASCADE"`
 	Date    datatypes.Date
 	Ema     float64
 	NDays   uint

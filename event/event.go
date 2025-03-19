@@ -9,8 +9,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/robfig/cron"
 )
 
 type EventHandler struct {
@@ -52,14 +50,14 @@ const (
 const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 
 func (e EventHandler) Run() {
-	c := cron.New()
-	c.AddFunc(AssetSpec, e.AssetEvent)
-	c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
-	c.AddFunc(CoinSpec, e.CoinEvent)
-	c.AddFunc(EstateSpec, e.RealEstateEvent)
-	c.AddFunc(IndexSpec, e.IndexEvent)
-	c.AddFunc(EmaSpec, e.EmaUpdateEvent)
-	c.Start()
+	// c := cron.New()
+	// c.AddFunc(AssetSpec, e.AssetEvent)
+	// c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
+	// c.AddFunc(CoinSpec, e.CoinEvent)
+	// c.AddFunc(EstateSpec, e.RealEstateEvent)
+	// c.AddFunc(IndexSpec, e.IndexEvent)
+	// c.AddFunc(EmaSpec, e.EmaUpdateEvent)
+	// c.Start()
 }
 
 func (e EventHandler) Events() []*Event {

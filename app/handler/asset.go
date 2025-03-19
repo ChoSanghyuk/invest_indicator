@@ -119,7 +119,10 @@ func (h *AssetHandler) AddAsset(c *fiber.Ctx) error {
 	var n uint
 
 	if param.Ema == 0 {
-		ema, n, err = h.p.AvgPrice(category, param.Code)
+		ema, n, _ = h.p.AvgPrice(category, param.Code)
+	} else {
+		ema = param.Ema
+		n = param.Ndays
 	}
 
 	err = h.w.SaveEmaHist(&m.EmaHist{

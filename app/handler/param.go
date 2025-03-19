@@ -23,9 +23,10 @@ type AddAssetReq struct {
 	Currency  string  `json:"currency" validate:"required"`
 	Top       float64 `json:"top"`
 	Bottom    float64 `json:"bottom"`
+	SellPrice float64 `json:"sell"`
+	BuyPrice  float64 `json:"buy"`
 	Ema       float64 `json:"ema"`
-	SellPrice float64 `json:"sel_price"`
-	BuyPrice  float64 `json:"buy_price"`
+	Ndays     uint    `json:"ndays"`
 }
 
 type UpdateAssetReq struct {
@@ -36,8 +37,8 @@ type UpdateAssetReq struct {
 	Currency  string  `json:"currency"`
 	Top       float64 `json:"top"`
 	Bottom    float64 `json:"bottom"`
-	SellPrice float64 `json:"sel_price"`
-	BuyPrice  float64 `json:"buy_price"`
+	SellPrice float64 `json:"sell"`
+	BuyPrice  float64 `json:"buy"`
 }
 
 type DeleteAssetReq struct {
@@ -74,6 +75,8 @@ type assetResponse struct {
 	Bottom    float64 `json:"bottom"`
 	SellPrice float64 `json:"sell"`
 	BuyPrice  float64 `json:"buy"`
+	Ema       float64 `json:"ema"`
+	NDays     float64 `json:"ndays"`
 }
 
 type HistResponse struct {

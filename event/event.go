@@ -56,7 +56,7 @@ func (e EventHandler) Run() {
 	c.AddFunc(AssetSpec, e.AssetEvent)
 	c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
 	c.AddFunc(CoinSpec, e.CoinEvent)
-	c.AddFunc(EstateSpec, e.RealEstateEvent)
+	// c.AddFunc(EstateSpec, e.RealEstateEvent)
 	c.AddFunc(IndexSpec, e.IndexEvent)
 	c.AddFunc(EmaSpec, e.EmaUpdateEvent)
 	c.Start()

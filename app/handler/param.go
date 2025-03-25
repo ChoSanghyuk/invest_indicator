@@ -58,6 +58,11 @@ type SaveInvestParam struct {
 	Count     float64 `json:"count" validate:"required"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 /***************************************************************** resoponse ****************************************************************/
 
 type assetListResponse struct {
@@ -147,4 +152,10 @@ type EventStatusChangeRequest struct {
 
 type EventLaunchRequest struct {
 	Id int `json:"id"`
+}
+
+// JWTResponse is the response sent after successful authentication
+type JWTResponse struct {
+	Token  string `json:"token"`
+	Expiry int64  `json:"expiry"`
 }

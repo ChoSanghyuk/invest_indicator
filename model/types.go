@@ -77,3 +77,10 @@ type Sample struct {
 	Time time.Time
 	gorm.Model
 }
+
+type User struct {
+	ID       int
+	Username string
+	Email    string
+	Password string
+}

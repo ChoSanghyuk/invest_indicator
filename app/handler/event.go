@@ -80,7 +80,7 @@ func (h *EventHandler) LaunchEvent(c *fiber.Ctx) error {
 
 	err = h.el.Launch(param.Id)
 	if err != nil {
-		return fmt.Errorf("event Launch 시 오류 발생. %w", err)
+		return fmt.Errorf("event Launch 시 오류 발생. %s", err.Error())
 	}
 
 	return c.Status(fiber.StatusOK).SendString("event 실행 성공")

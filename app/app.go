@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"invest/app/handler"
+	"invest/app/middleware"
 	"invest/db"
 	"invest/event"
 	"invest/scrape"
@@ -10,10 +11,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Run(port int, stg *db.Storage, scraper *scrape.Scraper, eh *event.EventHandler) {
+func Run(port int, authKey string, stg *db.Storage, scraper *scrape.Scraper, eh *event.EventHandler) {
 
 	app := fiber.New()
 
+	middleware.SetupMiddleware(app)
+	handler.NewAuthHandler(stg, authKey).InitRoute(app) // todo.
 	handler.NewAssetHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewFundHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)

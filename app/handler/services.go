@@ -70,3 +70,7 @@ type EventLauncher interface {
 type EventStatusChanger interface {
 	StatusChange(id int, active bool) error
 }
+
+type UserRetrierver interface {
+	User(email string) (*m.User, error)
+}

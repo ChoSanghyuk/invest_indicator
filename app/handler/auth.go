@@ -23,11 +23,12 @@ func NewAuthHandler(us UserRetrierver, authKey string) *AuthHandler {
 	}
 }
 
-func (h *AuthHandler) InitRoute(app *fiber.App) {
-
+func (h *AuthHandler) InitAuthMiddleware(app *fiber.App) {
 	app.Use(h.AuthMiddleware)
-	router := app.Group("/assets")
+}
 
+func (h *AuthHandler) InitRoute(app *fiber.App) {
+	router := app.Group("/login")
 	router.Post("/", h.Login)
 }
 

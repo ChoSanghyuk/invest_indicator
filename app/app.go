@@ -16,7 +16,11 @@ func Run(port int, authKey string, stg *db.Storage, scraper *scrape.Scraper, eh 
 	app := fiber.New()
 
 	middleware.SetupMiddleware(app)
-	handler.NewAuthHandler(stg, authKey).InitRoute(app) // todo.
+
+	authHandler := handler.NewAuthHandler(stg, authKey)
+	authHandler.InitAuthMiddleware(app)
+
+	authHandler.InitRoute(app)
 	handler.NewAssetHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewFundHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)

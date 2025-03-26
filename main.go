@@ -48,8 +48,8 @@ func main() {
 	eventHandler.Run()
 
 	go func() {
-		app.Run(conf.App.Port, "", db, scraper, eventHandler) // jwtToken key
+		app.Run(conf.App.Port, "test", db, scraper, eventHandler) // todo. jwtToken key
 	}()
 
-	teleBot.Run(ch, conf.App.Port)
+	teleBot.Run(ch, conf.App.Port) // todo. telegram login
 }

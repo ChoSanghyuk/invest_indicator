@@ -516,34 +516,12 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 		setPortCache(k)
 
 		os := make([]priority, 0, len(ivsmLi)) // ordered slice
+		err = e.loadOrderSlice(&os, pm)
+		if err != nil {
+			return "", err
+		}
 
 		if r > marketLevel.MaxVolatileAssetRate() { // 매도 메시지
-
-			err = e.loadOrderSlice(&os, pm)
-			if err != nil {
-				return "", err
-			}
-			// for _, ivsm := range ivsmLi {
-			// 	if ivsm.FundID == k {
-			// 		a := &ivsm.Asset
-			// 		if a.Category == m.Won || a.Category == m.Dollar {
-			// 			continue
-			// 		}
-			// 		pp := pm[a.ID]
-			// 		ap, err := e.stg.RetreiveLatestEma(a.ID)
-			// 		if err != nil {
-			// 			return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
-			// 		}
-			// 		hp := a.Top
-			// 		os = append(os, priority{
-			// 			asset: a,
-			// 			ap:    ap,
-			// 			pp:    pp,
-			// 			hp:    hp,
-			// 			score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
-			// 		})
-			// 	}
-			// }
 
 			sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 				k,
@@ -567,33 +545,6 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 				}
 			})
 		} else if r < marketLevel.MinVolatileAssetRate() { // 매수 메시지
-			err = e.loadOrderSlice(&os, pm)
-			if err != nil {
-				return "", err
-			}
-			// li, err := e.stg.RetrieveTotalAssets()
-			// if err != nil {
-			// 	return "", fmt.Errorf("RetrieveTotalAssets, 에러 발생. %w", err)
-			// }
-			// // 매수 시기에는 전체 List 조회. Todo. 여러 자금에 대해서 공통적으로 반복 수행하게 될 수 있음.
-			// for _, a := range li {
-			// 	if a.Category == m.Won || a.Category == m.Dollar {
-			// 		continue
-			// 	}
-			// 	pp := pm[a.ID]
-			// 	ap, err := e.stg.RetreiveLatestEma(a.ID)
-			// 	if err != nil {
-			// 		return "", fmt.Errorf("RetreiveLatestEma, 에러 발생. ID: %d. %w", a.ID, err)
-			// 	}
-			// 	hp := a.Top
-			// 	os = append(os, priority{
-			// 		asset: &a,
-			// 		ap:    ap,
-			// 		pp:    pp,
-			// 		hp:    hp,
-			// 		score: 0.6*((pp-ap)/pp) + 0.4*((pp-hp)/pp),
-			// 	})
-			// }
 
 			sb.WriteString(fmt.Sprintf(portfolioMsgForm, // "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 				k,

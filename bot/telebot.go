@@ -3,10 +3,10 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -87,6 +87,7 @@ func (t TeleBot) communicate(ch chan string, port int) {
 				/funds
 				/funds/{id}/hist
 				/funds/:{id}/assets
+				/assets
 				/assets/list
 				/assets/{id}
 				/assets/{id}/hist
@@ -128,7 +129,7 @@ func (t TeleBot) communicate(ch chan string, port int) {
 				}
 				`
 			default:
-				rtn, err := httpsend("http://localhost:" + strconv.Itoa(port) + txt)
+				rtn, err := httpsend(fmt.Sprintf("http://localhost:%d%s", port, txt))
 				if err != nil {
 					ch <- err.Error()
 				} else {

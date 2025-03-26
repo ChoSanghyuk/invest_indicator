@@ -127,6 +127,10 @@ func (mock PriceGetterMock) AvgPrice(category m.Category, code string) (ap float
 	return 0, 0, nil
 }
 
+func (mock PriceGetterMock) PresentPrice(category m.Category, code string) (float64, error) {
+	return 0, nil
+}
+
 /***************************** Fund ***********************************/
 type FundRetrieverMock struct {
 	isli []m.InvestSummary

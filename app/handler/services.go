@@ -34,6 +34,7 @@ type AssetInfoSaver interface {
 type PriceGetter interface {
 	TopBottomPrice(category m.Category, code string) (float64, float64, error)
 	AvgPrice(category m.Category, code string) (ap float64, n uint, err error)
+	PresentPrice(category m.Category, code string) (float64, error)
 }
 
 type MaketRetriever interface {

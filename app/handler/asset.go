@@ -49,6 +49,12 @@ func (h *AssetHandler) Assets(c *fiber.Ctx) error {
 			return fmt.Errorf("RetrieveAsset 오류 발생. %w", err)
 		}
 
+		pp, err := h.p.PresentPrice(asset.Category, asset.Code)
+		if err != nil {
+			// todo. log
+			pp = 0
+		}
+
 		rtn[i] = assetResponse{
 			ID:        asset.ID,
 			Name:      asset.Name,
@@ -59,6 +65,7 @@ func (h *AssetHandler) Assets(c *fiber.Ctx) error {
 			Bottom:    asset.Bottom,
 			SellPrice: asset.SellPrice,
 			BuyPrice:  asset.BuyPrice,
+			Price:     pp,
 		}
 
 	}

@@ -82,6 +82,7 @@ type assetResponse struct {
 	BuyPrice  float64 `json:"buy"`
 	Ema       float64 `json:"ema"`
 	NDays     float64 `json:"ndays"`
+	Price     float64 `json:"price"`
 }
 
 type HistResponse struct {

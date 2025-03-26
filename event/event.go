@@ -566,7 +566,7 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 					}
 				}
 			})
-		} else { // 매수 메시지
+		} else if r < marketLevel.MinVolatileAssetRate() { // 매수 메시지
 			err = e.loadOrderSlice(&os, pm)
 			if err != nil {
 				return "", err

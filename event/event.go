@@ -602,7 +602,7 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 				volatile[k],
 				volatile[k]+stable[k],
 				marketLevel.String(),
-				marketLevel.MaxVolatileAssetRate()),
+				marketLevel.MinVolatileAssetRate()),
 			)
 
 			slices.SortFunc(os, func(a, b priority) int {

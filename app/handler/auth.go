@@ -30,6 +30,7 @@ func (h *AuthHandler) InitAuthMiddleware(app *fiber.App) {
 func (h *AuthHandler) InitRoute(app *fiber.App) {
 	router := app.Group("/login")
 	router.Post("/", h.Login)
+	app.Use(h.AuthMiddleware)
 }
 
 // Claims represents the JWT claims

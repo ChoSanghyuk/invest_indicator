@@ -69,7 +69,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		},
 	}
 
-	jwtKey := h.authKey
+	jwtKey := []byte(h.authKey)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {

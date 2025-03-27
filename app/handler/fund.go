@@ -139,7 +139,7 @@ func (h *FundHandler) FundHist(c *fiber.Ctx) error {
 	var invests []model.Invest
 
 	if start == "" || end == "" {
-		invests, err = h.r.RetreiveAFundInvestsById(uint(id))
+		invests, err = h.r.RetreiveFundInvestsById(uint(id))
 	} else {
 		invests, err = h.r.RetrieveFundInvestsByIdAndRange(uint(id), start, end)
 	}

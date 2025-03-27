@@ -13,12 +13,12 @@ import (
 
 type AuthHandler struct {
 	us      UserRetrierver
-	authKey string
+	authKey []byte
 }
 
 func NewAuthHandler(us UserRetrierver, authKey string) *AuthHandler {
 	return &AuthHandler{
-		authKey: authKey,
+		authKey: []byte(authKey),
 		us:      us,
 	}
 }
@@ -70,9 +70,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		},
 	}
 
-	jwtKey := []byte(h.authKey)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(h.authKey)
 	if err != nil {
 		return err
 	}

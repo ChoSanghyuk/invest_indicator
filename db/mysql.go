@@ -74,7 +74,7 @@ func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error
 
 }
 
-func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
+func (s Storage) RetreiveFundInvestsById(id uint) ([]m.Invest, error) {
 	var invets []m.Invest
 
 	result := s.db.Model(&m.Invest{}).

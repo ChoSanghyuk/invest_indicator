@@ -18,7 +18,7 @@ type EventHandler struct {
 	rt     RtPoller
 	dp     DailyPoller
 	ch     chan<- string
-	events []*Event
+	events []*EnrolledEvent
 }
 
 type EventHandlerConfig struct {
@@ -62,7 +62,7 @@ func (e EventHandler) Run() {
 	c.Start()
 }
 
-func (e EventHandler) Events() []*Event {
+func (e EventHandler) Events() []*EnrolledEvent {
 	return e.events
 }
 

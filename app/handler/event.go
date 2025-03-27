@@ -35,6 +35,7 @@ func (h *EventHandler) Events(c *fiber.Ctx) error {
 	eventResponse := make([]EventResponse, 0, len(events))
 	for _, e := range events {
 		eventResponse = append(eventResponse, EventResponse{
+			Id:          e.Id,
 			Title:       e.Title,
 			Description: e.Description,
 			Active:      e.Active,

@@ -1,6 +1,6 @@
 package event
 
-type Event struct {
+type EnrolledEvent struct {
 	Id          int
 	Title       string
 	Description string
@@ -9,7 +9,7 @@ type Event struct {
 }
 
 func (e *EventHandler) registerEvents() {
-	e.events = []*Event{
+	e.events = []*EnrolledEvent{
 		{
 			Id:          1,
 			Title:       "매수 Asset 추천",

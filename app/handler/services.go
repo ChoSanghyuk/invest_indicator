@@ -61,7 +61,7 @@ type ExchageRateGetter interface {
 }
 
 type EventRetriever interface {
-	Events() []*event.Event
+	Events() []*event.EnrolledEvent
 }
 
 type EventLauncher interface {

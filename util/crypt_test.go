@@ -3,6 +3,8 @@ package util
 import (
 	"os"
 	"testing"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 /*
@@ -37,4 +39,15 @@ func TestDecrypt(t *testing.T) {
 		t.Error(err)
 	}
 	t.Logf("decrypted: %s\n", decrypted)
+}
+
+func TestEncryptPassword(t *testing.T) {
+
+	password := os.Getenv("password")
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("encrypted password: %s\n", hashedPassword)
+
 }

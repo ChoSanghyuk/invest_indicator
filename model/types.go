@@ -57,7 +57,7 @@ type InvestSummary struct {
 type Market struct {
 	ID        uint
 	Status    uint
-	CreatedAt datatypes.Date `gorm:"primaryKey"`
+	CreatedAt datatypes.Date
 }
 
 type DailyIndex struct {

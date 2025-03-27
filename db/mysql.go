@@ -245,7 +245,7 @@ func (s Storage) RetrieveMarketStatus(date string) (*m.Market, error) {
 			return nil, result.Error
 		}
 	} else {
-		result := s.db.Where("created_at = ?", date).Last(&market, date) // Preload("Asset")
+		result := s.db.Where("created_at = ?", date).Last(&market) // Preload("Asset")
 		if result.Error != nil {
 			return nil, result.Error
 		}

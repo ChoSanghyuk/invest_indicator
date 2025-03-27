@@ -520,7 +520,7 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 		}
 
 		r := volatile[k] / (volatile[k] + stable[k])
-		if hasPortCache(k) && !(r > marketLevel.MaxVolatileAssetRate()) && !(r < marketLevel.MinVolatileAssetRate()) {
+		if hasPortCache(k) || (r > marketLevel.MinVolatileAssetRate() && r < marketLevel.MaxVolatileAssetRate()) { // 캐시가 있거나, 범주안에 있으면 스킵
 			continue
 		}
 		setPortCache(k)

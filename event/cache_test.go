@@ -3,8 +3,6 @@ package event
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCache(t *testing.T) {
@@ -65,9 +63,9 @@ func TestCache(t *testing.T) {
 		}
 	})
 
-	t.Run("Daily Cache", func(t *testing.T) {
-		b := hasDailyCache()
-		assert.Equal(t, b, false)
-		t.Log(time.Now().Day())
-	})
+	// t.Run("Daily Cache", func(t *testing.T) {
+	// 	b := hasDailyCache()
+	// 	assert.Equal(t, b, false)
+	// 	t.Log(time.Now().Day())
+	// })
 }

@@ -15,7 +15,8 @@ type assetMsgSentInfo struct {
 
 var assetMsgCache map[assetMsg]*assetMsgSentInfo
 var portMsgCache map[uint]time.Time
-var dailyCache int
+
+// var dailyCache int
 
 func init() {
 	assetMsgCache = make(map[assetMsg]*assetMsgSentInfo)
@@ -78,16 +79,16 @@ func setPortCache(id uint) {
 	portMsgCache[id] = time.Now()
 }
 
-func hasDailyCache() bool {
+// func hasDailyCache() bool {
 
-	if dailyCache == 0 || dailyCache != time.Now().Day() {
-		return false
-	} else {
-		return true
-	}
-}
+// 	if dailyCache == 0 || dailyCache != time.Now().Day() {
+// 		return false
+// 	} else {
+// 		return true
+// 	}
+// }
 
 // deprecated
-func setDailyCache() {
-	dailyCache = time.Now().Day()
-}
+// func setDailyCache() {
+// 	dailyCache = time.Now().Day()
+// }

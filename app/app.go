@@ -17,10 +17,7 @@ func Run(port int, authKey string, stg *db.Storage, scraper *scrape.Scraper, eh 
 
 	middleware.SetupMiddleware(app)
 
-	authHandler := handler.NewAuthHandler(stg, authKey)
-	authHandler.InitAuthMiddleware(app)
-
-	authHandler.InitRoute(app)
+	handler.NewAuthHandler(stg, authKey).InitRoute(app)
 	handler.NewAssetHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewFundHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)

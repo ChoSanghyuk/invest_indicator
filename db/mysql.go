@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	m "invest/model"
 	"time"
 
@@ -74,7 +75,7 @@ func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error
 
 }
 
-func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
+func (s Storage) RetreiveFundInvestsById(id uint) ([]m.Invest, error) {
 	var invets []m.Invest
 
 	result := s.db.Model(&m.Invest{}).
@@ -91,7 +92,22 @@ func (s Storage) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
 func (s Storage) RetrieveFundInvestsByIdAndRange(fundID uint, startDate, endDate string) ([]m.Invest, error) {
 	var invests []m.Invest
 
-	err := s.db.Where("fund_id = ? AND created_at BETWEEN ? AND ?", fundID, startDate, endDate).
+	from, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, err
+	}
+
+	temp, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, err
+	}
+	end := time.Date(
+		temp.Year(), temp.Month(), temp.Day(),
+		23, 59, 59, 999,
+		temp.Location(),
+	)
+
+	err = s.db.Where("fund_id = ? AND created_at BETWEEN ? AND ?", fundID, from, end).
 		Preload("Asset").
 		Find(&invests).
 		Error
@@ -245,7 +261,7 @@ func (s Storage) RetrieveMarketStatus(date string) (*m.Market, error) {
 			return nil, result.Error
 		}
 	} else {
-		result := s.db.Where("created_at = ?", date).Last(&market, date) // Preload("Asset")
+		result := s.db.Where("created_at = ?", date).Last(&market) // Preload("Asset")
 		if result.Error != nil {
 			return nil, result.Error
 		}
@@ -479,4 +495,29 @@ func (s Storage) User(email string) (*m.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s Storage) RetreiveEventIsActive(eventId uint) bool {
+	var event m.Event
+	result := s.db.Where("event_id", eventId).First(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			s.db.Create(&m.Event{ID: eventId, IsActive: true})
+			return true
+		} else {
+			return false
+		}
+	}
+
+	return event.IsActive
+}
+
+func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
+
+	result := s.db.Updates(m.Event{ID: eventId, IsActive: isActive})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

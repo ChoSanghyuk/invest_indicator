@@ -156,7 +156,7 @@ func (mock FundRetrieverMock) RetreiveFundSummaryByFundId(id uint) ([]m.InvestSu
 	return mock.isli, nil
 }
 
-func (mock FundRetrieverMock) RetreiveAFundInvestsById(id uint) ([]m.Invest, error) {
+func (mock FundRetrieverMock) RetreiveFundInvestsById(id uint) ([]m.Invest, error) {
 	fmt.Println("RetreiveAFundInvestsById Called")
 
 	if mock.err != nil {

@@ -54,7 +54,7 @@ func TestRetreiveFundSummaryById(t *testing.T) {
 }
 func TestRetreiveAFundInvestsById(t *testing.T) {
 
-	rtn, err := stg.RetreiveAFundInvestsById(1)
+	rtn, err := stg.RetreiveFundInvestsById(1)
 	if err != nil {
 		t.Error(t)
 	}

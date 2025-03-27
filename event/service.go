@@ -21,6 +21,9 @@ type Storage interface {
 
 	RetreiveLatestEma(assetId uint) (*m.EmaHist, error)
 	SaveEmaHist(newEma *m.EmaHist) error
+
+	RetreiveEventIsActive(eventId uint) bool
+	UpdateEventIsActive(eventId uint, isActive bool) error
 }
 
 type RtPoller interface {

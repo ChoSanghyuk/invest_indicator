@@ -8,7 +8,7 @@ import (
 type FundRetriever interface {
 	RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error)
 	RetreiveFundSummaryByFundId(id uint) ([]m.InvestSummary, error)
-	RetreiveAFundInvestsById(id uint) ([]m.Invest, error)
+	RetreiveFundInvestsById(id uint) ([]m.Invest, error)
 	RetrieveFundInvestsByIdAndRange(id uint, start, end string) ([]m.Invest, error)
 }
 
@@ -61,15 +61,15 @@ type ExchageRateGetter interface {
 }
 
 type EventRetriever interface {
-	Events() []*event.Event
+	Events() []*event.EnrolledEvent
 }
 
 type EventLauncher interface {
-	Launch(id int) error
+	Launch(id uint) error
 }
 
 type EventStatusChanger interface {
-	StatusChange(id int, active bool) error
+	StatusChange(id uint, active bool) error
 }
 
 type UserRetrierver interface {

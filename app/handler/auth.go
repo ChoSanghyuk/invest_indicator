@@ -13,12 +13,12 @@ import (
 
 type AuthHandler struct {
 	us      UserRetrierver
-	authKey string
+	authKey []byte
 }
 
 func NewAuthHandler(us UserRetrierver, authKey string) *AuthHandler {
 	return &AuthHandler{
-		authKey: authKey,
+		authKey: []byte(authKey),
 		us:      us,
 	}
 }
@@ -30,6 +30,7 @@ func (h *AuthHandler) InitAuthMiddleware(app *fiber.App) {
 func (h *AuthHandler) InitRoute(app *fiber.App) {
 	router := app.Group("/login")
 	router.Post("/", h.Login)
+	app.Use(h.AuthMiddleware)
 }
 
 // Claims represents the JWT claims
@@ -69,9 +70,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		},
 	}
 
-	jwtKey := h.authKey
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(h.authKey)
 	if err != nil {
 		return err
 	}

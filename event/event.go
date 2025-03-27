@@ -14,11 +14,11 @@ import (
 )
 
 type EventHandler struct {
-	stg    Storage
-	rt     RtPoller
-	dp     DailyPoller
-	ch     chan<- string
-	events []*Event
+	stg            Storage
+	rt             RtPoller
+	dp             DailyPoller
+	ch             chan<- string
+	enrolledEvents []*EnrolledEvent
 }
 
 type EventHandlerConfig struct {
@@ -41,8 +41,8 @@ func NewEventHandler(conf EventHandlerConfig) *EventHandler {
 }
 
 const (
-	AssetSpec  = "0 */15 9-23 * * 1-5"
-	RcmdSpec   = "0 0 8 * * 1-5"
+	AssetSpec = "0 */15 9-23 * * 1-5"
+	// RcmdSpec   = "0 0 8 * * 1-5"
 	CoinSpec   = "0 */15 8-23 * * 0,6"
 	EstateSpec = "0 */15 9-17 * * 1-5"
 	IndexSpec  = "0 0 8 * * 1-5"
@@ -54,24 +54,34 @@ const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 �
 func (e EventHandler) Run() {
 	c := cron.New()
 	c.AddFunc(AssetSpec, e.AssetEvent)
-	c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
 	c.AddFunc(CoinSpec, e.CoinEvent)
-	// c.AddFunc(EstateSpec, e.RealEstateEvent)
 	c.AddFunc(IndexSpec, e.IndexEvent)
 	c.AddFunc(EmaSpec, e.EmaUpdateEvent)
+	// c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
+	// c.AddFunc(EstateSpec, e.RealEstateEvent)
+
+	for _, enrolled := range e.enrolledEvents {
+		c.AddFunc(enrolled.schedule, func() {
+			if enrolled.IsActive {
+				enrolled.Event()
+			}
+		})
+	}
+
 	c.Start()
 }
 
-func (e EventHandler) Events() []*Event {
-	return e.events
+func (e EventHandler) Events() []*EnrolledEvent {
+	return e.enrolledEvents
 }
 
-func (e EventHandler) StatusChange(id int, active bool) error {
+func (e EventHandler) StatusChange(id uint, active bool) error {
 
 	done := false
-	for _, ev := range e.events {
+	for _, ev := range e.enrolledEvents {
 		if ev.Id == id {
-			ev.Active = active
+			ev.IsActive = active
+			e.stg.UpdateEventIsActive(ev.Id, ev.IsActive)
 			done = true
 			break
 		}
@@ -83,11 +93,11 @@ func (e EventHandler) StatusChange(id int, active bool) error {
 	return nil
 }
 
-func (e EventHandler) Launch(id int) error {
+func (e EventHandler) Launch(id uint) error {
 
-	for _, ev := range e.events {
+	for _, ev := range e.enrolledEvents {
 		if ev.Id == id {
-			if ev.Active {
+			if ev.IsActive {
 				ev.Event()
 				return nil
 			} else {

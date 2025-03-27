@@ -65,11 +65,11 @@ type EventRetriever interface {
 }
 
 type EventLauncher interface {
-	Launch(id int) error
+	Launch(id uint) error
 }
 
 type EventStatusChanger interface {
-	StatusChange(id int, active bool) error
+	StatusChange(id uint, active bool) error
 }
 
 type UserRetrierver interface {

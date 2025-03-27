@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	m "invest/model"
 	"time"
 
@@ -494,4 +495,29 @@ func (s Storage) User(email string) (*m.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s Storage) RetreiveEventIsActive(eventId uint) bool {
+	var event m.Event
+	result := s.db.Where("event_id", eventId).First(&event)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			s.db.Create(&m.Event{ID: eventId, IsActive: true})
+			return true
+		} else {
+			return false
+		}
+	}
+
+	return event.IsActive
+}
+
+func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
+
+	result := s.db.Updates(m.Event{ID: eventId, IsActive: isActive})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

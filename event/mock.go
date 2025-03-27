@@ -87,6 +87,14 @@ func (m StorageMock) RetreiveFundSummaryByAssetId(id uint) ([]md.InvestSummary, 
 	return nil, nil
 }
 
+func (m StorageMock) RetreiveEventIsActive(eventId uint) bool {
+	return false
+}
+
+func (m StorageMock) UpdateEventIsActive(eventId uint, isActive bool) error {
+	return nil
+}
+
 type RtPollerMock struct {
 	pp     float64
 	estate string

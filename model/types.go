@@ -85,3 +85,8 @@ type User struct {
 	Email    string
 	Password string
 }
+
+type Event struct {
+	ID       uint
+	IsActive bool
+}

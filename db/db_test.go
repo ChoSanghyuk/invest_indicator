@@ -11,7 +11,7 @@ import (
 
 func TestMigration(t *testing.T) {
 	// db.AutoMigrate(&m.EmaHist{})
-	stg.db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.Invest{}, &m.InvestSummary{}, &m.Market{}, &m.DailyIndex{}, &m.CliIndex{}, &m.EmaHist{})
+	stg.db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.Invest{}, &m.InvestSummary{}, &m.Market{}, &m.DailyIndex{}, &m.CliIndex{}, &m.EmaHist{}, &m.User{}, &m.Event{})
 }
 
 func TestCreate(t *testing.T) {

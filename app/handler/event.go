@@ -38,7 +38,7 @@ func (h *EventHandler) Events(c *fiber.Ctx) error {
 			Id:          e.Id,
 			Title:       e.Title,
 			Description: e.Description,
-			Active:      e.Active,
+			Active:      e.IsActive,
 		})
 	}
 

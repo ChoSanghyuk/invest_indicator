@@ -141,19 +141,19 @@ type WeekMarketIndicators struct {
 // }
 
 type EventResponse struct {
-	Id          int    `json:"id"`
+	Id          uint   `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Active      bool   `json:"active"`
 }
 
 type EventStatusChangeRequest struct {
-	Id     int  `json:"id"`
+	Id     uint `json:"id"`
 	Active bool `json:"active"`
 }
 
 type EventLaunchRequest struct {
-	Id int `json:"id"`
+	Id uint `json:"id"`
 }
 
 // JWTResponse is the response sent after successful authentication

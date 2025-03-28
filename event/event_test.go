@@ -147,11 +147,7 @@ func TestEnrolledEventLaunch(t *testing.T) {
 	}
 
 	event := EnrolledEvent{
-		Id:          1,
-		Title:       "매수 Asset 추천",
-		Description: "Asset 가격들을 조회 후 우선 매수 대상 Asset으로 정렬 후 반환",
-		schedule:    "0 0 8 * * 1-5",
-		Event:       testF,
+		Event: testF,
 	}
 
 	event.Event()

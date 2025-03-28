@@ -275,10 +275,6 @@ func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
 		ema = math.Round((a*cp+(1-a)*oldEma.Ema)*100) / 100
 	}
 
-	if nDays < 200 {
-		nDays++
-	}
-
 	newEma = &m.EmaHist{
 		AssetID: oldEma.AssetID,
 		Ema:     ema,

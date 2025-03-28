@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	m "invest/model"
 	"strings"
 	"testing"
@@ -138,4 +139,20 @@ func TestEventportfolioMsg(t *testing.T) {
 		}
 	})
 
+}
+
+func TestEnrolledEventLaunch(t *testing.T) {
+	testF := func() {
+		fmt.Println("HELLO EVENT")
+	}
+
+	event := EnrolledEvent{
+		Id:          1,
+		Title:       "매수 Asset 추천",
+		Description: "Asset 가격들을 조회 후 우선 매수 대상 Asset으로 정렬 후 반환",
+		schedule:    "0 0 8 * * 1-5",
+		Event:       testF,
+	}
+
+	event.Event()
 }

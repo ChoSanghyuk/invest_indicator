@@ -233,16 +233,17 @@ func (e EventHandler) EmaUpdateEvent() {
 			return
 		}
 		// EMA 갱신 제외
-		if a.Category == m.Won || a.Category == m.Dollar {
+		if asset.Category == m.Won || asset.Category == m.Dollar {
 			continue
 		}
+
 		cp, err := e.dp.ClosingPrice(asset.Category, asset.Code)
 		if err != nil {
 			e.ch <- fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err)
 			continue
 		}
 
-		oldEma, err := e.stg.RetreiveLatestEma(a.ID)
+		oldEma, err := e.stg.RetreiveLatestEma(asset.ID)
 		if err != nil {
 			e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetreiveLatestEma 시, 에러 발생. %s", err)
 			continue
@@ -266,7 +267,9 @@ func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
 	var nDays uint
 	var ema float64
 
-	if oldEma.NDays < 200 {
+	if oldEma.NDays == 0 { // 0 일 때는 스킵
+		return oldEma
+	} else if oldEma.NDays < 200 {
 		ema = (cp + oldEma.Ema*float64(nDays)) / float64(nDays+1) // 200일 되기 전까진 exponential 미존재
 		nDays = oldEma.NDays + 1
 	} else {

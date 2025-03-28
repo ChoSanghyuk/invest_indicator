@@ -486,10 +486,10 @@ func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 	return nil
 }
 
-func (s Storage) User(email string) (*m.User, error) {
+func (s Storage) User(userName string) (*m.User, error) {
 
 	var user m.User
-	result := s.db.Where("email", email).Last(&user)
+	result := s.db.Where("username", userName).Last(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

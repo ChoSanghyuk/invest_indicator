@@ -358,7 +358,6 @@ func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi *[]m.InvestS
 		e.ch <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
 		return
 	}
-	// priceMap := make(map[uint]float64) // assetId => price
 
 	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
 	for _, a := range assetList {

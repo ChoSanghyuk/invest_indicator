@@ -3,6 +3,7 @@ package config
 import (
 	_ "embed"
 	"fmt"
+
 	"invest/bot"
 	"invest/scrape"
 	"invest/util"
@@ -16,7 +17,9 @@ var configByte []byte
 
 type Config struct {
 	App struct {
-		Port int `yaml:"port"`
+		Port    int    `yaml:"port"`
+		Jwt     string `yaml:"jwt"`
+		Passkey string `yaml:"passkey"`
 	} `yaml:"app"`
 	Api      map[string]apiConfig   `yaml:"api"`
 	Crawl    map[string]crawlConfig `yaml:"crawl"`
@@ -56,11 +59,10 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	// util.Decode(&ConfigInfo.Gold.API.ApiKey)
 	util.Decode(&ConfigInfo.Telegram.ChatId)
 	util.Decode(&ConfigInfo.Telegram.Token)
-	// util.Decode(ConfigInfo.Key.KIS["appkey"])
-	// util.Decode(ConfigInfo.Key.KIS["appsecret"])
+	util.Decode(&ConfigInfo.App.Jwt)
+	util.Decode(&ConfigInfo.App.Passkey)
 
 	return &ConfigInfo, nil
 }

@@ -250,6 +250,10 @@ func (e EventHandler) EmaUpdateEvent() {
 		}
 
 		newEma := CalEma(oldEma, cp)
+		if newEma == nil {
+			continue
+		}
+
 		err = e.stg.SaveEmaHist(newEma)
 		if err != nil {
 			e.ch <- fmt.Sprintf("[EmaUpdateEvent] SaveEmaHist 시, 에러 발생. %s", err)
@@ -267,8 +271,8 @@ func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
 	var nDays uint
 	var ema float64
 
-	if oldEma.NDays == 0 { // 0 일 때는 스킵
-		return oldEma
+	if oldEma.NDays == 0 || oldEma.Ema == 0 { // 0 일 때는 스킵
+		return nil
 	} else if oldEma.NDays < 200 {
 		ema = (cp + oldEma.Ema*float64(nDays)) / float64(nDays+1) // 200일 되기 전까진 exponential 미존재
 		nDays = oldEma.NDays + 1

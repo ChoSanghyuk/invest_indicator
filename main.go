@@ -47,9 +47,6 @@ func main() {
 	})
 	eventHandler.Run()
 
-	conf.App.JwtKey = "test"
-	conf.App.Passkey = "test"
-
 	go func() {
 		app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler) // todo. jwtToken key
 	}()

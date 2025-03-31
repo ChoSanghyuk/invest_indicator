@@ -59,7 +59,7 @@ type SaveInvestParam struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
+	Id       string `json:"id"`
 	Password string `json:"password"`
 }
 

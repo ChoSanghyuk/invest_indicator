@@ -14,17 +14,15 @@ import (
 type AuthHandler struct {
 	us      UserRetrierver
 	authKey []byte
+	passKey string
 }
 
-func NewAuthHandler(us UserRetrierver, authKey string) *AuthHandler {
+func NewAuthHandler(us UserRetrierver, authKey string, passKey string) *AuthHandler {
 	return &AuthHandler{
 		authKey: []byte(authKey),
+		passKey: passKey,
 		us:      us,
 	}
-}
-
-func (h *AuthHandler) InitAuthMiddleware(app *fiber.App) {
-	app.Use(h.AuthMiddleware)
 }
 
 func (h *AuthHandler) InitRoute(app *fiber.App) {
@@ -48,7 +46,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return err
 	}
 
-	user, err := h.us.User(req.Email)
+	user, err := h.us.User(req.Id)
 	if err != nil {
 		return err
 	}
@@ -87,6 +85,8 @@ func (h *AuthHandler) AuthMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
 		return errors.New("authorization header missing")
+	} else if authHeader == h.passKey {
+		return c.Next()
 	}
 
 	tokenParts := strings.Split(authHeader, " ")

@@ -1,6 +1,7 @@
 package event
 
 import (
+	"fmt"
 	m "invest/model"
 	"strings"
 	"testing"
@@ -138,4 +139,16 @@ func TestEventportfolioMsg(t *testing.T) {
 		}
 	})
 
+}
+
+func TestEnrolledEventLaunch(t *testing.T) {
+	testF := func() {
+		fmt.Println("HELLO EVENT")
+	}
+
+	event := EnrolledEvent{
+		Event: testF,
+	}
+
+	event.Event()
 }

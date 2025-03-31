@@ -357,7 +357,6 @@ func (e EventHandler) assetUpdate(priceMap map[uint]float64, ivsmLi *[]m.InvestS
 		e.ch <- fmt.Sprintf("[AssetEvent] RetrieveAssetList 시, 에러 발생. %s", err)
 		return
 	}
-	// priceMap := make(map[uint]float64) // assetId => price
 
 	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
 	for _, a := range assetList {
@@ -519,7 +518,7 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 		}
 
 		r := volatile[k] / (volatile[k] + stable[k])
-		if hasPortCache(k) && !(r > marketLevel.MaxVolatileAssetRate()) && !(r < marketLevel.MinVolatileAssetRate()) {
+		if hasPortCache(k) || (r > marketLevel.MinVolatileAssetRate() && r < marketLevel.MaxVolatileAssetRate()) { // 캐시가 있거나, 범주안에 있으면 스킵
 			continue
 		}
 		setPortCache(k)

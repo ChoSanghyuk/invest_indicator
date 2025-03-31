@@ -33,7 +33,7 @@ func (s *Scraper) KisToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(token.AccessToken)
+
 	s.kis.accessToken = token.AccessToken
 	s.kis.tokenExpired = token.Expired
 

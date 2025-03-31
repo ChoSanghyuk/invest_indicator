@@ -73,5 +73,5 @@ type EventStatusChanger interface {
 }
 
 type UserRetrierver interface {
-	User(email string) (*m.User, error)
+	User(userName string) (*m.User, error)
 }

@@ -41,11 +41,11 @@ func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
 	}, nil
 }
 
-func (t TeleBot) Run(ch chan string, port int) {
+func (t TeleBot) Run(ch chan string, port int, passkey string) {
 	t.SendMessage("LAUNCHED SUCCESSFULLY")
 
 	go func() {
-		t.communicate(ch, port)
+		t.communicate(ch, port, passkey)
 	}()
 
 	for true {
@@ -71,7 +71,7 @@ func (t TeleBot) SendMessage(msg string) {
 	t.bot.Send(tgbotapi.NewMessage(t.chatId, msg))
 }
 
-func (t TeleBot) communicate(ch chan string, port int) {
+func (t TeleBot) communicate(ch chan string, port int, passkey string) {
 
 	for update := range t.updates {
 		if update.Message != nil {
@@ -129,7 +129,7 @@ func (t TeleBot) communicate(ch chan string, port int) {
 				}
 				`
 			default:
-				rtn, err := httpsend(fmt.Sprintf("http://localhost:%d%s", port, txt))
+				rtn, err := httpsend(fmt.Sprintf("http://localhost:%d%s", port, txt), passkey)
 				if err != nil {
 					ch <- err.Error()
 				} else {
@@ -141,10 +141,12 @@ func (t TeleBot) communicate(ch chan string, port int) {
 	}
 }
 
-func httpsend(url string) (string, error) {
+func httpsend(url string, passkey string) (string, error) {
 
 	// url := "http://localhost:50001" + path
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set("Authorization", passkey)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	res, err := client.Do(req)

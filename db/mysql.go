@@ -486,10 +486,10 @@ func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 	return nil
 }
 
-func (s Storage) User(email string) (*m.User, error) {
+func (s Storage) User(userName string) (*m.User, error) {
 
 	var user m.User
-	result := s.db.Where("email", email).Last(&user)
+	result := s.db.Where("username", userName).Last(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -499,7 +499,7 @@ func (s Storage) User(email string) (*m.User, error) {
 
 func (s Storage) RetreiveEventIsActive(eventId uint) bool {
 	var event m.Event
-	result := s.db.Where("event_id", eventId).First(&event)
+	result := s.db.Where("id", eventId).First(&event)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			s.db.Create(&m.Event{ID: eventId, IsActive: true})
@@ -514,7 +514,7 @@ func (s Storage) RetreiveEventIsActive(eventId uint) bool {
 
 func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
 
-	result := s.db.Updates(m.Event{ID: eventId, IsActive: isActive})
+	result := s.db.Select("is_active").Updates(m.Event{ID: eventId, IsActive: isActive})
 	if result.Error != nil {
 		return result.Error
 	}

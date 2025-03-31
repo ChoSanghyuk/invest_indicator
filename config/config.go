@@ -18,7 +18,7 @@ var configByte []byte
 type Config struct {
 	App struct {
 		Port    int    `yaml:"port"`
-		Jwt     string `yaml:"jwt"`
+		JwtKey  string `yaml:"jwtkey"`
 		Passkey string `yaml:"passkey"`
 	} `yaml:"app"`
 	Api      map[string]apiConfig   `yaml:"api"`
@@ -61,7 +61,7 @@ func NewConfig() (*Config, error) {
 
 	util.Decode(&ConfigInfo.Telegram.ChatId)
 	util.Decode(&ConfigInfo.Telegram.Token)
-	util.Decode(&ConfigInfo.App.Jwt)
+	util.Decode(&ConfigInfo.App.JwtKey)
 	util.Decode(&ConfigInfo.App.Passkey)
 
 	return &ConfigInfo, nil

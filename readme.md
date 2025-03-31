@@ -222,7 +222,7 @@ EMAt = a*PRICEt + (1-a)EMAy
 
 초기값은 SMA값 사용 : :link:https://www.barchart.com/stocks/quotes/AAPL/technical-analysis#google_vignette
 
-
+:link: https://kr.investing.com/
 
 
 
@@ -405,7 +405,6 @@ https://generalcoder.tistory.com/29
 - 25.03.17
   - top price, ema 둘 중 하나라도 없으면 포트폴리오 추천 메시지에 포함 X
   - asset 등록 시, ema 자동 계산
-
 
 
 

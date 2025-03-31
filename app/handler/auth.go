@@ -46,7 +46,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return err
 	}
 
-	user, err := h.us.User(req.Id)
+	user, err := h.us.User(req.Username)
 	if err != nil {
 		return err
 	}

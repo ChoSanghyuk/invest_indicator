@@ -48,7 +48,7 @@ func main() {
 	eventHandler.Run()
 
 	go func() {
-		app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler) // todo. jwtToken key
+		app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler)
 	}()
 
 	teleBot.Run(ch, conf.App.Port, conf.App.Passkey) // todo. telegram login

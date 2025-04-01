@@ -374,7 +374,7 @@ func TestUpdateInvestSummary(t *testing.T) {
 }
 
 func TestRetrieveInitAmountofAsset(t *testing.T) {
-	rtn, err := stg.RetrieveInitAmountofAsset(1, 1)
+	rtn, err := stg.RetrieveInitAmountofAsset(1, 2)
 	if err != nil {
 		t.Error(err)
 	}

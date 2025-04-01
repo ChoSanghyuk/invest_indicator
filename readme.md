@@ -265,6 +265,8 @@ EMAt = a*PRICEt + (1-a)EMAy
 $ docker run -v /invest/db:/var/lib/mysql --name investDb -e MYSQL_ROOT_PASSWORD={password} -d -p 3306:3306 mysql --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 ```
 
+
+
 :bulb: root 계정은 기본값으로 localhost로부터의 연결만 가능
 
 - `{계정}`@`%` 생성 : `%`는 wildcard로 모든 ip에 대해 응답 가능 설정
@@ -280,7 +282,7 @@ $ docker run -v /invest/db:/var/lib/mysql --name investDb -e MYSQL_ROOT_PASSWORD
   ```
 
   
-  
+
 
 ### go 설정
 

@@ -317,7 +317,10 @@ func TestRetrieveInvestHist(t *testing.T) {
 		if err != nil {
 			t.Error(t)
 		}
-		t.Log(rtn)
+		for _, r := range rtn {
+			t.Log(r)
+		}
+
 	})
 
 	t.Run("날짜 지정", func(t *testing.T) {
@@ -373,10 +376,10 @@ func TestUpdateInvestSummary(t *testing.T) {
 	}
 }
 
-func TestRetrieveInitAmountofAsset(t *testing.T) {
-	rtn, err := stg.RetrieveInitAmountofAsset(1, 2)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("%+v", rtn)
-}
+// func TestRetrieveInitAmountofAsset(t *testing.T) {
+// 	rtn, err := stg.RetrieveInitAmountofAsset(1, 2)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+// 	t.Logf("%+v", rtn)
+// }

@@ -522,24 +522,24 @@ func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
 	return nil
 }
 
-func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {
+// func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {
 
-	var invests []m.Invest
+// 	var invests []m.Invest
 
-	result := s.db.Model(&m.Invest{}).
-		Where("fund_id", fundId).
-		Where("asset_id", assetId).
-		Find(&invests)
+// 	result := s.db.Model(&m.Invest{}).
+// 		Where("fund_id", fundId).
+// 		Where("asset_id", assetId).
+// 		Find(&invests)
 
-	if result.Error != nil {
-		return 0, result.Error
-	}
+// 	if result.Error != nil {
+// 		return 0, result.Error
+// 	}
 
-	rtn := 0.0
+// 	rtn := 0.0
 
-	for _, i := range invests {
-		rtn += i.Count * i.Price
-	}
+// 	for _, i := range invests {
+// 		rtn += i.Count * i.Price
+// 	}
 
-	return rtn, nil
-}
+// 	return rtn, nil
+// }

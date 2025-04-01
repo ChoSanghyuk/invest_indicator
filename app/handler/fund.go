@@ -119,13 +119,7 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 			fundAsset.AmountDollar = fmt.Sprintf("%.2f", iv.Sum)
 		}
 
-		if iv.Asset.Category != model.Won && iv.Asset.Category != model.Dollar {
-			init, err := h.i.RetrieveInitAmountofAsset(iv.FundID, iv.AssetID)
-			if err == nil {
-				fundAsset.ProfitRate = fmt.Sprintf("%.2f", 100*(iv.Sum-init)/init)
-			}
-		}
-
+		fundAsset.ProfitRate = h.profitRateOfAsset(&iv)
 		resp = append(resp, fundAsset)
 	}
 
@@ -211,4 +205,43 @@ func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(resp)
 
+}
+
+func (h *FundHandler) profitRateOfAsset(iv *model.InvestSummary) string {
+	if iv.Asset.Category == model.Won || iv.Asset.Category == model.Dollar {
+		return ""
+	}
+
+	invests, err := h.i.RetrieveInvestHist(iv.FundID, iv.AssetID, "", "")
+	if err != nil {
+		return ""
+	}
+
+	base := 0.0
+	sold := 0.0
+	for i := len(invests) - 1; i >= 0; i-- {
+		invest := invests[i]
+
+		if invest.Count < 0 {
+			sold += invest.Count * -1
+			continue
+		}
+
+		if sold > 0 {
+			if sold > invest.Count {
+				sold -= invest.Count
+			} else {
+				invest.Count -= sold
+				sold = 0
+			}
+		}
+
+		base += invest.Count * invest.Price
+	}
+
+	if base == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("%.2f", 100*(iv.Sum-base)/base)
 }

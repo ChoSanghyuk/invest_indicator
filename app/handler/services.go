@@ -49,7 +49,7 @@ type MarketSaver interface {
 
 type InvestRetriever interface {
 	RetrieveInvestHist(fundId uint, assetId uint, start string, end string) ([]m.Invest, error)
-	RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error)
+	// RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error)
 }
 
 type InvestSaver interface {

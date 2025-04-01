@@ -10,6 +10,7 @@ import (
 type FundHandler struct {
 	r FundRetriever
 	w FundWriter
+	i InvestRetriever
 	e ExchageRateGetter
 }
 
@@ -90,33 +91,36 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 id 조회 시 오류 발생. %w", err)
 	}
 
-	funds, err := h.r.RetreiveFundSummaryByFundId(uint(id))
+	invests, err := h.r.RetreiveFundSummaryByFundId(uint(id))
 	if err != nil {
 		return fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
 	}
 
-	resp := make([]fundAssetsResponse, 0, len(funds))
+	resp := make([]fundAssetsResponse, 0, len(invests))
 
-	for _, f := range funds {
-		if f.Count == 0 {
+	for _, iv := range invests {
+		if iv.Count == 0 {
 			continue
 		}
 
 		fundAsset := fundAssetsResponse{
-			Name:        f.Asset.Name,
-			ProfitRate:  "", // todo ProfitRate 계산 로직 추가
-			Division:    f.Asset.Category.String(),
-			Quantity:    fmt.Sprintf("%.2f", f.Count),
-			Price:       "",
-			PriceDollar: "",
-			IsStable:    f.Asset.Category.IsStable(),
+			Name: iv.Asset.Name,
+			// ProfitRate: "", // todo ProfitRate 계산 로직 추가
+			Division: iv.Asset.Category.String(),
+			Quantity: fmt.Sprintf("%.2f", iv.Count),
+			IsStable: iv.Asset.Category.IsStable(),
 		}
-		if f.Asset.Currency == model.KRW.String() {
-			fundAsset.Amount = fmt.Sprintf("%.2f", f.Sum)
-		} else {
-			fundAsset.Amount = fmt.Sprintf("%.2f", f.Sum*h.e.ExchageRate())
-			fundAsset.AmountDollar = fmt.Sprintf("%.2f", f.Sum)
 
+		if iv.Asset.Currency == model.KRW.String() {
+			fundAsset.Amount = fmt.Sprintf("%.2f", iv.Sum)
+		} else {
+			fundAsset.Amount = fmt.Sprintf("%.2f", iv.Sum*h.e.ExchageRate())
+			fundAsset.AmountDollar = fmt.Sprintf("%.2f", iv.Sum)
+		}
+
+		init, err := h.i.RetrieveInitAmountofAsset(iv.FundID, iv.AssetID)
+		if err == nil {
+			fundAsset.ProfitRate = fmt.Sprintf("%.2f", (iv.Sum-init)/init)
 		}
 
 		resp = append(resp, fundAsset)

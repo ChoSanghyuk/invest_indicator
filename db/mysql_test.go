@@ -372,3 +372,11 @@ func TestUpdateInvestSummary(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRetrieveInitAmountofAsset(t *testing.T) {
+	rtn, err := stg.RetrieveInitAmountofAsset(1, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("%+v", rtn)
+}

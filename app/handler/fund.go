@@ -18,6 +18,7 @@ func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageR
 	return &FundHandler{
 		r: r,
 		w: w,
+		i: i,
 		e: e,
 	}
 }

@@ -19,8 +19,9 @@ func TestFundHandler(t *testing.T) {
 
 	readerMock := &FundRetrieverMock{}
 	writerMock := &FundWriterMock{}
+	investMock := &InvestRetrieverMock{}
 	exGetterMock := &ExchageRateGetterMock{}
-	f := NewFundHandler(readerMock, writerMock, exGetterMock)
+	f := NewFundHandler(readerMock, writerMock, investMock, exGetterMock)
 	f.InitRoute(app)
 
 	go func() {

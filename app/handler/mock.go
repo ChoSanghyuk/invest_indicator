@@ -280,6 +280,10 @@ func (mock InvestRetrieverMock) RetrieveInvestHist(fundId uint, assetId uint, st
 	}, nil
 }
 
+func (mock InvestRetrieverMock) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {
+	return 0, nil
+}
+
 type InvestSaverMock struct {
 	err error
 }

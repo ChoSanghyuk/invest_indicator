@@ -14,7 +14,7 @@ type FundHandler struct {
 	e ExchageRateGetter
 }
 
-func NewFundHandler(r FundRetriever, w FundWriter, e ExchageRateGetter) *FundHandler {
+func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter) *FundHandler {
 	return &FundHandler{
 		r: r,
 		w: w,

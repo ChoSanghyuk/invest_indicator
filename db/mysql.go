@@ -527,7 +527,7 @@ func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error
 	var invests []m.Invest
 
 	result := s.db.Model(&m.Invest{}).
-		Where("fund_id", assetId).
+		Where("fund_id", fundId).
 		Where("asset_id", assetId).
 		Find(&invests)
 

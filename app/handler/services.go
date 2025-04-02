@@ -40,7 +40,7 @@ type PriceGetter interface {
 type MaketRetriever interface {
 	RetrieveMarketStatus(date string) (*m.Market, error)
 	RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error)
-	RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error)
+	RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex, error)
 }
 
 type MarketSaver interface {

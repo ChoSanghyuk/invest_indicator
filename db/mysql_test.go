@@ -274,7 +274,7 @@ func TestRetrieveMarketIndicator(t *testing.T) {
 	})
 
 	t.Run("일주일치", func(t *testing.T) {
-		rtn, err := stg.RetrieveMarketIndicatorWeek()
+		rtn, err := stg.RetrieveMarketIndicatorWeekDesc()
 		if err != nil {
 			t.Error(t)
 		}

@@ -117,11 +117,21 @@ type fundPortionResponse struct {
 	Volatile int `json:"volatile"`
 }
 
-type WeekMarketIndicators struct {
-	FearGreedWeek []uint    `json:"fear_greed"`
-	NasdaqWeek    []float64 `json:"nasdaq"`
-	Sp500Week     []float64 `json:"sp500"`
+type MarketIndexInner struct {
+	Value     string    `json:"value"`
+	Status    string    `json:"status"`
+	GraphData []float64 `json:"graph"`
 }
+
+type WeekMarketIndicators struct {
+	Indexes map[string]MarketIndexInner
+}
+
+// type WeekMarketIndicators struct {
+// 	FearGreedWeek []uint    `json:"fear_greed"`
+// 	NasdaqWeek    []float64 `json:"nasdaq"`
+// 	Sp500Week     []float64 `json:"sp500"`
+// }
 
 // type FearGreedIndexResponse struct {
 // 	Value      uint      `json:"value"`

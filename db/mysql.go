@@ -301,7 +301,7 @@ func (s Storage) RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliInde
 	return &dailyIdx, &cliIdx, nil
 }
 
-func (s Storage) RetrieveMarketIndicatorWeek() ([]m.DailyIndex, error) {
+func (s Storage) RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex, error) {
 
 	var indexes []m.DailyIndex
 

@@ -63,28 +63,74 @@ func (h *MarketHandler) MarketIndicator(c *fiber.Ctx) error {
 
 func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
 
-	weekIdx, err := h.r.RetrieveMarketIndicatorWeek()
+	weekIdx, err := h.r.RetrieveMarketIndicatorWeekDesc()
 	if err != nil {
 		return fmt.Errorf("RetrieveMarketIndicatorWeek 오류 발생. %w", err)
 	}
 
-	fg := make([]uint, 7)
-	nd := make([]float64, 7)
-	sp := make([]float64, 7)
+	l := len(weekIdx)
+	fgw := make([]float64, l)
+	ndw := make([]float64, l)
+	spw := make([]float64, l)
 
 	for i, idx := range weekIdx {
-		fg[6-i] = idx.FearGreedIndex
-		nd[6-i] = idx.NasDaq
-		sp[6-i] = idx.Sp500
+		fgw[l-(i+1)] = float64(idx.FearGreedIndex)
+		ndw[l-(i+1)] = idx.NasDaq
+		spw[l-(i+1)] = idx.Sp500
+	}
+
+	// fg
+	fg := MarketIndexInner{
+		Value:     fmt.Sprintf("%f", fgw[l-1]),
+		GraphData: fgw,
+	}
+	if fgw[l-1] > 50 {
+		fg.Status = "GREED"
+	} else {
+		fg.Status = "FEAR"
+	}
+
+	// nd
+	nd := MarketIndexInner{
+		Value:     fmt.Sprintf("%f", ndw[l-1]),
+		Status:    fmt.Sprintf("%.2f", 100*(ndw[l-1]-ndw[l-2])/ndw[l-1]) + "%",
+		GraphData: ndw,
+	}
+
+	// sp
+	sp := MarketIndexInner{
+		Value:     fmt.Sprintf("%f", spw[l-1]),
+		Status:    fmt.Sprintf("%.2f", 100*(spw[l-1]-spw[l-2])/spw[l-1]) + "%",
+		GraphData: spw,
 	}
 
 	return c.Status(fiber.StatusOK).
-		JSON(WeekMarketIndicators{
-			FearGreedWeek: fg,
-			NasdaqWeek:    nd,
-			Sp500Week:     sp,
+		JSON(map[string]MarketIndexInner{
+			"Fear & Greed Index": fg,
+			"NASDAQ":             nd,
+			"S&P 500":            sp,
 		})
 }
+
+/*
+	{
+	'Fear & Greed Index': {
+		'value': fearGreedWeek[6].toString(),
+		'status': fearGreedWeek[6] > 50? 'GREED' : 'FEAR',
+		'graph': fearGreedWeek
+	},
+	'NASDAQ' : {
+	'value': nasdaqWeek[6].toString(),
+	'status': (100 * ((nasdaqWeek[6]-nasdaqWeek[5]) / nasdaqWeek[6])).toStringAsFixed(2)+'%' ,
+	'graph': nasdaqWeek
+	},
+	'S&P 500' : {
+	'value': sp500Week[6].toString(),
+	'status': (100 * ((sp500Week[6]-sp500Week[5]) / sp500Week[6])).toStringAsFixed(2)+'%' ,
+	'graph': sp500Week
+	}
+};
+*/
 
 func (h *MarketHandler) ChangeMarketStatus(c *fiber.Ctx) error {
 

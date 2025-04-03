@@ -224,7 +224,7 @@ func (s *Scraper) CliIdx() (float64, error) {
 }
 
 func (s *Scraper) GoldPriceDollar() (float64, error) {
-	url := "https://www.goldapi.io/api/XAU/KRW" // USD
+	url := "https://www.goldapi.io/api/XAU/USD"
 
 	b64Key := s.t.ApiHeader("gold")["api-key"] // todo. confing Key transmitter 개설
 	key, _ := base64.StdEncoding.DecodeString(b64Key)

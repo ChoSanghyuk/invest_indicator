@@ -63,7 +63,7 @@ func (e EventHandler) Run() {
 	for _, enrolled := range e.enrolledEvents {
 		c.AddFunc(enrolled.schedule, func() {
 			if enrolled.IsActive {
-				enrolled.Event()
+				enrolled.Event(false)
 			}
 		})
 	}
@@ -98,7 +98,7 @@ func (e EventHandler) Launch(id uint) error {
 	for _, ev := range e.enrolledEvents {
 		if ev.Id == id {
 			if ev.IsActive {
-				ev.Event()
+				ev.Event(true)
 				return nil
 			} else {
 				return fmt.Errorf("비활성화 이벤트 Id: %d", id)
@@ -155,8 +155,8 @@ func (e EventHandler) CoinEvent() {
 
 	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
 	for _, a := range assetList {
+		msg, err := e.buySellMsg(a.ID, priceMap)
 		if a.Category == m.DomesticCoin { // 코인에 대해서만 수행
-			msg, err := e.buySellMsg(a.ID, priceMap)
 			if err != nil {
 				e.ch <- fmt.Sprintf("[AssetEvent] buySellMsg시, 에러 발생. %s", err)
 				return
@@ -169,7 +169,7 @@ func (e EventHandler) CoinEvent() {
 	}
 }
 
-func (e EventHandler) AssetRecommendEvent() {
+func (e EventHandler) AssetRecommendEvent(isManual bool) {
 
 	pm := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)
@@ -214,7 +214,6 @@ func (e EventHandler) AssetRecommendEvent() {
 	}
 
 	e.ch <- sb.String()
-
 }
 
 func (e EventHandler) EmaUpdateEvent() {
@@ -633,7 +632,7 @@ hp - 최고가
 매도매수지수 낮을수록 매수 우선순위
 */
 
-func (e EventHandler) goldKimchiPremium() {
+func (e EventHandler) goldKimchiPremium(isManual bool) {
 
 	goldAsset, err := e.stg.RetrieveAsset(4)
 	if err != nil {
@@ -674,11 +673,13 @@ func (e EventHandler) goldKimchiPremium() {
 
 	kPrm := 100 * (kp - cp) / cp // k-premium
 
-	if kPrm > 15 {
-		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 15프로 초과. 현재 프리미엄: %.2f", kPrm)
-	} else if kPrm > 10 {
-		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
+	if kPrm > 10 {
+		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
+	} else if kPrm > 5 {
+		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm)
 	}
 
-	e.ch <- fmt.Sprintf("[임시] 현재 프리미엄: %.2f", kPrm)
+	if isManual {
+		e.ch <- fmt.Sprintf("[알림] 현재 프리미엄: %.2f", kPrm)
+	}
 }

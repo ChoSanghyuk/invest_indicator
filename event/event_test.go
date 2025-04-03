@@ -142,7 +142,7 @@ func TestEventportfolioMsg(t *testing.T) {
 }
 
 func TestEnrolledEventLaunch(t *testing.T) {
-	testF := func() {
+	testF := func(bool) {
 		fmt.Println("HELLO EVENT")
 	}
 
@@ -150,5 +150,5 @@ func TestEnrolledEventLaunch(t *testing.T) {
 		Event: testF,
 	}
 
-	event.Event()
+	event.Event(true)
 }

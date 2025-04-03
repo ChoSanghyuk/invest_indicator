@@ -10,7 +10,7 @@ import (
 
 func TestGoldApi(t *testing.T) {
 
-	url := "https://www.goldapi.io/api/XAU/KRW"
+	url := "https://www.goldapi.io/api/XAU/USD"
 	key := os.Getenv("gold_key")
 	head := map[string]string{
 		"x-access-token": key,

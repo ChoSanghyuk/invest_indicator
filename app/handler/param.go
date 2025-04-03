@@ -123,34 +123,6 @@ type MarketIndexInner struct {
 	GraphData []float64 `json:"graph"`
 }
 
-type WeekMarketIndicators struct {
-	Indexes map[string]MarketIndexInner
-}
-
-// type WeekMarketIndicators struct {
-// 	FearGreedWeek []uint    `json:"fear_greed"`
-// 	NasdaqWeek    []float64 `json:"nasdaq"`
-// 	Sp500Week     []float64 `json:"sp500"`
-// }
-
-// type FearGreedIndexResponse struct {
-// 	Value      uint      `json:"value"`
-// 	Status     string    `json:"status"`
-// 	WeeklyData []float64 `json:"weeklyData"`
-// }
-
-// type NasdaqResponse struct {
-// 	Value      float64   `json:"value"`
-// 	Change     float64   `json:"change"`
-// 	WeeklyData []float64 `json:"weeklyData"`
-// }
-
-// type SP500Response struct {
-// 	Value      float64   `json:"value"`
-// 	Change     float64   `json:"change"`
-// 	WeeklyData []float64 `json:"weeklyData"`
-// }
-
 type EventResponse struct {
 	Id          uint   `json:"id"`
 	Title       string `json:"title"`

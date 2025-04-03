@@ -632,3 +632,53 @@ hp - 최고가
 매도매수지수 클수록 매도 우선 순위
 매도매수지수 낮을수록 매수 우선순위
 */
+
+func (e EventHandler) goldKimchiPremium() {
+
+	goldAsset, err := e.stg.RetrieveAsset(4)
+	if err != nil {
+		e.ch <- err.Error() //todo log
+	}
+
+	if goldAsset == nil || goldAsset.Category != m.Gold {
+
+		assets, err := e.stg.RetrieveAssetList()
+		if err != nil {
+			e.ch <- err.Error() //todo log
+			return
+		}
+
+		for _, a := range assets {
+			if a.Category == m.Gold {
+				goldAsset = &a
+				continue
+			}
+		}
+	}
+
+	kp, err := e.rt.PresentPrice(goldAsset.Category, goldAsset.Code) // kimchi price
+	if err != nil {
+		//todo log
+		e.ch <- fmt.Sprintf("금 한국 가격 조회 시 오류. %s", err.Error())
+		return
+	}
+
+	dp, err := e.rt.GoldPriceDollar() // dollar price
+	if err != nil {
+		//todo log
+		e.ch <- fmt.Sprintf("금 달러 가격 조회 시 오류. %s", err.Error())
+		return
+	}
+	ex := e.dp.ExchageRate() // exchange rate
+	cp := dp * ex            // converted price
+
+	kPrm := 100 * (kp - cp) / cp // k-premium
+
+	if kPrm > 15 {
+		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 15프로 초과. 현재 프리미엄: %.2f", kPrm)
+	} else if kPrm > 10 {
+		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
+	}
+
+	e.ch <- fmt.Sprintf("[임시] 현재 프리미엄: %.2f", kPrm)
+}

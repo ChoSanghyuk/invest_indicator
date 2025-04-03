@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	m "invest/model"
@@ -220,6 +221,26 @@ func (s *Scraper) Sp500() (float64, error) {
 func (s *Scraper) CliIdx() (float64, error) {
 	// need Chromedp
 	return 0, nil
+}
+
+func (s *Scraper) GoldPriceDollar() (float64, error) {
+	url := "https://www.goldapi.io/api/XAU/KRW" // USD
+
+	b64Key := s.t.ApiHeader("gold")["api-key"] // todo. confing Key transmitter 개설
+	key, _ := base64.StdEncoding.DecodeString(b64Key)
+	head := map[string]string{
+		"x-access-token": string(key),
+	}
+
+	var rtn map[string]interface{}
+	err := sendRequest(url, http.MethodGet, head, nil, &rtn)
+	if err != nil {
+		return 0, err
+	}
+
+	p := rtn["price_gram_24k"].(float64)
+
+	return p, nil
 }
 
 // todo. refactor scraper 변경 필요

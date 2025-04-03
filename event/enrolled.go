@@ -19,6 +19,13 @@ func (e *EventHandler) registerEvents() {
 			schedule:    "0 0 8 * * 1-5",
 			Event:       e.AssetRecommendEvent,
 		},
+		{
+			Id:          2,
+			Title:       "금 김치 프리미엄",
+			Description: "금 가격의 한국 시세와 달러 시세의 차이 확인.\n10% 초과 시 알림. 15% 초과 시, 매도 권자 알림.\n09:00~16:00 10분 주기",
+			schedule:    "0 */10 9-16 * * 1-5",
+			Event:       e.goldKimchiPremium,
+		},
 	}
 
 	for _, event := range e.enrolledEvents {

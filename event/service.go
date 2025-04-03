@@ -29,6 +29,7 @@ type Storage interface {
 type RtPoller interface {
 	PresentPrice(category m.Category, code string) (float64, error)
 	RealEstateStatus() (string, error)
+	GoldPriceDollar() (float64, error)
 }
 
 type DailyPoller interface {

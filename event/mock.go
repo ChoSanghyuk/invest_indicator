@@ -115,6 +115,10 @@ func (m RtPollerMock) RealEstateStatus() (string, error) {
 	return m.estate, nil
 }
 
+func (m RtPollerMock) GoldPriceDollar() (float64, error) {
+	return 0, nil
+}
+
 type DailyPollerMock struct {
 	err error
 }

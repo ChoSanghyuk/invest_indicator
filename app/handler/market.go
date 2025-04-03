@@ -81,7 +81,7 @@ func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
 
 	// fg
 	fg := MarketIndexInner{
-		Value:     fmt.Sprintf("%f", fgw[l-1]),
+		Value:     fmt.Sprintf("%.0f", fgw[l-1]),
 		GraphData: fgw,
 	}
 	if fgw[l-1] > 50 {
@@ -92,14 +92,14 @@ func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
 
 	// nd
 	nd := MarketIndexInner{
-		Value:     fmt.Sprintf("%f", ndw[l-1]),
+		Value:     fmt.Sprintf("%.2f", ndw[l-1]),
 		Status:    fmt.Sprintf("%.2f", 100*(ndw[l-1]-ndw[l-2])/ndw[l-1]) + "%",
 		GraphData: ndw,
 	}
 
 	// sp
 	sp := MarketIndexInner{
-		Value:     fmt.Sprintf("%f", spw[l-1]),
+		Value:     fmt.Sprintf("%.2f", spw[l-1]),
 		Status:    fmt.Sprintf("%.2f", 100*(spw[l-1]-spw[l-2])/spw[l-1]) + "%",
 		GraphData: spw,
 	}

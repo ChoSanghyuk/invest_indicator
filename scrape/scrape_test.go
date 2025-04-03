@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,20 +10,22 @@ import (
 
 func TestGoldApi(t *testing.T) {
 
-	// info, _ := config.NewConfig()
-
-	url := ""
-	head := map[string]string{}
+	url := "https://www.goldapi.io/api/XAU/KRW"
+	key := os.Getenv("gold_key")
+	head := map[string]string{
+		"x-access-token": key,
+	}
 
 	var rtn map[string]interface{}
-	err := sendRequest(url, http.MethodGet, head, nil, rtn)
+	err := sendRequest(url, http.MethodGet, head, nil, &rtn)
 	if err != nil {
 		t.Error(err)
 	}
-
 	assert.NotEmpty(t, rtn)
-
 	t.Log(rtn)
+
+	p := rtn["price_gram_24k"].(float64)
+	t.Log(p)
 }
 
 func TestBitcoinApi(t *testing.T) {

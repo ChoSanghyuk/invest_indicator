@@ -89,14 +89,23 @@ func (h *InvestHandler) SaveInvest(c *fiber.Ctx) error {
 		return fmt.Errorf("RetrieveAsset 오류 발생. %w", err)
 	}
 
-	if assetId == h.cm[model.USD] { // 달러 충전
-		exRate := h.e.ExchageRate()
-		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*exRate*param.Count, 1)
-	} else if asset.Currency == model.KRW.String() && asset.Name != model.KRW.String() { // 원화 자산
-		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*param.Price*param.Count, 1)
-	} else if asset.Currency == model.USD.String() && asset.Name != model.USD.String() { // 달러 자산
+	// if assetId == h.cm[model.USD] { // 달러 충전
+	// 	exRate := h.e.ExchageRate()
+	// 	err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*exRate*param.Count, 1)
+	// } else
+	// if asset.Currency == model.KRW.String() && asset.Name != model.KRW.String() { // 원화 자산 및 달러 충전
+	// 	err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*param.Price*param.Count, 1)
+	// } else if asset.Currency == model.USD.String() && asset.Name != model.USD.String() { // 달러 자산
+	// 	err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*param.Count, 1)
+	// }
+
+	// 원화 잔고 업데이트
+	if asset.Currency == model.USD.String() && asset.Name != model.USD.String() { // 달러 자산
 		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*param.Count, 1)
+	} else {
+		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*param.Price*param.Count, 1) // 원화 자산 및 달러 충전
 	}
+
 	if err != nil {
 		return fmt.Errorf("UpdateInvestSummaryCount 오류 발생. %w", err)
 	}

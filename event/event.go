@@ -677,6 +677,8 @@ func (e EventHandler) goldKimchiPremium(isManual bool) {
 		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
 	} else if kPrm > 5 {
 		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm)
+	} else if kPrm < -2 {
+		e.ch <- fmt.Sprintf("[매수] 금 역 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", kPrm)
 	}
 
 	if isManual {

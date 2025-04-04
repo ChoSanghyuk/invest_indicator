@@ -162,7 +162,7 @@ func (s *Scraper) RealEstateStatus() (string, error) {
 func (s *Scraper) ExchageRate() float64 {
 
 	//  sendTime.Before(time.Now().Add(-2*time.Hour))
-	if s.exchange.Rate != 0 && s.exchange.Date.Before(time.Now().Add(-3*time.Hour)) {
+	if s.exchange.Rate != 0 && s.exchange.Date.Before(time.Now().Add(-3*time.Hour)) { // 캐시 3시간 유지
 		return s.exchange.Rate
 	}
 

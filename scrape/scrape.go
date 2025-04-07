@@ -1,7 +1,6 @@
 package scrape
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	m "invest/model"
@@ -29,9 +28,7 @@ type Scraper struct {
 }
 
 type transmitter interface {
-	ApiBaseUrl(target string) string
-	ApiHeader(target string) map[string]string
-	CrawlUrlCasspath(target string) (url string, cssPath string)
+	Key(target string) string
 }
 
 func NewScraper(t transmitter, options ...func(*Scraper)) *Scraper {
@@ -154,10 +151,15 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 	return 0, errors.New("미분류된 종목")
 }
 
+const realEstateUrl = "https://www.ep.go.kr/www/contents.do?key=3763"
+const realEstateCss = "#contents > table:nth-child(8) > tbody > tr:nth-child(2) > td:nth-child(6)"
+
 func (s *Scraper) RealEstateStatus() (string, error) {
-	url, cssPath := s.t.CrawlUrlCasspath("estate")
-	return s.crawl(url, cssPath)
+	return s.crawl(realEstateUrl, realEstateCss)
 }
+
+const exRateUrl = "https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=%ED%99%98%EC%9C%A8"
+const exRateCssPath = "#main_pack > section.sc_new.cs_nexchangerate > div:nth-child(1) > div.exchange_bx._exchange_rate_calculator > div > div.inner > div:nth-child(3) > div.num > div > span"
 
 func (s *Scraper) ExchageRate() float64 {
 
@@ -166,9 +168,7 @@ func (s *Scraper) ExchageRate() float64 {
 		return s.exchange.Rate
 	}
 
-	url, cssPath := s.t.CrawlUrlCasspath("exchangeRate")
-
-	rtn, err := s.crawl(url, cssPath)
+	rtn, err := s.crawl(exRateUrl, exRateCssPath)
 	if err != nil {
 		log.Error(err)
 	}
@@ -185,10 +185,17 @@ func (s *Scraper) ExchageRate() float64 {
 	return exrate
 }
 
+const (
+	fearGreedUrl = "https://fear-and-greed-index.p.rapidapi.com/v1/fgi"
+)
+
 func (s *Scraper) FearGreedIndex() (uint, error) {
 
-	url := s.t.ApiBaseUrl("fearGreed")
-	header := s.t.ApiHeader("fearGreed")
+	key := s.t.Key("rapidapi")
+	header := map[string]string{
+		"x-rapidapi-host": "fear-and-greed-index.p.rapidapi.com",
+		"x-rapidapi-key":  key,
+	}
 
 	type fearGreed struct {
 		Fgi struct {
@@ -200,7 +207,7 @@ func (s *Scraper) FearGreedIndex() (uint, error) {
 	}
 	var rtn fearGreed
 
-	err := sendRequest(url, http.MethodGet, header, nil, &rtn)
+	err := sendRequest(fearGreedUrl, http.MethodGet, header, nil, &rtn)
 	if err != nil {
 		return 0, nil
 	}
@@ -224,17 +231,20 @@ func (s *Scraper) CliIdx() (float64, error) {
 	return 0, nil
 }
 
-func (s *Scraper) GoldPriceDollar() (float64, error) {
-	url := "https://www.goldapi.io/api/XAU/USD"
+const (
+	goldPriceDollarUrl = "https://www.goldapi.io/api/XAU/USD"
+)
 
-	b64Key := s.t.ApiHeader("gold")["api-key"] // todo. confing Key transmitter 개설
-	key, _ := base64.StdEncoding.DecodeString(b64Key)
+func (s *Scraper) GoldPriceDollar() (float64, error) {
+
+	key := s.t.Key("goldapi")
+
 	head := map[string]string{
-		"x-access-token": string(key),
+		"x-access-token": key,
 	}
 
 	var rtn map[string]interface{}
-	err := sendRequest(url, http.MethodGet, head, nil, &rtn)
+	err := sendRequest(goldPriceDollarUrl, http.MethodGet, head, nil, &rtn)
 	if err != nil {
 		return 0, err
 	}

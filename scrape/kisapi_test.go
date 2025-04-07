@@ -9,14 +9,8 @@ import (
 type transmitterMock struct {
 }
 
-func (t transmitterMock) ApiBaseUrl(target string) string {
+func (t transmitterMock) Key(target string) string {
 	return ""
-}
-func (t transmitterMock) ApiHeader(target string) map[string]string {
-	return nil
-}
-func (t transmitterMock) CrawlUrlCasspath(target string) (url string, cssPath string) {
-	return "", ""
 }
 
 func TestKis(t *testing.T) {

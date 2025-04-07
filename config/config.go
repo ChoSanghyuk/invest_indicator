@@ -21,15 +21,13 @@ type Config struct {
 		JwtKey  string `yaml:"jwtkey"`
 		Passkey string `yaml:"passkey"`
 	} `yaml:"app"`
-	Api      map[string]apiConfig   `yaml:"api"`
-	Crawl    map[string]crawlConfig `yaml:"crawl"`
+	ApiKey   map[string]string `yaml:"api-key"`
 	Telegram struct {
 		ChatId string `yaml:"chatId"`
 		Token  string `yaml:"token"`
 	} `yaml:"telegram"`
-	Key struct {
-		KIS map[string]*string `yaml:"KIS"`
-	} `yaml:"key"`
+
+	KIS map[string]*string `yaml:"KIS"`
 
 	Db struct {
 		User     string `yaml:"user"`
@@ -45,11 +43,6 @@ type apiConfig struct {
 	Header map[string]string `yaml:"header"`
 }
 
-type crawlConfig struct {
-	Url     string `yaml:"url"`
-	CssPath string `yaml:"css-path"`
-}
-
 func NewConfig() (*Config, error) {
 
 	var ConfigInfo Config = Config{}
@@ -59,10 +52,7 @@ func NewConfig() (*Config, error) {
 		return nil, err
 	}
 
-	util.Decode(&ConfigInfo.Telegram.ChatId)
-	util.Decode(&ConfigInfo.Telegram.Token)
-	util.Decode(&ConfigInfo.App.JwtKey)
-	util.Decode(&ConfigInfo.App.Passkey)
+	decode(&ConfigInfo)
 
 	return &ConfigInfo, nil
 }
@@ -81,12 +71,12 @@ func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
 }
 
 func (c Config) InitKIS(key string) (err error) {
-	*c.Key.KIS["appkey"], err = util.Decrypt([]byte(key), *c.Key.KIS["appkey"])
+	*c.KIS["appkey"], err = util.Decrypt([]byte(key), *c.KIS["appkey"])
 	if err != nil {
 		return err
 	}
 
-	*c.Key.KIS["appsecret"], err = util.Decrypt([]byte(key), *c.Key.KIS["appsecret"])
+	*c.KIS["appsecret"], err = util.Decrypt([]byte(key), *c.KIS["appsecret"])
 	if err != nil {
 		return err
 	}
@@ -106,12 +96,12 @@ func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 
 	for appKey == "" || appSecret == "" || err != nil {
 		key := keyPasser.InitKey(err)
-		appKey, err = util.Decrypt([]byte(key), *c.Key.KIS["appkey"])
+		appKey, err = util.Decrypt([]byte(key), *c.KIS["appkey"])
 		if err != nil {
 			continue
 		}
 
-		appSecret, err = util.Decrypt([]byte(key), *c.Key.KIS["appsecret"])
+		appSecret, err = util.Decrypt([]byte(key), *c.KIS["appsecret"])
 	}
 
 	return &scrape.KisConfig{
@@ -124,14 +114,13 @@ func (c Config) Dsn() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)
 }
 
-func (c Config) ApiBaseUrl(target string) string {
-	return c.Api[target].Url
+func (c Config) Key(target string) string {
+	return c.ApiKey[target]
 }
 
-func (c Config) ApiHeader(target string) map[string]string {
-	return c.Api[target].Header
-}
-
-func (c Config) CrawlUrlCasspath(target string) (url string, cssPath string) {
-	return c.Crawl[target].Url, c.Crawl[target].CssPath
+func decode(conf *Config) {
+	util.Decode(&conf.Telegram.ChatId)
+	util.Decode(&conf.Telegram.Token)
+	util.Decode(&conf.App.JwtKey)
+	util.Decode(&conf.App.Passkey)
 }

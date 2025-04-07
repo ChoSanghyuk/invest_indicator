@@ -1,18 +1,15 @@
 package scrape
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 )
 
+const upbitUrlForm = "https://api.upbit.com/v1/candles/days?market=%s&count=1"
+
 func (s Scraper) upbitApi(sym string) (float64, float64, error) {
 
-	url := s.t.ApiBaseUrl("upbit")
-	if url == "" {
-		return 0, 0, errors.New("URL 미존재")
-	}
-	url = fmt.Sprintf(url, sym)
+	url := fmt.Sprintf(upbitUrlForm, sym)
 
 	var rtn []map[string]any
 	err := sendRequest(url, http.MethodGet, nil, nil, &rtn)

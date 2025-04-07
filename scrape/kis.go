@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+const (
+	kisTokenUrl                 = "https://openapi.koreainvestment.com:9443/oauth2/tokenP"
+	kisDomesticStockUrlForm     = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=%s"
+	kisForeignPriceUrlForm      = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price?AUTH=&EXCD=%s&SYMB=%s"
+	kisIndexUrlForm             = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/inquire-daily-chartprice?FID_COND_MRKT_DIV_CODE=N&FID_INPUT_ISCD=%s&FID_INPUT_DATE_1=%s&FID_INPUT_DATE_2=%s&FID_PERIOD_DIV_CODE=D"
+	kisDomesticEtfPriceUrlForm  = "https://openapi.koreainvestment.com:9443/uapi/etfetn/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=%s"
+	kisForeignDailyPriceUrlForm = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/dailyprice?EXCD=%s&SYMB=%s&GUBN=0&BYMD=%s&MODP=0"
+)
+
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
@@ -22,10 +31,8 @@ func (s *Scraper) KisToken() (string, error) {
 		return s.kis.accessToken, nil
 	}
 
-	url := "https://openapi.koreainvestment.com:9443/oauth2/tokenP"
-
 	var token TokenResponse
-	err := sendRequest(url, http.MethodPost, nil, map[string]string{
+	err := sendRequest(kisTokenUrl, http.MethodPost, nil, map[string]string{
 		"grant_type": "client_credentials",
 		"appkey":     s.kis.appKey,
 		"appsecret":  s.kis.appSecret,
@@ -57,12 +64,7 @@ type StockPrice struct {
 
 func (s *Scraper) kisDomesticStockPrice(code string) (StockPrice, error) {
 
-	url := s.t.ApiBaseUrl("KIS")
-	if url == "" {
-		return StockPrice{}, errors.New("URL 미존재")
-	}
-
-	url = fmt.Sprintf(url, code)
+	url := fmt.Sprintf(kisDomesticStockUrlForm, code)
 
 	token, err := s.KisToken()
 	if err != nil {
@@ -123,19 +125,14 @@ func (s *Scraper) kisDomesticStockPrice(code string) (StockPrice, error) {
 }
 
 // 해외주식 현재체결가[v1_해외주식-009]
-// https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/price?AUTH=""&EXCD=%s&SYMB=%s
 func (s *Scraper) kisForeignPrice(code string) (pp, cp float64, err error) {
 
-	url := s.t.ApiBaseUrl("KIS_FOR")
-	if url == "" {
-		return 0, 0, errors.New("URL 미존재")
-	}
 	/*
 		NYS : 뉴욕
 		NAS : 나스닥
 	*/
 	parmas := strings.Split(code, "-")
-	url = fmt.Sprintf(url, parmas[0], parmas[1]) // Nas
+	url := fmt.Sprintf(kisForeignPriceUrlForm, parmas[0], parmas[1]) // Nas
 
 	token, err := s.KisToken()
 	if err != nil {
@@ -234,13 +231,10 @@ const (
 	Sp500  = "SPX"
 )
 
-// todo. transmitter 필요한가??
 func (s *Scraper) kisIndex(idx Index) (float64, error) { // todo 반복 코드 모듈화
 
 	today := time.Now().Format("20060102")
-	// COMP
-	base := "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/inquire-daily-chartprice?FID_COND_MRKT_DIV_CODE=N&FID_INPUT_ISCD=%s&FID_INPUT_DATE_1=%s&FID_INPUT_DATE_2=%s&FID_PERIOD_DIV_CODE=D"
-	url := fmt.Sprintf(base, idx, today, today) // 여기 url에서 sp500 파람 전달
+	url := fmt.Sprintf(kisIndexUrlForm, idx, today, today)
 
 	token, err := s.KisToken()
 	if err != nil {
@@ -285,11 +279,7 @@ func (s *Scraper) kisIndex(idx Index) (float64, error) { // todo 반복 코드 �
 
 func (s *Scraper) kisDomesticEtfPrice(code string) (StockPrice, error) {
 
-	url := s.t.ApiBaseUrl("KIS_ETF")
-	if url == "" {
-		return StockPrice{}, errors.New("URL 미존재")
-	}
-	url = fmt.Sprintf(url, code)
+	url := fmt.Sprintf(kisDomesticEtfPriceUrlForm, code)
 
 	token, err := s.KisToken()
 	if err != nil {
@@ -362,10 +352,9 @@ func (s *Scraper) kisForeignAvg(code string) (ap float64, n int, err error) {
 	day := time.Now().Format("20060102")
 
 loop:
-	url := "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/dailyprice?EXCD=%s&SYMB=%s&GUBN=0&BYMD=%s&MODP=0"
 
 	parmas := strings.Split(code, "-")
-	url = fmt.Sprintf(url, parmas[0], parmas[1], day) // Nas
+	url := fmt.Sprintf(kisForeignDailyPriceUrlForm, parmas[0], parmas[1], day) // Nas
 
 	token, err := s.KisToken()
 	if err != nil {

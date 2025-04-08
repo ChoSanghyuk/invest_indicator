@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	m "invest/model"
+	"math"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -94,7 +95,9 @@ func (h *AssetHandler) AddAsset(c *fiber.Ctx) error {
 	if top == 0 || bottom == 0 {
 		_top, _bottom, err := h.p.TopBottomPrice(category, param.Code)
 		if err != nil {
-			return fmt.Errorf("TopBottomPrice 시 오류 발생. %w", err)
+			// return fmt.Errorf("TopBottomPrice 시 오류 발생. %w", err) todo.log
+			top = 0
+			bottom = math.MaxInt32
 		}
 		if top == 0 {
 			top = _top

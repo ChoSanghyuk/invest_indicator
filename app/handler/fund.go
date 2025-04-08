@@ -198,9 +198,9 @@ func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
 
 	resp := fundPortionResponse{}
 	if stableAmount != 0 || volatileAmount != 0 {
-		stablePortion := int((stableAmount / (stableAmount + volatileAmount)) * 100)
-		resp.Stable = stablePortion
-		resp.Volatile = 100 - stablePortion
+		volatilePortion := int((volatileAmount / (stableAmount + volatileAmount)) * 100)
+		resp.Volatile = volatilePortion
+		resp.Stable = 100 - volatilePortion
 	}
 
 	return c.Status(fiber.StatusOK).JSON(resp)

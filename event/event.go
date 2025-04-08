@@ -6,11 +6,13 @@ import (
 	m "invest/model"
 	"log"
 	"math"
+	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/robfig/cron"
+	"github.com/rs/zerolog"
 )
 
 type EventHandler struct {
@@ -19,6 +21,7 @@ type EventHandler struct {
 	dp             DailyPoller
 	ch             chan<- string
 	enrolledEvents []*EnrolledEvent
+	lg             zerolog.Logger
 }
 
 type EventHandlerConfig struct {
@@ -35,6 +38,7 @@ func NewEventHandler(conf EventHandlerConfig) *EventHandler {
 		rt:  conf.RtPoller,
 		dp:  conf.DailyPoller,
 		ch:  conf.Channel,
+		lg:  zerolog.New(os.Stdout).With().Str("Module", "EventHandler").Timestamp().Logger(),
 	}
 	eh.registerEvents()
 	return eh
@@ -52,6 +56,7 @@ const (
 const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
 
 func (e EventHandler) Run() {
+	e.lg.Info().Msg("Starting EventHandler Run")
 	c := cron.New()
 	c.AddFunc(AssetSpec, e.AssetEvent)
 	c.AddFunc(CoinSpec, e.CoinEvent)
@@ -69,6 +74,7 @@ func (e EventHandler) Run() {
 	}
 
 	c.Start()
+	e.lg.Info().Msg("EventHandler Run completed")
 }
 
 func (e EventHandler) Events() []*EnrolledEvent {
@@ -76,6 +82,7 @@ func (e EventHandler) Events() []*EnrolledEvent {
 }
 
 func (e EventHandler) StatusChange(id uint, active bool) error {
+	e.lg.Info().Uint("id", id).Bool("active", active).Msg("Changing event status")
 
 	done := false
 	for _, ev := range e.enrolledEvents {
@@ -90,15 +97,18 @@ func (e EventHandler) StatusChange(id uint, active bool) error {
 		return fmt.Errorf("미존재 Id : %d", id)
 	}
 
+	e.lg.Info().Uint("id", id).Bool("active", active).Msg("Event status changed successfully")
 	return nil
 }
 
 func (e EventHandler) Launch(id uint) error {
+	e.lg.Info().Uint("id", id).Msg("Launching event")
 
 	for _, ev := range e.enrolledEvents {
 		if ev.Id == id {
 			if ev.IsActive {
 				ev.Event(true)
+				e.lg.Info().Uint("id", id).Msg("Event launched successfully")
 				return nil
 			} else {
 				return fmt.Errorf("비활성화 이벤트 Id: %d", id)
@@ -127,6 +137,7 @@ func (e EventHandler) Launch(id uint) error {
 */
 
 func (e EventHandler) AssetEvent() {
+	e.lg.Info().Msg("Starting AssetEvent")
 
 	priceMap := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)
@@ -141,9 +152,11 @@ func (e EventHandler) AssetEvent() {
 		e.ch <- msg
 	}
 
+	e.lg.Info().Msg("AssetEvent completed")
 }
 
 func (e EventHandler) CoinEvent() {
+	e.lg.Info().Msg("Starting CoinEvent")
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
@@ -167,9 +180,11 @@ func (e EventHandler) CoinEvent() {
 		}
 
 	}
+	e.lg.Info().Msg("CoinEvent completed")
 }
 
 func (e EventHandler) AssetRecommendEvent(isManual bool) {
+	e.lg.Info().Bool("isManual", isManual).Msg("Starting AssetRecommendEvent")
 
 	pm := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)
@@ -214,9 +229,11 @@ func (e EventHandler) AssetRecommendEvent(isManual bool) {
 	}
 
 	e.ch <- sb.String()
+	e.lg.Info().Msg("AssetRecommendEvent completed")
 }
 
 func (e EventHandler) EmaUpdateEvent() {
+	e.lg.Info().Msg("Starting EmaUpdateEvent")
 
 	// 등록 자산 목록 조회
 	assetList, err := e.stg.RetrieveAssetList()
@@ -259,6 +276,7 @@ func (e EventHandler) EmaUpdateEvent() {
 			continue
 		}
 	}
+	e.lg.Info().Msg("EmaUpdateEvent completed")
 }
 
 /*
@@ -291,6 +309,7 @@ func CalEma(oldEma *m.EmaHist, cp float64) (newEma *m.EmaHist) {
 }
 
 func (e EventHandler) RealEstateEvent() {
+	e.lg.Info().Msg("Starting RealEstateEvent")
 
 	rtn, err := e.rt.RealEstateStatus()
 	if err != nil {
@@ -303,9 +322,11 @@ func (e EventHandler) RealEstateEvent() {
 	} else {
 		log.Printf("연신내 변동 사항 없음. 현재 단계: %s", rtn)
 	}
+	e.lg.Info().Str("status", rtn).Msg("RealEstateEvent completed")
 }
 
 func (e EventHandler) IndexEvent() {
+	e.lg.Info().Msg("Starting IndexEvent")
 
 	// 1. 공포 탐욕 지수
 	fgi, err := e.dp.FearGreedIndex()
@@ -347,6 +368,11 @@ func (e EventHandler) IndexEvent() {
 	} else {
 		e.ch <- fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq)
 	}
+	e.lg.Info().
+		Uint("fgi", fgi).
+		Float64("nasdaq", nasdaq).
+		Float64("sp500", sp500).
+		Msg("IndexEvent completed")
 }
 
 /**********************************************************************************************************************
@@ -494,6 +520,10 @@ func (e EventHandler) portfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]float64
 	for i := range len(ivsmLi) {
 
 		ivsm := &ivsmLi[i]
+
+		if ivsmLi[i].Fund.IsExcept {
+			continue
+		}
 
 		keySet[ivsm.FundID] = true
 

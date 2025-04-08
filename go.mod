@@ -12,6 +12,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/robfig/cron v1.2.0
+	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.24.0
 	gopkg.in/yaml.v3 v3.0.1

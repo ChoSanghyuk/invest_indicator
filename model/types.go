@@ -8,8 +8,9 @@ import (
 )
 
 type Fund struct {
-	ID   uint
-	Name string
+	ID       uint
+	Name     string
+	IsExcept bool
 }
 
 type Asset struct {

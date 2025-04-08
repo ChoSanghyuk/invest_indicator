@@ -38,11 +38,6 @@ type Config struct {
 	} `yaml:"db"`
 }
 
-type apiConfig struct {
-	Url    string            `yaml:"url"`
-	Header map[string]string `yaml:"header"`
-}
-
 func NewConfig() (*Config, error) {
 
 	var ConfigInfo Config = Config{}

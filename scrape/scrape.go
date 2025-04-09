@@ -248,6 +248,10 @@ func (s *Scraper) GoldPriceDollar() (float64, error) {
 		return 0, err
 	}
 
+	if rtn["error"] != nil {
+		return 0, fmt.Errorf("%s", rtn["error"])
+	}
+
 	p := rtn["price_gram_24k"].(float64)
 
 	return p, nil

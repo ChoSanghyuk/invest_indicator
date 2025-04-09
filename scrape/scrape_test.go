@@ -10,14 +10,14 @@ import (
 
 func TestGoldApi(t *testing.T) {
 
-	url := "https://www.goldapi.io/api/XAU/USD"
+	_ = "https://www.goldapi.io/api/XAU/USD"
 	key := os.Getenv("gold_key")
 	head := map[string]string{
 		"x-access-token": key,
 	}
 
 	var rtn map[string]interface{}
-	err := sendRequest(url, http.MethodGet, head, nil, &rtn)
+	err := sendRequest(goldPriceDollarUrl, http.MethodGet, head, nil, &rtn)
 	if err != nil {
 		t.Error(err)
 	}

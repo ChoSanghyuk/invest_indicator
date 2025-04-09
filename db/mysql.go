@@ -465,17 +465,6 @@ func (s Storage) RetreiveLatestEma(assetId uint) (*m.EmaHist, error) {
 
 func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 
-	// ema, err := s.RetreiveLatestEma(assetId)
-	// RecentEma := ema.Ema
-	// if err != nil {
-	// 	RecentEma = price
-	// }
-	// var NewEma = m.EmaHist{
-	// 	AssetID: assetId,
-	// 	Date:    datatypes.Date(time.Now()),
-	// 	Ema:     CalEma(price, RecentEma),
-	// }
-
 	newEma.Date = datatypes.Date(time.Now())
 
 	result := s.db.Create(newEma)

@@ -118,7 +118,7 @@ func (s *Scraper) AvgPrice(category m.Category, code string) (float64, uint, err
 	case m.DomesticStock:
 		stock, err := s.kisDomesticStockPrice(code)
 		return stock.ap, 200, err
-	case m.DomesticETF:
+	case m.ForeignStock:
 		ap, n, err := s.kisForeignAvg(code)
 		return ap, uint(n), err
 	}

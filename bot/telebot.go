@@ -86,7 +86,8 @@ func (t TeleBot) communicate(ch chan string, port int, passkey string) {
 				조회 API 목록
 				/funds
 				/funds/{id}/hist
-				/funds/:{id}/assets
+				/funds/{id}/assets
+				/funds/{id}/portion
 				/assets
 				/assets/list
 				/assets/{id}

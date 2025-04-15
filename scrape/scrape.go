@@ -5,12 +5,14 @@ import (
 	"fmt"
 	m "invest/model"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/rs/zerolog"
 )
 
 type Scraper struct {
@@ -24,7 +26,8 @@ type Scraper struct {
 		accessToken  string
 		tokenExpired string
 	}
-	t transmitter
+	lg zerolog.Logger
+	t  transmitter
 }
 
 type transmitter interface {
@@ -33,9 +36,9 @@ type transmitter interface {
 
 func NewScraper(t transmitter, options ...func(*Scraper)) *Scraper {
 	s := &Scraper{
-		t: t,
+		t:  t,
+		lg: zerolog.New(os.Stdout).With().Str("Module", "Scraper").Timestamp().Logger(),
 	}
-
 	for _, opt := range options {
 		opt(s)
 	}
@@ -75,7 +78,7 @@ func WithToken(token string) func(*Scraper) {
 */
 
 func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, err error) {
-
+	s.lg.Info().Msgf("Starting PresentPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.Won:
 		return 1, nil
@@ -95,10 +98,12 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 		return pp, err
 	}
 
+	s.lg.Error().Err(err).Msg("Error in PresentPrice")
 	return 0, errors.New("미분류된 종목")
 }
 
 func (s *Scraper) TopBottomPrice(category m.Category, code string) (hp float64, lp float64, err error) {
+	s.lg.Info().Msgf("Starting TopBottomPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.DomesticStock:
 		stock, err := s.kisDomesticStockPrice(code)
@@ -110,10 +115,12 @@ func (s *Scraper) TopBottomPrice(category m.Category, code string) (hp float64, 
 		// 	return 0, 0, nil
 	}
 
+	s.lg.Error().Err(err).Msg("Error in TopBottomPrice")
 	return 0, 0, errors.New("최고/최저 호출 API 미존재")
 }
 
 func (s *Scraper) AvgPrice(category m.Category, code string) (float64, uint, error) {
+	s.lg.Info().Msgf("Starting AvgPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.DomesticStock:
 		stock, err := s.kisDomesticStockPrice(code)
@@ -123,11 +130,12 @@ func (s *Scraper) AvgPrice(category m.Category, code string) (float64, uint, err
 		return ap, uint(n), err
 	}
 
+	// s.lg.Error().Err(err).Msg("Error in AvgPrice")
 	return 0, 0, errors.New("평균 가격 호출 API 미존재")
 }
 
 func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, err error) {
-
+	s.lg.Info().Msgf("Starting ClosingPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.Won:
 		return 1, nil
@@ -147,6 +155,7 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 		return cp, err
 	}
 
+	s.lg.Error().Err(err).Msg("Error in ClosingPrice")
 	return 0, errors.New("미분류된 종목")
 }
 
@@ -154,6 +163,7 @@ const realEstateUrl = "https://www.ep.go.kr/www/contents.do?key=3763"
 const realEstateCss = "#contents > table:nth-child(8) > tbody > tr:nth-child(2) > td:nth-child(6)"
 
 func (s *Scraper) RealEstateStatus() (string, error) {
+	s.lg.Info().Msg("Starting RealEstateStatus")
 	return s.crawl(realEstateUrl, realEstateCss)
 }
 
@@ -161,8 +171,7 @@ const exRateUrl = "https://search.naver.com/search.naver?where=nexearch&sm=top_h
 const exRateCssPath = "#main_pack > section.sc_new.cs_nexchangerate > div:nth-child(1) > div.exchange_bx._exchange_rate_calculator > div > div.inner > div:nth-child(3) > div.num > div > span"
 
 func (s *Scraper) ExchageRate() float64 {
-
-	//  sendTime.Before(time.Now().Add(-2*time.Hour))
+	s.lg.Info().Msg("Starting ExchageRate")
 	if s.exchange.Rate != 0 && !s.exchange.Date.Before(time.Now().Add(-3*time.Hour)) {
 		return s.exchange.Rate
 	}
@@ -189,6 +198,7 @@ const (
 )
 
 func (s *Scraper) FearGreedIndex() (uint, error) {
+	s.lg.Info().Msg("Starting FearGreedIndex")
 
 	key := s.t.Key("rapidapi")
 	header := map[string]string{
@@ -215,17 +225,18 @@ func (s *Scraper) FearGreedIndex() (uint, error) {
 }
 
 func (s *Scraper) Nasdaq() (float64, error) {
-
+	s.lg.Info().Msg("Starting Nasdaq")
 	return s.kisIndex(Nasdaq)
 }
 
 func (s *Scraper) Sp500() (float64, error) {
-
+	s.lg.Info().Msg("Starting Sp500")
 	return s.kisIndex(Sp500)
 }
 
 // todo. 현재로는 크롤링/API 못 찾음
 func (s *Scraper) CliIdx() (float64, error) {
+	s.lg.Info().Msg("Starting CliIdx")
 	// need Chromedp
 	return 0, nil
 }
@@ -235,6 +246,7 @@ const (
 )
 
 func (s *Scraper) GoldPriceDollar() (float64, error) {
+	s.lg.Info().Msg("Starting GoldPriceDollar")
 
 	key := s.t.Key("goldapi")
 
@@ -259,6 +271,7 @@ func (s *Scraper) GoldPriceDollar() (float64, error) {
 
 // todo. refactor scraper 변경 필요
 func (s *Scraper) Buy(category m.Category, code string) error {
+	s.lg.Info().Msgf("Starting Buy with category: %v, code: %s", category, code)
 
 	switch category {
 	case m.ForeignStock, m.ForeignETF:

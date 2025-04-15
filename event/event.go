@@ -53,7 +53,7 @@ const (
 	EmaSpec    = "0 0 7 * * 2-6" // 화~토
 )
 
-const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.2f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.1f)\n\n"
+const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.3f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.2f)\n\n"
 
 func (e EventHandler) Run() {
 	e.lg.Info().Msg("Starting EventHandler Run")

@@ -8,6 +8,8 @@ import (
 	"invest/db"
 	"invest/event"
 	"invest/scrape"
+
+	"github.com/rs/zerolog"
 )
 
 func main() {
@@ -17,6 +19,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	level, err := conf.LogLevel()
+	if err != nil {
+		panic(err)
+	}
+	zerolog.SetGlobalLevel(level) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인
 
 	ch := make(chan string)
 

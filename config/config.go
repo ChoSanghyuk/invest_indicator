@@ -9,6 +9,7 @@ import (
 	"invest/util"
 	"strconv"
 
+	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,6 +17,7 @@ import (
 var configByte []byte
 
 type Config struct {
+	Log string `yaml:"log"`
 	App struct {
 		Port    int    `yaml:"port"`
 		JwtKey  string `yaml:"jwtkey"`
@@ -50,6 +52,16 @@ func NewConfig() (*Config, error) {
 	decode(&ConfigInfo)
 
 	return &ConfigInfo, nil
+}
+
+func (c Config) LogLevel() (zerolog.Level, error) {
+
+	level, err := zerolog.ParseLevel(c.Log)
+	if err != nil {
+		return -1, err
+	}
+
+	return level, nil
 }
 
 func (c Config) BotConfig() (*bot.TeleBotConfig, error) {

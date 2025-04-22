@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	m "invest/model"
+	"os"
 	"time"
 
+	"github.com/rs/zerolog"
 	"gorm.io/datatypes"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -13,6 +15,7 @@ import (
 
 type Storage struct {
 	db *gorm.DB
+	lg zerolog.Logger
 }
 
 func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
@@ -30,6 +33,7 @@ func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
 
 	return &Storage{
 		db: db,
+		lg: zerolog.New(os.Stdout).With().Str("Module", "Storage").Timestamp().Logger(),
 	}, nil
 }
 
@@ -43,6 +47,7 @@ func (s Storage) RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error) 
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d funds summary ordered by fund ID", len(fundsSummary))
 	return fundsSummary, nil
 
 }
@@ -57,6 +62,7 @@ func (s Storage) RetreiveFundSummaryByFundId(id uint) ([]m.InvestSummary, error)
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d fund summaries for fund ID %d", len(fundsSummary), id)
 	return fundsSummary, nil
 
 }
@@ -71,6 +77,7 @@ func (s Storage) RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d fund summaries for asset ID %d", len(fundsSummary), id)
 	return fundsSummary, nil
 
 }
@@ -87,8 +94,10 @@ func (s Storage) RetreiveFundInvestsById(id uint) ([]m.Invest, error) {
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d invests for fund ID %d", len(invets), id)
 	return invets, nil
 }
+
 func (s Storage) RetrieveFundInvestsByIdAndRange(fundID uint, startDate, endDate string) ([]m.Invest, error) {
 	var invests []m.Invest
 
@@ -111,6 +120,8 @@ func (s Storage) RetrieveFundInvestsByIdAndRange(fundID uint, startDate, endDate
 		Preload("Asset").
 		Find(&invests).
 		Error
+
+	s.lg.Info().Msgf("Retrieved %d invests for fund ID %d between %s and %s", len(invests), fundID, startDate, endDate)
 	return invests, err
 }
 
@@ -135,6 +146,7 @@ func (s Storage) SaveFund(name string) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Saved fund with name %s", name)
 	return nil
 }
 
@@ -146,6 +158,8 @@ func (s Storage) RetrieveAssetList() ([]m.Asset, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	s.lg.Info().Msgf("Retrieved %d assets", len(assets))
 	return assets, nil
 }
 
@@ -156,6 +170,8 @@ func (s Storage) RetrieveTotalAssets() ([]m.Asset, error) {
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	s.lg.Info().Msgf("Retrieved total of %d assets", len(assets))
 	return assets, nil
 }
 
@@ -168,6 +184,7 @@ func (s Storage) RetrieveAsset(id uint) (*m.Asset, error) {
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved asset with ID %d", id)
 	return &asset, nil
 }
 
@@ -180,6 +197,7 @@ func (s Storage) RetrieveAssetHist(id uint) ([]m.Invest, error) {
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d invests for asset ID %d", len(invests), id)
 	return invests, nil
 }
 
@@ -188,9 +206,11 @@ func (s Storage) RetrieveAssetIdByName(name string) uint {
 
 	result := s.db.Model(&m.Asset{}).Where("name", name).Select("id").Find(&asset)
 	if result.Error != nil || result.RowsAffected == 0 {
+		s.lg.Info().Msgf("No asset found with name %s", name)
 		return 0
 	}
 
+	s.lg.Info().Msgf("Retrieved asset ID %d for name %s", asset.ID, name)
 	return asset.ID
 }
 
@@ -199,9 +219,11 @@ func (s Storage) RetrieveAssetIdByCode(code string) uint {
 
 	result := s.db.Model(&m.Asset{}).Where("code", code).Select("id").Find(&asset)
 	if result.Error != nil || result.RowsAffected == 0 { // memo. RowsAffected selete된 갯수 파악 가능
+		s.lg.Info().Msgf("No asset found with code %s", code)
 		return 0
 	}
 
+	s.lg.Info().Msgf("Retrieved asset ID %d for code %s", asset.ID, code)
 	return asset.ID
 }
 
@@ -225,6 +247,7 @@ func (s Storage) SaveAssetInfo(asset m.Asset) (uint, error) {
 		return 0, result.Error
 	}
 
+	s.lg.Info().Msgf("Saved asset with ID %d", asset.ID)
 	return asset.ID, nil
 }
 
@@ -237,6 +260,7 @@ func (s Storage) UpdateAssetInfo(asset m.Asset) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Updated asset with ID %d", asset.ID)
 	return nil
 }
 
@@ -248,6 +272,7 @@ func (s Storage) DeleteAssetInfo(id uint) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Deleted asset with ID %d", id)
 	return nil
 }
 
@@ -267,6 +292,7 @@ func (s Storage) RetrieveMarketStatus(date string) (*m.Market, error) {
 		}
 	}
 
+	s.lg.Info().Msgf("Retrieved market status for date %s", date)
 	return &market, nil
 }
 
@@ -298,6 +324,7 @@ func (s Storage) RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliInde
 		// }
 	}
 
+	s.lg.Info().Msgf("Retrieved market indicator for date %s", date)
 	return &dailyIdx, &cliIdx, nil
 }
 
@@ -315,6 +342,8 @@ func (s Storage) RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex, error) {
 		Limit(7).
 		Find(&indexes).
 		Error
+
+	s.lg.Info().Msgf("Retrieved %d market indicators for the last week", len(indexes))
 	return indexes, err
 
 }
@@ -331,6 +360,7 @@ func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, s
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Saved daily market indicator")
 	return nil
 }
 
@@ -344,6 +374,7 @@ func (s Storage) SaveMarketStatus(status uint) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Saved market status")
 	return nil
 }
 
@@ -371,6 +402,7 @@ func (s Storage) RetrieveInvestHist(fundId uint, assetId uint, start string, end
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved %d invest history records", len(investHist))
 	return investHist, nil
 }
 
@@ -386,6 +418,7 @@ func (s Storage) SaveInvest(fundId uint, assetId uint, price float64, count floa
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Saved invest record for fund ID %d and asset ID %d", fundId, assetId)
 	return nil
 }
 
@@ -400,6 +433,7 @@ func (s Storage) RetrieveInvestSummaryByFundIdAssetId(fundId uint, assetId uint)
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved invest summary for fund ID %d and asset ID %d", fundId, assetId)
 	return &investSummary, nil
 }
 
@@ -432,6 +466,7 @@ func (s Storage) UpdateInvestSummary(fundId uint, assetId uint, change float64, 
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Updated invest summary for fund ID %d and asset ID %d", fundId, assetId)
 	return nil
 }
 
@@ -448,6 +483,7 @@ func (s Storage) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) 
 	}
 
 	s.db.Model(&investSummary).Update("sum", sum)
+	s.lg.Info().Msgf("Updated invest summary sum for fund ID %d and asset ID %d", fundId, assetId)
 	return nil
 }
 
@@ -460,6 +496,7 @@ func (s Storage) RetreiveLatestEma(assetId uint) (*m.EmaHist, error) {
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved latest EMA for asset ID %d", assetId)
 	return &ema, nil
 }
 
@@ -472,6 +509,7 @@ func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Saved EMA history for asset ID %d", newEma.AssetID)
 	return nil
 }
 
@@ -483,6 +521,7 @@ func (s Storage) User(userName string) (*m.User, error) {
 		return nil, result.Error
 	}
 
+	s.lg.Info().Msgf("Retrieved user with username %s", userName)
 	return &user, nil
 }
 
@@ -492,12 +531,15 @@ func (s Storage) RetreiveEventIsActive(eventId uint) bool {
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			s.db.Create(&m.Event{ID: eventId, IsActive: true})
+			s.lg.Info().Msgf("Created new event with ID %d and set as active", eventId)
 			return true
 		} else {
+			s.lg.Info().Msgf("Failed to retrieve event with ID %d", eventId)
 			return false
 		}
 	}
 
+	s.lg.Info().Msgf("Retrieved event with ID %d, active status: %t", eventId, event.IsActive)
 	return event.IsActive
 }
 
@@ -508,6 +550,7 @@ func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
 		return result.Error
 	}
 
+	s.lg.Info().Msgf("Updated event with ID %d to active status: %t", eventId, isActive)
 	return nil
 }
 

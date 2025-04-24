@@ -1,22 +1,70 @@
 package event
 
+import "github.com/robfig/cron"
+
+const (
+	AssetSpec  = "0 */15 9-23 * * 1-5"
+	CoinSpec   = "0 */15 8-23 * * 0,6"
+	EstateSpec = "0 */15 9-17 * * 1-5"
+	DailySpec  = "0 0 7 * * 1-5"
+	// IndexSpec  = "0 0 7 * * 1-5"
+	// EmaSpec    = "0 0 7 * * 2-6" // 화 - 토
+)
+
+const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.3f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.2f)\n\n"
+
+func (e EventHandler) Run() {
+	e.lg.Info().Msg("Starting EventHandler Run")
+	c := cron.New()
+	c.AddFunc(AssetSpec, e.AssetEvent)
+	c.AddFunc(CoinSpec, e.CoinEvent)
+	// c.AddFunc(IndexSpec, e.IndexEvent)
+	// c.AddFunc(EmaSpec, e.EmaUpdateEvent)
+	c.AddFunc(DailySpec, func() {
+		e.IndexEvent()
+		e.EmaUpdateEvent()
+		e.AssetRecommendEvent(false)
+	})
+	// c.AddFunc(EstateSpec, e.RealEstateEvent)
+
+	for _, enrolled := range e.enrolledEvents {
+		if enrolled.schedule == "" {
+			continue
+		}
+		c.AddFunc(enrolled.schedule, func() {
+			if enrolled.IsActive {
+				enrolled.Event(false)
+			}
+		})
+	}
+
+	c.Start()
+	e.lg.Info().Msg("EventHandler Run completed")
+}
+
 type EnrolledEvent struct {
 	Id          uint
 	Title       string
 	Description string
 	IsActive    bool
 	schedule    string
-	Event       func(bool)
+	Event       func(WayOfLaunch)
 }
 
-// todo. 얘네를 언제 실행하고,어떤 주기로 실행할지
+type WayOfLaunch bool
+
+const (
+	Manual WayOfLaunch = true
+	Auto   WayOfLaunch = false
+)
+
 func (e *EventHandler) registerEvents() {
 	e.enrolledEvents = []*EnrolledEvent{
 		{
 			Id:          1,
 			Title:       "매수 Asset 추천",
 			Description: "우선 매수 대상 Asset으로 정렬 후 반환\n평일 오전 8시 수행",
-			schedule:    "0 0 8 * * 1-5",
+			schedule:    "", // "0 0 7 * * 1-5",
 			Event:       e.AssetRecommendEvent,
 		},
 		// {

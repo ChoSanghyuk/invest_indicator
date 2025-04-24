@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron"
 	"github.com/rs/zerolog"
 )
 
@@ -42,39 +41,6 @@ func NewEventHandler(conf EventHandlerConfig) *EventHandler {
 	}
 	eh.registerEvents()
 	return eh
-}
-
-const (
-	AssetSpec = "0 */15 9-23 * * 1-5"
-	// RcmdSpec   = "0 0 8 * * 1-5"
-	CoinSpec   = "0 */15 8-23 * * 0,6"
-	EstateSpec = "0 */15 9-17 * * 1-5"
-	IndexSpec  = "0 0 8 * * 1-5"
-	EmaSpec    = "0 0 7 * * 2-6" // 화~토
-)
-
-const portfolioMsgForm string = "자금 %d 변동 자산 비중 %s.\n  변동 자산 비율 : %.3f.\n  (%.2f/%.2f)\n  현재 시장 단계 : %s(%.2f)\n\n"
-
-func (e EventHandler) Run() {
-	e.lg.Info().Msg("Starting EventHandler Run")
-	c := cron.New()
-	c.AddFunc(AssetSpec, e.AssetEvent)
-	c.AddFunc(CoinSpec, e.CoinEvent)
-	c.AddFunc(IndexSpec, e.IndexEvent)
-	c.AddFunc(EmaSpec, e.EmaUpdateEvent)
-	// c.AddFunc(RcmdSpec, e.AssetRecommendEvent)
-	// c.AddFunc(EstateSpec, e.RealEstateEvent)
-
-	for _, enrolled := range e.enrolledEvents {
-		c.AddFunc(enrolled.schedule, func() {
-			if enrolled.IsActive {
-				enrolled.Event(false)
-			}
-		})
-	}
-
-	c.Start()
-	e.lg.Info().Msg("EventHandler Run completed")
 }
 
 func (e EventHandler) Events() []*EnrolledEvent {
@@ -185,8 +151,8 @@ func (e EventHandler) CoinEvent() {
 	e.lg.Info().Msg("CoinEvent completed")
 }
 
-func (e EventHandler) AssetRecommendEvent(isManual bool) {
-	e.lg.Info().Bool("isManual", isManual).Msg("Starting AssetRecommendEvent")
+func (e EventHandler) AssetRecommendEvent(isManual WayOfLaunch) {
+	e.lg.Info().Msgf("Starting AssetRecommendEvent. isManual : %t", isManual)
 
 	pm := make(map[uint]float64)
 	ivsmLi := make([]m.InvestSummary, 0)

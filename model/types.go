@@ -10,7 +10,7 @@ import (
 type Fund struct {
 	ID       uint
 	Name     string
-	IsExcept bool
+	IsExcept bool `gorm:"column:is_except;default:false"` // column mapping
 }
 
 type Asset struct {

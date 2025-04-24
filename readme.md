@@ -410,9 +410,9 @@ https://generalcoder.tistory.com/29
   - asset 등록 시, ema 자동 계산
 
 
+
+
 .
-
-
 
 
 

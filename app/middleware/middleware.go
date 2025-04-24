@@ -8,6 +8,7 @@ import (
 func SetupMiddleware(router fiber.Router) {
 
 	router.Use(errorHandle)
+	router.Use(logRequest)
 }
 
 func errorHandle(c *fiber.Ctx) error {
@@ -18,4 +19,10 @@ func errorHandle(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 	return nil
+}
+
+func logRequest(c *fiber.Ctx) error {
+	log.Info().Str("endpoint", c.Path()).Msg("Request endpoint")
+	log.Info().Str("body", string(c.Body())).Msg("Request body")
+	return c.Next()
 }

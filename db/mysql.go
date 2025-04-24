@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	m "invest/model"
+	"log"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Storage struct {
@@ -24,9 +26,21 @@ func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
 		return nil, err
 	}
 
+	// Use a compatible writer for GORM's logger
+	gormLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			LogLevel:      logger.Info, // Log level
+			Colorful:      false,       // Disable color
+		},
+	)
+
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		Conn: sqlDB,
-	}), opts...) //&gorm.Config{}
+	}), &gorm.Config{
+		Logger: gormLogger,
+	})
 	if err != nil {
 		return nil, err
 	}

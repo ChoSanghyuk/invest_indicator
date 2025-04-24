@@ -77,10 +77,6 @@ func (h *InvestHandler) SaveInvest(c *fiber.Ctx) error {
 		return fmt.Errorf("SaveInvest 오류 발생. %w", err)
 	}
 
-	// 투자 요약 갱신
-	if assetId == h.cm[model.USD] {
-		param.Price = 1
-	}
 	err = h.w.UpdateInvestSummary(param.FundId, assetId, param.Count, param.Price)
 	if err != nil {
 		return fmt.Errorf("UpdateInvestSummaryCount 오류 발생. %w", err)

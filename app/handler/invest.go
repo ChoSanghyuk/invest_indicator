@@ -29,9 +29,9 @@ func NewInvestHandler(r AssetRetriever, w InvestSaver, e ExchageRateGetter) *Inv
 	}
 
 	for _, a := range li {
-		if a.Name == model.KRW.String() {
+		if a.Category == model.Won {
 			cm[model.KRW] = a.ID
-		} else if a.Name == model.USD.String() {
+		} else if a.Category == model.Dollar {
 			cm[model.USD] = a.ID
 		}
 	}
@@ -102,7 +102,7 @@ func (h *InvestHandler) SaveInvest(c *fiber.Ctx) error {
 	if assetId == h.cm[model.KRW] {
 		// pass
 	} else if asset.Currency == model.USD.String() && assetId != h.cm[model.USD] { // 달러 자산
-		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*param.Count, 1)
+		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*h.e.ExchageRate()*param.Count, 1)
 	} else {
 		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*param.Price*param.Count, 1) // 원화 자산 및 달러 충전
 	}

@@ -6,73 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kr/pretty"
 	"gorm.io/datatypes"
 )
 
 /***************************** Asset ***********************************/
-type AssetRetrieverMock struct {
-	err error
-}
-
-func (mock AssetRetrieverMock) RetrieveAssetList() ([]m.Asset, error) {
-	fmt.Println("RetrieveAssetList Called")
-
-	if mock.err != nil {
-		return nil, mock.err
-	}
-	return []m.Asset{
-		{
-			ID:   1,
-			Name: "비트코인",
-		},
-		{
-			ID:   2,
-			Name: "TigerS&P500",
-		},
-	}, nil
-}
-func (mock AssetRetrieverMock) RetrieveAsset(id uint) (*m.Asset, error) {
-	fmt.Println("RetrieveAsset Called")
-
-	if mock.err != nil {
-		return nil, mock.err
-	}
-	return &m.Asset{
-		ID:        1,
-		Name:      "bitcoin",
-		Code:      "BTS",
-		Category:  m.ForeignStock,
-		Currency:  "USD",
-		Top:       9800,
-		Bottom:    6800,
-		SellPrice: 8800,
-		BuyPrice:  7800,
-	}, nil
-}
-
-func (mock AssetRetrieverMock) RetrieveAssetHist(id uint) ([]m.Invest, error) {
-	fmt.Println("RetrieveAssetHist Called")
-
-	if mock.err != nil {
-		return nil, mock.err
-	}
-	return []m.Invest{
-		{
-			ID:      1,
-			FundID:  3,
-			AssetID: 1,
-			Price:   7800,
-			Count:   5,
-		},
-	}, nil
-}
-
-func (mock AssetRetrieverMock) RetrieveAssetIdByName(name string) uint {
-	return 1
-}
-func (mock AssetRetrieverMock) RetrieveAssetIdByCode(code string) uint {
-	return 1
-}
 
 type AssetInfoSaverMock struct {
 	err error
@@ -199,15 +137,6 @@ func (mock FundWriterMock) SaveFund(name string) error {
 	return nil
 }
 
-type ExchageRateGetterMock struct {
-}
-
-func (mock ExchageRateGetterMock) ExchageRate() float64 {
-	fmt.Println("SaveFund Called")
-
-	return 1334.3
-}
-
 /***************************** Market ***********************************/
 type MaketRetrieverMock struct {
 	err error
@@ -284,24 +213,154 @@ func (mock InvestRetrieverMock) RetrieveInitAmountofAsset(fundId, assetId uint) 
 	return 0, nil
 }
 
-type InvestSaverMock struct {
-	err error
+/***************************** 작업 완료 ***********************************/
+type AssetRetrieverMock struct {
+	assets []m.Asset
+	hist   []m.Invest
+	err    error
 }
 
-func (mock InvestSaverMock) SaveInvest(fundId uint, assetId uint, price float64, count float64) error {
-	fmt.Println("SaveInvest Called")
+func NewADefaultssetRetrieverMock(assets ...m.Asset) *AssetRetrieverMock {
+	mock := &AssetRetrieverMock{
+		assets: []m.Asset{
+			{ID: 1, Name: "KRW", Category: m.Won, Currency: "WON", Top: 0, Bottom: 0, SellPrice: 0, BuyPrice: 0},
+			{ID: 2, Name: "USD", Category: m.Dollar, Currency: "WON", Top: 0, Bottom: 0, SellPrice: 0, BuyPrice: 0},
+			{ID: 3, Name: "삼성전자", Category: m.DomesticStock, Currency: "WON", Top: 9800, Bottom: 6800, SellPrice: 8800, BuyPrice: 7800},
+			{ID: 4, Name: "애플", Category: m.ForeignStock, Currency: "USD", Top: 9800, Bottom: 6800, SellPrice: 8800, BuyPrice: 7800},
+		}}
+	mock.assets = append(mock.assets, assets...)
+	return mock
+}
 
+func (mock AssetRetrieverMock) RetrieveAssetList() ([]m.Asset, error) {
+	fmt.Println("RetrieveAssetList Called")
+
+	if mock.err != nil {
+		return nil, mock.err
+	}
+	return mock.assets, nil
+}
+func (mock AssetRetrieverMock) RetrieveAsset(id uint) (*m.Asset, error) {
+
+	if mock.err != nil {
+		return nil, mock.err
+	}
+	for _, a := range mock.assets {
+		if a.ID == id {
+			return &a, nil
+		}
+	}
+	return nil, fmt.Errorf("asset not found")
+}
+
+func (mock AssetRetrieverMock) RetrieveAssetHist(id uint) ([]m.Invest, error) {
+	fmt.Println("RetrieveAssetHist Called")
+
+	if mock.err != nil {
+		return nil, mock.err
+	}
+	return mock.hist, nil
+}
+
+func (mock AssetRetrieverMock) RetrieveAssetIdByName(name string) uint {
+	for _, a := range mock.assets {
+		if a.Name == name {
+			return a.ID
+		}
+	}
+	return 0
+}
+func (mock AssetRetrieverMock) RetrieveAssetIdByCode(code string) uint {
+	for _, a := range mock.assets {
+		if a.Code == code {
+			return a.ID
+		}
+	}
+	return 0
+}
+
+type ExchageRateGetterMock struct {
+	exchangeRate float64
+}
+
+func NewExchageRateGetterMock(exchangeRate float64) *ExchageRateGetterMock {
+	return &ExchageRateGetterMock{exchangeRate: exchangeRate}
+}
+
+func (mock ExchageRateGetterMock) ExchageRate() float64 {
+
+	return mock.exchangeRate
+}
+
+type InvestSaverMock struct {
+	initAmount float64
+	invests    []m.Invest
+	summaries  []m.InvestSummary
+	err        error
+}
+
+func NewInvestSaverMock(initAmount float64) *InvestSaverMock {
+	return &InvestSaverMock{
+		initAmount: initAmount,
+		invests: []m.Invest{
+			{ID: 1, FundID: 1, AssetID: 1, Price: 1, Count: initAmount},
+		},
+		summaries: []m.InvestSummary{
+			{ID: 1, FundID: 1, AssetID: 1, Sum: initAmount, Count: initAmount},
+		},
+	}
+}
+
+func (mock *InvestSaverMock) reset() {
+	mock.invests = []m.Invest{
+		{ID: 1, FundID: 1, AssetID: 1, Price: 1, Count: mock.initAmount},
+	}
+	mock.summaries = []m.InvestSummary{
+		{ID: 1, FundID: 1, AssetID: 1, Sum: mock.initAmount, Count: mock.initAmount},
+	}
+}
+
+func (mock *InvestSaverMock) prettyPrint() {
+
+	pretty.Println(mock.invests)
+	pretty.Println(mock.summaries)
+}
+
+func (mock *InvestSaverMock) SaveInvest(fundId uint, assetId uint, price float64, count float64) error {
 	if mock.err != nil {
 		return mock.err
 	}
+	mock.invests = append(mock.invests, m.Invest{
+		FundID:  fundId,
+		AssetID: assetId,
+		Price:   price,
+		Count:   count,
+	})
 	return nil
 }
 
-func (mock InvestSaverMock) UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error {
-	fmt.Println("UpdateInvestSummaryCount Called")
-
+func (mock *InvestSaverMock) UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error {
 	if mock.err != nil {
 		return mock.err
+	}
+
+	isExist := false
+	for i, s := range mock.summaries {
+		if s.FundID == fundId && s.AssetID == assetId {
+			mock.summaries[i].Count += change
+			mock.summaries[i].Sum += change * price
+			isExist = true
+			break
+		}
+	}
+
+	if !isExist {
+		mock.summaries = append(mock.summaries, m.InvestSummary{
+			FundID:  fundId,
+			AssetID: assetId,
+			Count:   change,
+			Sum:     change * price,
+		})
 	}
 	return nil
 }

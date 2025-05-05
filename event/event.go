@@ -73,7 +73,7 @@ func (e EventHandler) Launch(id uint) error {
 	for _, ev := range e.enrolledEvents {
 		if ev.Id == id {
 			if ev.IsActive {
-				ev.Event(true)
+				ev.Event(Manual)
 				e.lg.Info().Uint("id", id).Msg("Event launched successfully")
 				return nil
 			} else {
@@ -203,7 +203,7 @@ func (e EventHandler) AssetRecommendEvent(isManual WayOfLaunch) {
 func (e EventHandler) coinKimchiPremiumEvent(isManual WayOfLaunch) {
 	e.lg.Info().Msgf("Starting CoinKimchiPremiumEvent. isManual : %t", isManual)
 
-	assetList, err := e.stg.RetrieveAssetList()
+	assetList, err := e.stg.RetrieveTotalAssets()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생")
 		e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생. %s", err)
@@ -237,9 +237,7 @@ func (e EventHandler) coinKimchiPremiumEvent(isManual WayOfLaunch) {
 				e.ch <- fmt.Sprintf("[알림] %s 김치 프리미엄 5프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm)
 			} else if kPrm < -2 {
 				e.ch <- fmt.Sprintf("[매수] %s - 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", a.Name, kPrm)
-			}
-
-			if isManual {
+			} else if isManual {
 				e.ch <- fmt.Sprintf("[알림] %s 현재 프리미엄: %.2f", a.Name, kPrm)
 			}
 

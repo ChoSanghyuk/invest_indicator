@@ -76,9 +76,9 @@ func (e *EventHandler) registerEvents() {
 		// },
 		{
 			Id:          3,
-			Title:       "김치 프리미엄",
-			Description: "김치 프리미엄 확인",
-			schedule:    "0 */10 9-16 * * 1-5",
+			Title:       "코인 김치 프리미엄",
+			Description: "코인 김치 프리미엄 확인",
+			schedule:    "0 */15 8-23 * * 1-7",
 			Event:       e.coinKimchiPremiumEvent,
 		},
 	}

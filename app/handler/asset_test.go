@@ -24,7 +24,7 @@ func TestAssetHandler(t *testing.T) {
 	middleware.SetupMiddleware(app)
 
 	readerMock := AssetRetrieverMock{}
-	writerMock := AssetInfoSaverMock{}
+	writerMock := &AssetInfoSaverMock{}
 	PriceGetterMock := PriceGetterMock{}
 
 	f := NewAssetHandler(readerMock, writerMock, PriceGetterMock)

@@ -12,42 +12,6 @@ import (
 
 /***************************** Asset ***********************************/
 
-type AssetInfoSaverMock struct {
-	err error
-}
-
-func (mock AssetInfoSaverMock) SaveAssetInfo(a m.Asset) (uint, error) {
-	fmt.Println("SaveAssetInfo Called")
-
-	if mock.err != nil {
-		return 0, mock.err
-	}
-	return 0, nil
-}
-func (mock AssetInfoSaverMock) UpdateAssetInfo(a m.Asset) error {
-	fmt.Println("UpdateAssetInfo Called")
-
-	if mock.err != nil {
-		return mock.err
-	}
-	return nil
-}
-func (mock AssetInfoSaverMock) DeleteAssetInfo(id uint) error {
-	fmt.Println("DeleteAssetInfo Called")
-
-	if mock.err != nil {
-		return mock.err
-	}
-	return nil
-}
-
-func (mock AssetInfoSaverMock) SaveEmaHist(newEma *m.EmaHist) error {
-	if mock.err != nil {
-		return mock.err
-	}
-	return nil
-}
-
 type PriceGetterMock struct {
 	err error
 }
@@ -277,6 +241,57 @@ func (mock AssetRetrieverMock) RetrieveAssetIdByCode(code string) uint {
 		}
 	}
 	return 0
+}
+
+type AssetInfoSaverMock struct {
+	assets []m.Asset
+	hist   []m.EmaHist
+	err    error
+}
+
+func (mock *AssetInfoSaverMock) SaveAssetInfo(a m.Asset) (uint, error) {
+	if mock.err != nil {
+		return 0, mock.err
+	}
+	a.ID = uint(len(mock.assets)) + 1
+	mock.assets = append(mock.assets, a)
+
+	return a.ID, nil
+}
+func (mock *AssetInfoSaverMock) UpdateAssetInfo(a m.Asset) error {
+	if mock.err != nil {
+		return mock.err
+	}
+	for i, asset := range mock.assets {
+		if asset.ID == a.ID {
+			mock.assets[i] = a
+			return nil
+		}
+	}
+	return fmt.Errorf("asset not found")
+}
+func (mock *AssetInfoSaverMock) DeleteAssetInfo(id uint) error {
+	if mock.err != nil {
+		return mock.err
+	}
+
+	for i, asset := range mock.assets {
+		if asset.ID == id {
+			mock.assets = append(mock.assets[:i], mock.assets[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("asset not found")
+}
+
+func (mock *AssetInfoSaverMock) SaveEmaHist(newEma *m.EmaHist) error {
+	if mock.err != nil {
+		return mock.err
+	}
+
+	newEma.ID = uint(len(mock.hist)) + 1
+	mock.hist = append(mock.hist, *newEma)
+	return nil
 }
 
 type ExchageRateGetterMock struct {

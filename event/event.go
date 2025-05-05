@@ -200,6 +200,54 @@ func (e EventHandler) AssetRecommendEvent(isManual WayOfLaunch) {
 	e.lg.Info().Msg("AssetRecommendEvent completed")
 }
 
+func (e EventHandler) coinKimchiPremiumEvent(isManual WayOfLaunch) {
+	e.lg.Info().Msgf("Starting CoinKimchiPremiumEvent. isManual : %t", isManual)
+
+	assetList, err := e.stg.RetrieveAssetList()
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생")
+		e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		return
+	}
+
+	for _, a := range assetList {
+		if a.Category == m.DomesticCoin {
+			kp, err := e.rt.PresentPrice(a.Category, a.Code)
+			if err != nil {
+				e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생")
+				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)
+				return
+			}
+			code := strings.Replace(a.Code, "KRW", "USD", 1)
+			dp, err := e.rt.PresentPrice(a.Category, code)
+			if err != nil {
+				e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생")
+				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)
+				return
+			}
+
+			ex := e.dp.ExchageRate()
+			cp := dp * ex // converted price
+
+			kPrm := 100 * (kp - cp) / cp // k-premium
+
+			if kPrm >= 10 {
+				e.ch <- fmt.Sprintf("[매도] %s 김치 프리미엄 10프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm)
+			} else if kPrm >= 5 {
+				e.ch <- fmt.Sprintf("[알림] %s 김치 프리미엄 5프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm)
+			} else if kPrm < -2 {
+				e.ch <- fmt.Sprintf("[매수] %s - 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", a.Name, kPrm)
+			}
+
+			if isManual {
+				e.ch <- fmt.Sprintf("[알림] %s 현재 프리미엄: %.2f", a.Name, kPrm)
+			}
+
+		}
+	}
+	e.lg.Info().Msg("CoinKimchiPremiumEvent completed")
+}
+
 func (e EventHandler) EmaUpdateEvent() {
 	e.lg.Info().Msg("Starting EmaUpdateEvent")
 

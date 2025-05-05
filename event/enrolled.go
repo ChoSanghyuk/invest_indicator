@@ -63,7 +63,7 @@ func (e *EventHandler) registerEvents() {
 		{
 			Id:          1,
 			Title:       "매수 Asset 추천",
-			Description: "우선 매수 대상 Asset으로 정렬 후 반환\n평일 오전 8시 수행",
+			Description: "우선 매수 대상 Asset으로 정렬 후 반환",
 			schedule:    "", // "0 0 7 * * 1-5",
 			Event:       e.AssetRecommendEvent,
 		},
@@ -74,6 +74,13 @@ func (e *EventHandler) registerEvents() {
 		// 	schedule:    "0 */10 9-16 * * 1-5",
 		// 	Event:       e.goldKimchiPremium,
 		// },
+		{
+			Id:          3,
+			Title:       "김치 프리미엄",
+			Description: "김치 프리미엄 확인",
+			schedule:    "0 */10 9-16 * * 1-5",
+			Event:       e.coinKimchiPremiumEvent,
+		},
 	}
 
 	for _, event := range e.enrolledEvents {

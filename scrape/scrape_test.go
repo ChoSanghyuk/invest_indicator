@@ -53,8 +53,8 @@ func TestGoldCrwal(t *testing.T) {
 	s := Scraper{}
 
 	// gold
-	url := ""
-	cssPath := ""
+	url := "https://data-as.goldprice.org/dbXRates/USD"
+	cssPath := "#goldchange > div > div > div > div > div.tick-value-wrap.d-flex.align-items-center.justify-content-center.flex-wrap > div.tick-value.price-value > span"
 
 	rtn, err := s.crawl(url, cssPath)
 	if err != nil {

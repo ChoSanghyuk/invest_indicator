@@ -67,18 +67,18 @@ func (e *EventHandler) registerEvents() {
 			schedule:    "", // "0 0 7 * * 1-5",
 			Event:       e.AssetRecommendEvent,
 		},
-		// {
-		// 	Id:          2,
-		// 	Title:       "금 김치 프리미엄",
-		// 	Description: "금 가격의 한국 시세와 달러 시세의 차이 확인.\n5% 초과 시 알림. 10% 초과 시, 매도 권자 알림.\n09:00~16:00 10분 주기",
-		// 	schedule:    "0 */10 9-16 * * 1-5",
-		// 	Event:       e.goldKimchiPremium,
-		// },
+		{
+			Id:          2,
+			Title:       "금 김치 프리미엄",
+			Description: "금 가격의 한국 시세와 달러 시세의 차이 확인.\n5% 초과 시 알림. 10% 초과 시, 매도 권자 알림.\n오후 3시 실행",
+			schedule:    "0 0 15 * * 1-5",
+			Event:       e.goldKimchiPremium,
+		},
 		{
 			Id:          3,
 			Title:       "코인 김치 프리미엄",
-			Description: "코인 김치 프리미엄 확인",
-			schedule:    "0 */15 8-23 * * 1-7",
+			Description: "코인 김치 프리미엄 확인.\n매일 오전 8시~오후 12시 15분 주기로 실행",
+			schedule:    "0 */15 8-23 * * 0-6",
 			Event:       e.coinKimchiPremiumEvent,
 		},
 	}

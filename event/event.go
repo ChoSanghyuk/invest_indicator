@@ -697,18 +697,12 @@ hp - 최고가
 매도매수지수 클수록 매도 우선 순위
 매도매수지수 낮을수록 매수 우선순위
 */
+var goldId uint
 
-func (e EventHandler) goldKimchiPremium(isManual bool) {
+func (e EventHandler) goldKimchiPremium(isManual WayOfLaunch) {
 
-	goldAsset, err := e.stg.RetrieveAsset(4)
-	if err != nil {
-		e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAsset 시, 에러 발생")
-		e.ch <- err.Error() //todo log
-	}
-
-	if goldAsset == nil || goldAsset.Category != m.Gold {
-
-		assets, err := e.stg.RetrieveAssetList()
+	if goldId == 0 {
+		assets, err := e.stg.RetrieveTotalAssets()
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAssetList 시, 에러 발생")
 			e.ch <- err.Error() //todo log
@@ -717,10 +711,16 @@ func (e EventHandler) goldKimchiPremium(isManual bool) {
 
 		for _, a := range assets {
 			if a.Category == m.Gold {
-				goldAsset = &a
-				continue
+				goldId = a.ID
+				break
 			}
 		}
+	}
+
+	goldAsset, err := e.stg.RetrieveAsset(goldId)
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAsset 시, 에러 발생")
+		e.ch <- err.Error() //todo log
 	}
 
 	kp, err := e.rt.PresentPrice(goldAsset.Category, goldAsset.Code) // kimchi price

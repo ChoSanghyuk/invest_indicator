@@ -93,6 +93,9 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 	case m.DomesticCoin:
 		pp, _, err := s.upbitApi(code)
 		return pp, err
+	case m.ForeignCoin:
+		pp, err := alpacaCrypto(code)
+		return pp, err
 	case m.ForeignStock, m.ForeignETF:
 		pp, _, err := s.kisForeignPrice(code)
 		return pp, err
@@ -282,25 +285,15 @@ func (s *Scraper) Buy(category m.Category, code string) error {
 	return nil
 }
 
-// depre
-func AlpacaCrypto(target string) (string, error) {
+func alpacaCrypto(symbol string) (float64, error) {
 
 	client := marketdata.NewClient(marketdata.ClientOpts{})
-	request := marketdata.GetCryptoBarsRequest{
-		TimeFrame: marketdata.OneMin,
-		Start:     time.Now().Add(time.Duration(-10) * time.Minute), // time.Date(2022, 9, 1, 0, 0, 0, 0, time.UTC),
-		End:       time.Now(),
-	}
+	request := marketdata.GetLatestCryptoBarRequest{}
 
-	bars, err := client.GetCryptoBars(target, request)
+	bar, err := client.GetLatestCryptoBar(symbol+"/USD", request)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	if len(bars) == 0 {
-		return "", errors.New("빈 결과값 반환")
-	}
-
-	bar := bars[len(bars)-1]
-	return fmt.Sprintf("%f", bar.Close), nil
+	return bar.Close, nil
 }

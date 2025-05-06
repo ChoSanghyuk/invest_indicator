@@ -218,8 +218,7 @@ func (e EventHandler) coinKimchiPremiumEvent(isManual WayOfLaunch) {
 				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)
 				return
 			}
-			code := strings.Replace(a.Code, "KRW", "USD", 1)
-			dp, err := e.rt.PresentPrice(a.Category, code)
+			dp, err := e.rt.PresentPrice(m.ForeignCoin, a.Code)
 			if err != nil {
 				e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생")
 				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)

@@ -20,11 +20,11 @@ func main() {
 		panic(err)
 	}
 
-	level, err := conf.LogLevel()
-	if err != nil {
-		panic(err)
-	}
-	zerolog.SetGlobalLevel(level) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인
+	// level, err := conf.LogLevel()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	zerolog.SetGlobalLevel(zerolog.InfoLevel) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인. config로 이동
 
 	ch := make(chan string)
 

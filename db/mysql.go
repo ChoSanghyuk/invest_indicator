@@ -168,7 +168,7 @@ func (s Storage) RetrieveAssetList() ([]m.Asset, error) {
 
 	var assets []m.Asset
 
-	result := s.db.Model(&m.Asset{}).Select("id", "name").Find(&assets)
+	result := s.db.Model(&m.Asset{}).Find(&assets)
 	if result.Error != nil {
 		return nil, result.Error
 	}

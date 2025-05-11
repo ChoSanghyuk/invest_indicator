@@ -9,8 +9,9 @@ import (
 func SetupMiddleware(router fiber.Router) {
 
 	router.Use(cors.New(cors.Config{
-    AllowOrigins: "http://localhost:50002", // temp. Flutter web server address
-    AllowMethods: "GET,POST,PUT,DELETE",
+    AllowOrigins: "http://localhost:50002", // Replace with your Flutter web origin
+    AllowHeaders: "Origin, Content-Type, Accept",
+    AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 	router.Use(errorHandle)
 	router.Use(logRequest)

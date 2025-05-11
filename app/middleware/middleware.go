@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func SetupMiddleware(router fiber.Router) {

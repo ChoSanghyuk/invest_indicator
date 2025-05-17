@@ -2,13 +2,21 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/rs/zerolog/log"
 )
 
 func SetupMiddleware(router fiber.Router) {
 
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://lomoninvest.shop:50001", // Replace with your Flutter web origin
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowMethods:     "*",
+		AllowCredentials: true,
+	}))
 	router.Use(errorHandle)
 	router.Use(logRequest)
+
 }
 
 func errorHandle(c *fiber.Ctx) error {

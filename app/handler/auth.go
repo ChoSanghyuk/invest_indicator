@@ -28,7 +28,7 @@ func NewAuthHandler(us UserRetrierver, authKey string, passKey string) *AuthHand
 func (h *AuthHandler) InitRoute(app *fiber.App) {
 	router := app.Group("/login")
 	router.Post("/", h.Login)
-	// app.Use(h.AuthMiddleware) // todo. 위치 이동 시키자
+	app.Use(h.AuthMiddleware) // todo. 위치 이동 시키자
 }
 
 // Claims represents the JWT claims

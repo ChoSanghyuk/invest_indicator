@@ -10,7 +10,7 @@ func SetupMiddleware(router fiber.Router) {
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://lomoninvest.shop:50001", // Replace with your Flutter web origin
-		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowHeaders:     "Origin, Content-Type, Authorization",
 		AllowMethods:     "*",
 		AllowCredentials: true,
 	}))

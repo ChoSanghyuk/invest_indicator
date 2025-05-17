@@ -71,7 +71,7 @@ func (s Scraper) crawl(url string, cssPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating document\n%w", err)
 	}
-	fmt.Println(doc.Text())
+	// fmt.Println(doc.Text())
 
 	// fmt.Println(doc.Text())
 

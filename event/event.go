@@ -489,7 +489,7 @@ func (e EventHandler) ManageAvaxDex(isManual WayOfLaunch) {
 
 	if avaxId == 0 {
 		for _, a := range assets {
-			if a.Name == "" {
+			if a.Name == "Avalanche" {
 				avaxId = a.ID
 				break
 			}

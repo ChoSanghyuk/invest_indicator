@@ -245,6 +245,65 @@ func (e EventHandler) coinKimchiPremiumEvent(isManual WayOfLaunch) {
 	e.lg.Info().Msg("CoinKimchiPremiumEvent completed")
 }
 
+var goldId uint
+
+func (e EventHandler) goldKimchiPremium(isManual WayOfLaunch) {
+
+	if goldId == 0 {
+		assets, err := e.stg.RetrieveTotalAssets()
+		if err != nil {
+			e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAssetList 시, 에러 발생")
+			e.ch <- err.Error() //todo log
+			return
+		}
+
+		for _, a := range assets {
+			if a.Category == m.Gold {
+				goldId = a.ID
+				break
+			}
+		}
+	}
+
+	goldAsset, err := e.stg.RetrieveAsset(goldId)
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAsset 시, 에러 발생")
+		e.ch <- err.Error() //todo log
+	}
+
+	kp, err := e.rt.PresentPrice(goldAsset.Category, goldAsset.Code) // kimchi price
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[goldKimchiPremium] PresentPrice 시, 에러 발생")
+		//todo log
+		e.ch <- fmt.Sprintf("금 한국 가격 조회 시 오류. %s", err.Error())
+		return
+	}
+
+	dp, err := e.rt.GoldPriceDollar() // dollar price
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[goldKimchiPremium] GoldPriceDollar 시, 에러 발생")
+		//todo log
+		e.ch <- fmt.Sprintf("금 달러 가격 조회 시 오류. %s", err.Error())
+		return
+	}
+	ex := e.dp.ExchageRate() // exchange rate
+	cp := dp * ex            // converted price
+
+	kPrm := 100 * (kp - cp) / cp // k-premium
+
+	if kPrm > 10 {
+		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
+	} else if kPrm > 5 {
+		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm)
+	} else if kPrm < -2 {
+		e.ch <- fmt.Sprintf("[매수] 금 역 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", kPrm)
+	}
+
+	if isManual {
+		e.ch <- fmt.Sprintf("[알림] 현재 프리미엄: %.2f", kPrm)
+	}
+}
+
 func (e EventHandler) EmaUpdateEvent() {
 	e.lg.Info().Msg("Starting EmaUpdateEvent")
 
@@ -397,6 +456,101 @@ func (e EventHandler) IndexEvent() {
 		Float64("nasdaq", nasdaq).
 		Float64("sp500", sp500).
 		Msg("IndexEvent completed")
+}
+
+type phase uint
+
+const (
+	empty phase = iota
+	twoThird
+	full
+)
+
+var avaxId uint
+var inputedAvax float64
+
+func (e EventHandler) ManageAvaxDex(isManual WayOfLaunch) {
+
+	var dexRange [2]float64
+	// todo. range 가져오기
+	var currentPhase phase
+	// todo. 상태 가져오기
+
+	if isManual {
+		e.ch <- fmt.Sprintf("[ManageAvaxDex] 현재 단계 %d. 범위: %.2f ~ %.2f", currentPhase, dexRange[0], dexRange[1])
+	}
+
+	assets, err := e.stg.RetrieveAssetList()
+	if err != nil {
+		e.lg.Error().Err(err).Msg("[ManageAvaxDex] RetrieveAssetList 시, 에러 발생")
+		e.ch <- fmt.Sprintf("[ManageAvaxDex] RetrieveAssetList 시, 에러 발생. %s", err)
+		return
+	}
+
+	if avaxId == 0 {
+		for _, a := range assets {
+			if a.Name == "" {
+				avaxId = a.ID
+				break
+			}
+		}
+	}
+
+	avaxInfo, err := e.stg.RetrieveAsset(avaxId)
+	if err != nil {
+		e.ch <- fmt.Sprintf("[ManageAvaxDex] RetrieveAsset 시, 에러 발생. %s", err)
+		return
+	}
+
+	cp, err := e.rt.PresentPrice(m.ForeignCoin, avaxInfo.Code)
+	if err != nil {
+		e.ch <- fmt.Sprintf("[ManageAvaxDex] PresentPrice 시, 에러 발생. %s", err)
+		return
+	}
+
+	var needAction bool = false
+	if cp <= dexRange[0] || cp >= dexRange[1] {
+		needAction = true
+		dexRange = newRange(cp)
+	}
+
+	if needAction {
+
+		var amount float64
+		// todo 컨트랙트 조회로 수정 필요
+		invests, err := e.stg.RetreiveFundSummaryByAssetId(avaxId)
+		if err != nil {
+			e.ch <- fmt.Sprintf("[ManageAvaxDex] RetreiveFundSummaryByAssetId 시, 에러 발생. %s", err)
+			return
+		}
+		for _, invest := range invests {
+			if invest.FundID == 3 {
+				amount = invest.Count
+				break
+			}
+		}
+
+		switch currentPhase {
+		case empty, full:
+			if currentPhase == empty {
+				e.ch <- "[AVAX DEX Management] 현재 Phase EMPTY. 행동 필요. 아래 구간 진입 필요"
+			} else {
+				e.ch <- "[AVAX DEX Management] 헌재 Phase Full. 행동 필요. 전체 회수 및 아래 구간 진입 필요"
+			}
+			e.ch <- fmt.Sprintf("PUT %.0f Avax AND converted USDC", amount/3)
+			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
+			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
+			inputedAvax = 2 * math.Round(amount/3)
+			currentPhase = twoThird
+		case twoThird:
+			e.ch <- "[AVAX DEX Management] 헌재 Phase 2/3. 행동 필요. 아래 구간 진입 필요"
+			e.ch <- fmt.Sprintf("PUT %.0f Avax AND converted USDC", amount-inputedAvax)
+			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
+			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
+			currentPhase = full
+			inputedAvax = amount
+		}
+	}
 }
 
 /**********************************************************************************************************************
@@ -697,61 +851,21 @@ hp - 최고가
 매도매수지수 클수록 매도 우선 순위
 매도매수지수 낮을수록 매수 우선순위
 */
-var goldId uint
 
-func (e EventHandler) goldKimchiPremium(isManual WayOfLaunch) {
+func roundedValue(price float64, deciaml uint) float64 {
+	decimalPlaces := 2
+	factor := math.Pow(10, float64(decimalPlaces))
 
-	if goldId == 0 {
-		assets, err := e.stg.RetrieveTotalAssets()
-		if err != nil {
-			e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAssetList 시, 에러 발생")
-			e.ch <- err.Error() //todo log
-			return
-		}
+	return math.Round(price*factor) / factor
+}
 
-		for _, a := range assets {
-			if a.Category == m.Gold {
-				goldId = a.ID
-				break
-			}
-		}
-	}
+func newRange(price float64) [2]float64 {
+	decimalPlaces := 2
+	gap := 0.03
+	factor := math.Pow(10, float64(decimalPlaces))
 
-	goldAsset, err := e.stg.RetrieveAsset(goldId)
-	if err != nil {
-		e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAsset 시, 에러 발생")
-		e.ch <- err.Error() //todo log
-	}
+	start := math.Round(price*(1-gap)*factor) / factor
+	end := math.Round(price*(1+gap)*factor) / factor
 
-	kp, err := e.rt.PresentPrice(goldAsset.Category, goldAsset.Code) // kimchi price
-	if err != nil {
-		e.lg.Error().Err(err).Msg("[goldKimchiPremium] PresentPrice 시, 에러 발생")
-		//todo log
-		e.ch <- fmt.Sprintf("금 한국 가격 조회 시 오류. %s", err.Error())
-		return
-	}
-
-	dp, err := e.rt.GoldPriceDollar() // dollar price
-	if err != nil {
-		e.lg.Error().Err(err).Msg("[goldKimchiPremium] GoldPriceDollar 시, 에러 발생")
-		//todo log
-		e.ch <- fmt.Sprintf("금 달러 가격 조회 시 오류. %s", err.Error())
-		return
-	}
-	ex := e.dp.ExchageRate() // exchange rate
-	cp := dp * ex            // converted price
-
-	kPrm := 100 * (kp - cp) / cp // k-premium
-
-	if kPrm > 10 {
-		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
-	} else if kPrm > 5 {
-		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm)
-	} else if kPrm < -2 {
-		e.ch <- fmt.Sprintf("[매수] 금 역 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", kPrm)
-	}
-
-	if isManual {
-		e.ch <- fmt.Sprintf("[알림] 현재 프리미엄: %.2f", kPrm)
-	}
+	return [2]float64{start, end}
 }

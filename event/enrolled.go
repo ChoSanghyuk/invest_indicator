@@ -81,6 +81,13 @@ func (e *EventHandler) registerEvents() {
 			schedule:    "0 */15 8-23 * * 0-6",
 			Event:       e.coinKimchiPremiumEvent,
 		},
+		{
+			Id:          4,
+			Title:       "AVAX DEX 관리",
+			Description: "AVAX DEX 관리 행동 지시.\n매일 오전 8시~오후 12시 1분 주기로 실행",
+			schedule:    "0 */1 8-23 * * 0-6",
+			Event:       e.ManageAvaxDex,
+		},
 	}
 
 	for _, event := range e.enrolledEvents {

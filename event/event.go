@@ -537,14 +537,14 @@ func (e EventHandler) ManageAvaxDex(isManual WayOfLaunch) {
 			} else {
 				e.ch <- "[AVAX DEX Management] 헌재 Phase Full. 행동 필요. 전체 회수 및 아래 구간 진입 필요"
 			}
-			e.ch <- fmt.Sprintf("PUT %.0f Avax AND converted USDC", amount/3)
+			e.ch <- fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount/3, amount/3*cp)
 			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
 			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
 			inputedAvax = 2 * math.Round(amount/3)
 			currentPhase = twoThird
 		case twoThird:
 			e.ch <- "[AVAX DEX Management] 헌재 Phase 2/3. 행동 필요. 아래 구간 진입 필요"
-			e.ch <- fmt.Sprintf("PUT %.0f Avax AND converted USDC", amount-inputedAvax)
+			e.ch <- fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount-inputedAvax, (amount-inputedAvax)*cp)
 			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
 			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
 			currentPhase = full

@@ -468,12 +468,12 @@ const (
 
 var avaxId uint
 var inputedAvax float64
+var currentPhase phase
+var dexRange [2]float64
 
 func (e EventHandler) ManageAvaxDex(isManual WayOfLaunch) {
 
-	var dexRange [2]float64
 	// todo. range 가져오기
-	var currentPhase phase
 	// todo. 상태 가져오기
 
 	if isManual {

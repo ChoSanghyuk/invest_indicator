@@ -471,6 +471,20 @@ var inputedAvax float64
 var currentPhase phase
 var dexRange [2]float64
 
+/*
+원칙. 계속 들고 있으려는 AVAX로만 수행한다.
+
+기조
+AVAX의 가격은 떨어져도 다시 회복할 것이다. (장기 우상향)
+=> 하락으로 인한 IL은 실현시키지 않음. (언젠가는 회복)
+
+전략
+1. 가지고 있는 총 자산은 1/3 AVAX 투입. 1/3 USDC 투입. 1/3 AVAX 홀드 상태로 풀 주입. 단, 1/3 AVAX가 3AVAX 이상이어야 함
+2. AVAX 가격이 떨어졌을 때에는 풀 제거 X. 1번 수행.
+3. AVAX 가격이 정해둔 풀을 벗어날 경우에는 회수
+4. 가진 총 자산의 2/3는 AVAX가 되게끔 환전
+5. 소수점 두번째 자리의 가격이 3분 연속 같을 때 1 수행.
+*/
 func (e EventHandler) ManageAvaxDex(isManual WayOfLaunch) {
 
 	// todo. range 가져오기

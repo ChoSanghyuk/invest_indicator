@@ -102,7 +102,7 @@ func (h *InvestHandler) SaveInvest(c *fiber.Ctx) error {
 	if assetId == h.cm[model.KRW] {
 		// pass
 	} else if asset.Currency == model.USD.String() && assetId != h.cm[model.USD] { // 달러 자산
-		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*h.e.ExchageRate()*param.Count, 1)
+		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.USD], -1*param.Price*param.Count, 1)
 	} else {
 		err = h.w.UpdateInvestSummary(param.FundId, h.cm[model.KRW], -1*param.Price*param.Count, 1) // 원화 자산 및 달러 충전
 	}

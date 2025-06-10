@@ -413,33 +413,15 @@ https://generalcoder.tistory.com/29
 
 
 
-.
+## 운영
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### 로깅
+```bash
+nohup ./{my-server} > $(date +%F).log 2>&1 &
+```
+- & puts the process in the background.
+- > $(date +%F).log writes stdout to the date-named file.
+- 2>&1 includes stderr in the same log.
 
 
 

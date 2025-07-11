@@ -207,6 +207,7 @@ func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
 
 }
 
+// 수익률 = (현재가치 + 판매가치) / 총 구입 가치
 func (h *FundHandler) profitRateOfAsset(iv *model.InvestSummary) string {
 	if iv.Asset.Category == model.Won || iv.Asset.Category == model.Dollar {
 		return ""
@@ -217,31 +218,43 @@ func (h *FundHandler) profitRateOfAsset(iv *model.InvestSummary) string {
 		return ""
 	}
 
-	base := 0.0
-	sold := 0.0
-	for i := len(invests) - 1; i >= 0; i-- {
-		invest := invests[i]
+	// base := 0.0
+	// sold := 0.0
+	// for i := len(invests) - 1; i >= 0; i-- {
+	// 	invest := invests[i]
+	// 	if invest.Count < 0 {
+	// 		sold += invest.Count * -1
+	// 		continue
+	// 	}
+	// 	if sold > 0 {
+	// 		if sold > invest.Count {
+	// 			sold -= invest.Count
+	// 		} else {
+	// 			invest.Count -= sold
+	// 			sold = 0
+	// 		}
+	// 	}
+	// 	base += invest.Count * invest.Price
+	// }
+	// if base == 0 {
+	// 	return ""
+	// }
+	// return fmt.Sprintf("%.2f", 100*(iv.Sum-base)/base)
 
-		if invest.Count < 0 {
-			sold += invest.Count * -1
-			continue
+	soldValue := 0.0
+	buyValue := 0.0
+
+	for _, iv := range invests {
+		if iv.Count < 0 {
+			soldValue += iv.Count * -1 * iv.Price
+		} else {
+			buyValue += iv.Count * iv.Price
 		}
-
-		if sold > 0 {
-			if sold > invest.Count {
-				sold -= invest.Count
-			} else {
-				invest.Count -= sold
-				sold = 0
-			}
-		}
-
-		base += invest.Count * invest.Price
 	}
 
-	if base == 0 {
+	if buyValue == 0 {
 		return ""
 	}
 
-	return fmt.Sprintf("%.2f", 100*(iv.Sum-base)/base)
+	return fmt.Sprintf("%.2f", 100*(iv.Sum-buyValue)/buyValue)
 }

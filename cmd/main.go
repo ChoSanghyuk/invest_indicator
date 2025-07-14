@@ -1,13 +1,13 @@
 package main
 
 import (
-	"invest/app"
+	app "investindicator/app"
 
-	"invest/bot"
-	"invest/config"
-	"invest/db"
-	"invest/event"
-	"invest/scrape"
+	investind "investindicator"
+	"investindicator/bot"
+	"investindicator/config"
+	"investindicator/internal/db"
+	"investindicator/scrape"
 
 	"github.com/rs/zerolog"
 )
@@ -47,7 +47,7 @@ func main() {
 		panic(err)
 	}
 
-	eventHandler := event.NewEventHandler(event.EventHandlerConfig{
+	eventHandler := investind.NewInvestIndicator(investind.InvestIndicatorConfig{
 		Storage:     db,
 		RtPoller:    scraper,
 		DailyPoller: scraper,

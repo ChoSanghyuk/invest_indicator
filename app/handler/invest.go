@@ -3,7 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"invest/model"
+	"investindicator/internal/model"
 
 	"github.com/gofiber/fiber/v2"
 )

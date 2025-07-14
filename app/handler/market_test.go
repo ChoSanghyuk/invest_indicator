@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"invest/app/middleware"
+	"investindicator/app/middleware"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"

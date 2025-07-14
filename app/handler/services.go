@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"invest/event"
-	m "invest/model"
+	investind "investindicator"
+	m "investindicator/internal/model"
 )
 
 type FundRetriever interface {
@@ -62,15 +62,15 @@ type ExchageRateGetter interface {
 }
 
 type EventRetriever interface {
-	Events() []*event.EnrolledEvent
+	Events() []*investind.EnrolledEvent
 }
 
 type EventLauncher interface {
-	Launch(id uint) error
+	LaunchEvent(id uint) error
 }
 
 type EventStatusChanger interface {
-	StatusChange(id uint, active bool) error
+	SetEventStatus(id uint, active bool) error
 }
 
 type UserRetrierver interface {

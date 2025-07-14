@@ -2,8 +2,8 @@ package handler
 
 import (
 	"fmt"
-	"invest/app/middleware"
-	m "invest/model"
+	"investindicator/app/middleware"
+	m "investindicator/internal/model"
 	"testing"
 	"time"
 

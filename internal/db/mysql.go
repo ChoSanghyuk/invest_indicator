@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
-	m "invest/model"
+	m "investindicator/internal/model"
 	"log"
 	"os"
 	"time"

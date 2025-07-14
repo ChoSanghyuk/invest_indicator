@@ -1,8 +1,8 @@
-package event
+package investind
 
 import (
 	"fmt"
-	m "invest/model"
+	m "investindicator/internal/model"
 	"strings"
 	"testing"
 )
@@ -13,7 +13,7 @@ func TestEventbuySellMsg(t *testing.T) {
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
 
-	evt := NewEventHandler(EventHandlerConfig{
+	evt := NewInvestIndicator(InvestIndicatorConfig{
 		Storage:     stg,
 		RtPoller:    scrp,
 		DailyPoller: dp,
@@ -84,7 +84,7 @@ func TestEventportfolioMsg(t *testing.T) {
 	dp := &DailyPollerMock{}
 	ch := make(chan<- string)
 
-	evt := NewEventHandler(EventHandlerConfig{
+	evt := NewInvestIndicator(InvestIndicatorConfig{
 		Storage:     stg,
 		RtPoller:    scrp,
 		DailyPoller: dp,
@@ -127,7 +127,7 @@ func TestEventportfolioMsg(t *testing.T) {
 			5: 1000,
 		}
 
-		msg, err := evt.portfolioMsg(ivsmLi, pm)
+		msg, err := evt.genPortfolioMsg(ivsmLi, pm)
 
 		if err != nil {
 			t.Error(err)

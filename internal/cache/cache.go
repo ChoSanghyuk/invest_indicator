@@ -1,4 +1,4 @@
-package event
+package cache
 
 import "time"
 
@@ -23,7 +23,7 @@ func init() {
 	portMsgCache = make(map[uint]time.Time)
 }
 
-func hasMsgCache(assetId uint, isSell bool, price float64) bool {
+func HasMsgCache(assetId uint, isSell bool, price float64) bool {
 
 	cache := assetMsgCache[assetMsg{
 		assetId: assetId,
@@ -42,7 +42,7 @@ func hasMsgCache(assetId uint, isSell bool, price float64) bool {
 	return false
 }
 
-func setMsgCache(assetId uint, isSell bool, price float64) {
+func SetMsgCache(assetId uint, isSell bool, price float64) {
 
 	k := assetMsg{
 		assetId: assetId,
@@ -64,7 +64,7 @@ func setMsgCache(assetId uint, isSell bool, price float64) {
 
 }
 
-func hasPortCache(id uint) bool {
+func HasPortCache(id uint) bool {
 
 	sendTime := portMsgCache[id]
 
@@ -75,20 +75,6 @@ func hasPortCache(id uint) bool {
 	}
 }
 
-func setPortCache(id uint) {
+func SetPortCache(id uint) {
 	portMsgCache[id] = time.Now()
 }
-
-// func hasDailyCache() bool {
-
-// 	if dailyCache == 0 || dailyCache != time.Now().Day() {
-// 		return false
-// 	} else {
-// 		return true
-// 	}
-// }
-
-// deprecated
-// func setDailyCache() {
-// 	dailyCache = time.Now().Day()
-// }

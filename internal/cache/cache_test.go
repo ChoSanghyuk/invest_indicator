@@ -1,4 +1,4 @@
-package event
+package cache
 
 import (
 	"testing"
@@ -29,35 +29,35 @@ func TestCache(t *testing.T) {
 	}
 
 	t.Run("Valid Cache", func(t *testing.T) {
-		b := hasMsgCache(1, true, 1000)
+		b := HasMsgCache(1, true, 1000)
 		if !b {
 			t.Error(b)
 		}
 	})
 
 	t.Run("No Cache", func(t *testing.T) {
-		b := hasMsgCache(1, false, 1000)
+		b := HasMsgCache(1, false, 1000)
 		if b {
 			t.Error(b)
 		}
 	})
 
 	t.Run("Invalid Cache", func(t *testing.T) {
-		b := hasMsgCache(2, false, 1000)
+		b := HasMsgCache(2, false, 1000)
 		if b {
 			t.Error(b)
 		}
 	})
 
 	t.Run("Set Cache", func(t *testing.T) {
-		b := hasMsgCache(3, true, 1000)
+		b := HasMsgCache(3, true, 1000)
 		if b {
 			t.Error(b)
 		}
 
-		setMsgCache(3, true, 1000)
+		SetMsgCache(3, true, 1000)
 
-		b = hasMsgCache(3, true, 1000)
+		b = HasMsgCache(3, true, 1000)
 		if !b {
 			t.Error(b)
 		}

@@ -206,7 +206,7 @@
 
 ### 모델링
 
-![image-20240906160601407](img/image-20240906160601407.png)
+![image-20240906160601407](.document/img/image-20240906160601407.png)
 
 
 
@@ -422,7 +422,6 @@ nohup ./{my-server} > $(date +%F).log 2>&1 &
 - & puts the process in the background.
 - > $(date +%F).log writes stdout to the date-named file.
 - 2>&1 includes stderr in the same log.
-
 
 
 

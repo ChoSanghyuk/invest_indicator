@@ -1,4 +1,4 @@
-module invest
+module investindicator
 
 go 1.22.0
 

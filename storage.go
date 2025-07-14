@@ -1,7 +1,7 @@
-package event
+package investind
 
 import (
-	m "invest/model"
+	m "investindicator/internal/model"
 )
 
 type Storage interface {
@@ -24,19 +24,4 @@ type Storage interface {
 
 	RetreiveEventIsActive(eventId uint) bool
 	UpdateEventIsActive(eventId uint, isActive bool) error
-}
-
-type RtPoller interface {
-	PresentPrice(category m.Category, code string) (float64, error)
-	RealEstateStatus() (string, error)
-	GoldPriceDollar() (float64, error)
-}
-
-type DailyPoller interface {
-	ExchageRate() float64
-	ClosingPrice(category m.Category, code string) (float64, error)
-	FearGreedIndex() (uint, error)
-	Nasdaq() (float64, error)
-	Sp500() (float64, error)
-	CliIdx() (float64, error)
 }

@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	m "invest/model"
+	m "investindicator/internal/model"
 	"log"
 	"os"
 	"testing"

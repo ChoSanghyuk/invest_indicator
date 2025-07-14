@@ -3,7 +3,7 @@ package scrape
 import (
 	"errors"
 	"fmt"
-	m "invest/model"
+	m "investindicator/internal/model"
 	"net/http"
 	"os"
 	"regexp"

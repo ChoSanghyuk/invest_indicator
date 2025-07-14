@@ -4,9 +4,9 @@ import (
 	_ "embed"
 	"fmt"
 
-	"invest/bot"
-	"invest/scrape"
-	"invest/util"
+	"investindicator/bot"
+	"investindicator/internal/util"
+	"investindicator/scrape"
 	"strconv"
 
 	"github.com/rs/zerolog"

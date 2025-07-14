@@ -58,7 +58,7 @@ func (h *EventHandler) SwtichEvent(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 유효성 검사 시 오류 발생. %w", err)
 	}
 
-	err = h.ec.StatusChange(param.Id, param.Active)
+	err = h.ec.SetEventStatus(param.Id, param.Active)
 	if err != nil {
 		return fmt.Errorf("상태 변경 요청 시 오류. %w", err)
 	}
@@ -79,7 +79,7 @@ func (h *EventHandler) LaunchEvent(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 유효성 검사 시 오류 발생. %w", err)
 	}
 
-	err = h.el.Launch(param.Id)
+	err = h.el.LaunchEvent(param.Id)
 	if err != nil {
 		return fmt.Errorf("event Launch 시 오류 발생. %s", err.Error())
 	}

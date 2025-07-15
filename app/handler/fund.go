@@ -256,5 +256,5 @@ func (h *FundHandler) profitRateOfAsset(iv *model.InvestSummary) string {
 		return ""
 	}
 
-	return fmt.Sprintf("%.2f", 100*(iv.Sum-buyValue)/buyValue)
+	return fmt.Sprintf("%.2f", 100*(iv.Sum+soldValue-buyValue)/buyValue)
 }

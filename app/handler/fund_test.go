@@ -153,5 +153,20 @@ func TestFundHandler(t *testing.T) {
 		})
 	})
 
+	t.Run("수익률 조회", func(t *testing.T) {
+		readerMock.isli = []m.InvestSummary{
+			{ID: 1, FundID: 1, AssetID: 3, Count: 0.00354433, Sum: 577520.21886},
+		}
+
+		investMock.invests = []m.Invest{
+			{ID: 1, FundID: 1, AssetID: 3, Price: 150511000, Count: -0.00362779},
+			{ID: 2, FundID: 1, AssetID: 3, Price: 150511000, Count: 0.00362779},
+			{ID: 3, FundID: 1, AssetID: 3, Price: 141070000, Count: 0.00354433},
+		}
+
+		rtn := f.profitRateOfAsset(&readerMock.isli[0])
+		t.Logf("rtn : %s", rtn)
+	})
+
 	app.Shutdown()
 }

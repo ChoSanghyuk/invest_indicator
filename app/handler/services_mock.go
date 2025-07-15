@@ -153,7 +153,8 @@ func (mock MarketSaverMock) SaveMarketStatus(status uint) error {
 
 /***************************** Invest ***********************************/
 type InvestRetrieverMock struct {
-	err error
+	invests []m.Invest
+	err     error
 }
 
 func (mock InvestRetrieverMock) RetrieveInvestHist(fundId uint, assetId uint, start string, end string) ([]m.Invest, error) {
@@ -162,15 +163,26 @@ func (mock InvestRetrieverMock) RetrieveInvestHist(fundId uint, assetId uint, st
 	if mock.err != nil {
 		return nil, mock.err
 	}
-	return []m.Invest{
-		{
-			ID:      1,
-			FundID:  fundId,
-			AssetID: assetId,
-			Price:   7800,
-			Count:   5,
-		},
-	}, nil
+
+	if mock.invests != nil {
+		rtn := []m.Invest{}
+		for _, iv := range mock.invests {
+			if iv.FundID == fundId && iv.AssetID == assetId {
+				rtn = append(rtn, iv)
+			}
+		}
+		return rtn, nil
+	} else {
+		return []m.Invest{
+			{
+				ID:      1,
+				FundID:  fundId,
+				AssetID: assetId,
+				Price:   7800,
+				Count:   5,
+			},
+		}, nil
+	}
 }
 
 func (mock InvestRetrieverMock) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {

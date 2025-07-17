@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-func TestUpbitApi(t *testing.T) {
+func TestBithumbApi(t *testing.T) {
 	s := Scraper{}
-	pp, cp, err := s.upbitApi("AVAX")
+	pp, cp, err := s.bithumbApi("AVAX")
 	if err != nil {
 		t.Error(err)
 	}

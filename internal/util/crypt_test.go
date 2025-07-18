@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -44,6 +45,7 @@ func TestDecrypt(t *testing.T) {
 func TestEncryptPassword(t *testing.T) {
 
 	password := os.Getenv("password")
+	fmt.Println(password)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		t.Error(err)

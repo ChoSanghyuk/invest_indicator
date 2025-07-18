@@ -33,8 +33,9 @@ func (h *AuthHandler) InitRoute(app *fiber.App) {
 
 // Claims represents the JWT claims
 type Claims struct {
-	UserID int    `json:"user_id"`
-	Email  string `json:"email"`
+	UserID  int    `json:"user_id"`
+	Email   string `json:"email"`
+	IsAdmin bool   `json:"is_admin"`
 	jwt.RegisteredClaims
 }
 
@@ -59,8 +60,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	// Create token expiration time (24 hours from now)
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		UserID: user.ID,
-		Email:  user.Email,
+		UserID:  user.ID,
+		Email:   user.Email,
+		IsAdmin: user.IsAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -85,7 +87,7 @@ func (h *AuthHandler) AuthMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
 		return errors.New("authorization header missing")
-	} else if authHeader == h.passKey {
+	} else if authHeader == h.passKey { // bot 혹은 HTTP Req 테스트용 키
 		return c.Next()
 	}
 
@@ -105,13 +107,18 @@ func (h *AuthHandler) AuthMiddleware(c *fiber.Ctx) error {
 		}
 		return h.authKey, nil
 	})
-
 	if err != nil {
 		return err
 	}
 
 	if !token.Valid {
 		return errors.New("invalid token")
+	}
+
+	if c.Method() != "GET" && !claims.IsAdmin {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Forbidden",
+		})
 	}
 
 	return c.Next()

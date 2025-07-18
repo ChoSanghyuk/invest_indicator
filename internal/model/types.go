@@ -85,6 +85,7 @@ type User struct {
 	Username string
 	Email    string
 	Password string
+	IsAdmin  bool
 }
 
 type Event struct {

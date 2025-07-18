@@ -1,6 +1,9 @@
 package model
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 type Category uint
 
@@ -16,9 +19,11 @@ const (
 	ForeignETF
 	Leverage
 	ForeignCoin
+	DomesticStableETF
 )
 
-var categoryList = []string{"현금", "달러", "금", "단기채권", "국내ETF", "국내주식", "국내코인", "해외주식", "해외ETF", "레버리지", "해외코인"}
+var categoryList = []string{"현금", "달러", "금", "단기채권", "국내ETF", "국내주식", "국내코인", "해외주식", "해외ETF", "레버리지", "해외코인", "국내안전자산ETF"}
+var stableList = []Category{Won, Dollar, Gold, ShortTermBond, DomesticStableETF}
 
 func (c Category) String() string {
 	if c == 0 || int(c) >= len(categoryList) {
@@ -38,7 +43,7 @@ func ToCategory(s string) (Category, error) {
 }
 
 func (c Category) IsStable() bool {
-	if c <= 4 {
+	if slices.Contains(stableList, c) {
 		return true
 	} else {
 		return false

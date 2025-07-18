@@ -13,6 +13,20 @@ type Fund struct {
 	IsExcept bool `gorm:"column:is_except;default:false"` // column mapping
 }
 
+type Category struct {
+	ID     uint
+	Name   string
+	Stable bool
+}
+
+func (c Category) String() string {
+	return c.Name
+}
+
+func (c Category) IsStable() bool {
+	return c.Stable
+}
+
 type Asset struct {
 	ID        uint
 	Name      string

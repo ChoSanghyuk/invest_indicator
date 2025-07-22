@@ -185,29 +185,50 @@ func TestSaveAssetInfo(t *testing.T) {
 }
 func TestUpdateAssetInfo(t *testing.T) {
 
-	_, err := stg.SaveAssetInfo(m.Asset{}) //"테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300
+	id, err := stg.SaveAssetInfo(m.Asset{
+		Name:      "테스트",
+		Category:  m.DomesticStock,
+		Code:      "test",
+		Currency:  "WON",
+		Top:       82300,
+		Bottom:    60000,
+		SellPrice: 80000,
+		BuyPrice:  62300,
+	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	var asset m.Asset
-
-	stg.db.Last(&asset)
+	asset, err := stg.RetrieveAsset(id)
+	if err != nil {
+		t.Error(err)
+	}
 	t.Logf("%+v", asset)
 
-	err = stg.UpdateAssetInfo(m.Asset{}) //asset.ID, "", 0, "", "", 0, 0, 0, 65000
+	// update 로직
+	asset.Bottom = 0
+
+	err = stg.UpdateAssetInfo(*asset)
 	if err != nil {
 		t.Error(err)
 	}
 
-	stg.db.Last(&asset)
-	t.Logf("%+v", asset)
+	asset2, err := stg.RetrieveAsset(id)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("%+v", asset2)
 
-	if asset.BuyPrice != 65000 {
+	if !compareAssets(*asset, *asset2) {
 		t.Error()
 	}
-	stg.db.Delete(&asset)
 
+	stg.db.Delete(&asset2)
+
+	_, err = stg.RetrieveAsset(id)
+	if err == nil {
+		t.Error("asset not deleted", err)
+	}
 }
 func TestDeleteAssetInfo(t *testing.T) {
 
@@ -383,3 +404,9 @@ func TestUpdateInvestSummary(t *testing.T) {
 // 	}
 // 	t.Logf("%+v", rtn)
 // }
+
+/***************************************************** Inner Function ********************************************************************************/
+
+func compareAssets(asset1 m.Asset, asset2 m.Asset) bool {
+	return asset1.Name == asset2.Name && asset1.Category == asset2.Category && asset1.Code == asset2.Code && asset1.Currency == asset2.Currency && asset1.Top == asset2.Top && asset1.Bottom == asset2.Bottom && asset1.SellPrice == asset2.SellPrice && asset1.BuyPrice == asset2.BuyPrice
+}

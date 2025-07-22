@@ -266,9 +266,10 @@ func (s Storage) SaveAssetInfo(asset m.Asset) (uint, error) {
 }
 
 // When updating with struct, GORM will only update non-zero fields. You might want to use map to update attributes or use Select to specify fields to update
+// Default value도 updated 되게 끔
 func (s Storage) UpdateAssetInfo(asset m.Asset) error {
 
-	result := s.db.Updates(asset)
+	result := s.db.Select("*").Updates(asset)
 
 	if result.Error != nil {
 		return result.Error

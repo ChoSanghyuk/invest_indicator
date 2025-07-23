@@ -783,6 +783,7 @@ func (e InvestIndicator) genPortfolioMsg(ivsmLi []m.InvestSummary, pm map[uint]f
 				marketLevel.String(),
 				marketLevel.MaxVolatileAssetRate()),
 			)
+			sb.WriteString(fmt.Sprintf("최저 판매 필요 금액 : %.2f\n", (r-marketLevel.MinVolatileAssetRate())*(volatile[k]+stable[k])))
 
 			slices.SortFunc(os, func(a, b priority) int {
 				if a.asset.Category.IsStable() == b.asset.Category.IsStable() {

@@ -269,7 +269,7 @@ func (s Storage) SaveAssetInfo(asset m.Asset) (uint, error) {
 // Default value도 updated 되게 끔
 func (s Storage) UpdateAssetInfo(asset m.Asset) error {
 
-	result := s.db.Updates(asset) //.Select("*"). todo. top bottom 바뀔 때 다른 값들 디폴트로 바뀌는 문제 발생.
+	result := s.db.Select("*").Updates(asset)
 
 	if result.Error != nil {
 		return result.Error

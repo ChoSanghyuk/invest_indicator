@@ -650,15 +650,11 @@ func (e InvestIndicator) buySellMsg(assetId uint, pm map[uint]float64) (msg stri
 
 	// 최고가/최저가 갱신 여부 판단
 	if a.Top < pp {
-		e.stg.UpdateAssetInfo(m.Asset{
-			ID:  assetId,
-			Top: pp,
-		})
+		a.Top = pp
+		e.stg.UpdateAssetInfo(*a)
 	} else if a.Bottom > pp {
-		e.stg.UpdateAssetInfo(m.Asset{
-			ID:     assetId,
-			Bottom: pp,
-		})
+		a.Bottom = pp
+		e.stg.UpdateAssetInfo(*a)
 	}
 
 	return

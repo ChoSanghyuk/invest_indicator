@@ -127,3 +127,14 @@ func TestCliIndex(t *testing.T) {
 
 	crwalByChromedp()
 }
+
+func TestTossApi(t *testing.T) {
+
+	s := NewScraper(transmitterMock{})
+
+	date, spread, err := s.HighYieldSpread()
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(date, spread)
+}

@@ -73,6 +73,11 @@ type CliIndex struct {
 	Index     float64
 }
 
+type HighYieldSpread struct {
+	CreatedAt datatypes.Date `gorm:"primaryKey"`
+	Spread    float64
+}
+
 type Sample struct {
 	ID   uint `gorm:"primaryKey"`
 	Date datatypes.Date

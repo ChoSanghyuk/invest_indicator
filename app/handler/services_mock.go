@@ -138,6 +138,10 @@ func (mock MaketRetrieverMock) RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex
 	return nil, nil
 }
 
+func (mock MaketRetrieverMock) RetrieveHighYieldSpreadWeekDesc() ([]m.HighYieldSpread, error) {
+	return nil, nil
+}
+
 type MarketSaverMock struct {
 	err error
 }

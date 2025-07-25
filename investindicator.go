@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"gorm.io/datatypes"
 )
 
 type InvestIndicator struct {
@@ -208,6 +209,44 @@ func (e InvestIndicator) runIndexEvent() {
 		Float64("nasdaq", nasdaq).
 		Float64("sp500", sp500).
 		Msg("IndexEvent completed")
+}
+
+func (e InvestIndicator) runHighYieldSpreadEvent() {
+	e.lg.Info().Msg("Starting HighYieldSpreadEvent")
+
+	date, spread, err := e.dp.HighYieldSpread()
+	if err != nil {
+		e.lg.Error().Err(err).Msg("HighYieldSpread 조회 시 오류 발생")
+		e.ch <- fmt.Sprintf("HighYieldSpread 조회 시 오류 발생. %s", err.Error())
+	}
+
+	hy, err := e.stg.RetrieveLatestHighYieldSpread()
+	if err != nil {
+		e.lg.Error().Err(err).Msg("RetrieveMarketIndicator 시 오류 발생")
+		e.ch <- fmt.Sprintf("RetrieveMarketIndicator 시 오류 발생. %s", err.Error())
+	}
+	if time.Time(hy.CreatedAt).Format("2006-01-02") == date {
+		e.lg.Info().Str("date", date).Float64("spread", spread).Msg("HighYieldSpreadEvent Existing")
+		return
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		e.lg.Error().Err(err).Msg("Date parsing failed")
+		e.ch <- fmt.Sprintf("Date parsing failed. %s", err.Error())
+		return
+	}
+
+	err = e.stg.SaveHighYieldSpread(&m.HighYieldSpread{
+		CreatedAt: datatypes.Date(parsedDate),
+		Spread:    spread,
+	})
+	if err != nil {
+		e.lg.Error().Err(err).Msg("SaveHighYieldSpread 시 오류 발생")
+		e.ch <- fmt.Sprintf("SaveHighYieldSpread 시 오류 발생. %s", err.Error())
+	}
+
+	e.lg.Info().Str("date", date).Float64("spread", spread).Msg("HighYieldSpreadEvent completed")
 }
 
 func (e InvestIndicator) runEmaUpdateEvent() {

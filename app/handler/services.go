@@ -41,6 +41,7 @@ type MaketRetriever interface {
 	RetrieveMarketStatus(date string) (*m.Market, error)
 	RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error)
 	RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex, error)
+	RetrieveHighYieldSpreadWeekDesc() ([]m.HighYieldSpread, error)
 }
 
 type MarketSaver interface {

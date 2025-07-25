@@ -23,6 +23,7 @@ func (e InvestIndicator) Run() {
 	c.AddFunc(DailySpec, func() {
 		e.runIndexEvent()
 		e.runEmaUpdateEvent()
+		e.runHighYieldSpreadEvent()
 		e.runAssetRecommendEvent(false)
 	})
 	// c.AddFunc(EstateSpec, e.RealEstateEvent)

@@ -17,6 +17,7 @@ type dailyPoller interface {
 	Nasdaq() (float64, error)
 	Sp500() (float64, error)
 	CliIdx() (float64, error)
+	HighYieldSpread() (date string, spread float64, err error)
 }
 
 type Poller interface {

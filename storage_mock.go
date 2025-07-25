@@ -94,3 +94,11 @@ func (m StorageMock) RetreiveEventIsActive(eventId uint) bool {
 func (m StorageMock) UpdateEventIsActive(eventId uint, isActive bool) error {
 	return nil
 }
+
+func (m StorageMock) RetrieveLatestHighYieldSpread() (*md.HighYieldSpread, error) {
+	return nil, nil
+}
+
+func (m StorageMock) SaveHighYieldSpread(hy *md.HighYieldSpread) error {
+	return nil
+}

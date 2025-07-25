@@ -18,6 +18,8 @@ type Storage interface {
 
 	RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error)
 	SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error
+	RetrieveLatestHighYieldSpread() (*m.HighYieldSpread, error)
+	SaveHighYieldSpread(hy *m.HighYieldSpread) error
 
 	RetreiveLatestEma(assetId uint) (*m.EmaHist, error)
 	SaveEmaHist(newEma *m.EmaHist) error

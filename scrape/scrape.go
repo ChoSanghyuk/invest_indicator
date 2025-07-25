@@ -1,9 +1,11 @@
 package scrape
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	m "investindicator/internal/model"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -270,6 +272,57 @@ func (s *Scraper) GoldPriceDollar() (float64, error) {
 	p := rtn["price_gram_24k"].(float64)
 
 	return p, nil
+}
+
+const (
+	highYieldSpreadUrl = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+)
+
+func (s *Scraper) HighYieldSpread() (date string, spread float64, err error) {
+	s.lg.Info().Msg("Starting HighYieldSpread")
+
+	resp, err := http.Get(highYieldSpreadUrl)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// Read all content (small file, safe to read fully)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	// Split by lines
+	lines := bytes.Split(body, []byte("\n"))
+	if len(lines) < 2 {
+		panic("no data found")
+	}
+
+	// Get the last non-empty line (in case of trailing newline)
+	var lastLine []byte
+	for i := len(lines) - 1; i >= 0; i-- {
+		if len(bytes.TrimSpace(lines[i])) > 0 {
+			lastLine = lines[i]
+			break
+		}
+	}
+
+	// Split last line by comma
+	parts := bytes.Split(lastLine, []byte(","))
+	if len(parts) < 2 {
+		panic("invalid last line format")
+	}
+
+	date = string(parts[0])
+	value := string(parts[1])
+
+	spread, err = strconv.ParseFloat(value, 64)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return date, spread, nil
 }
 
 // todo. refactor scraper 변경 필요

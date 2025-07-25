@@ -569,6 +569,38 @@ func (s Storage) UpdateEventIsActive(eventId uint, isActive bool) error {
 	return nil
 }
 
+func (s Storage) RetrieveLatestHighYieldSpread() (*m.HighYieldSpread, error) {
+	var hy m.HighYieldSpread
+
+	result := s.db.Last(&hy)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &hy, nil
+}
+
+func (s Storage) SaveHighYieldSpread(hy *m.HighYieldSpread) error {
+
+	result := s.db.Create(hy)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (s Storage) RetrieveHighYieldSpreadWeekDesc() ([]m.HighYieldSpread, error) {
+	var hy []m.HighYieldSpread
+
+	err := s.db.Order("created_at DESC").
+		Limit(7).
+		Find(&hy).
+		Error
+
+	return hy, err
+}
+
 // func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {
 
 // 	var invests []m.Invest

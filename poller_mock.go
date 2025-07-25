@@ -56,3 +56,6 @@ func (m DailyPollerMock) CliIdx() (float64, error) {
 func (m DailyPollerMock) ClosingPrice(category md.Category, code string) (float64, error) {
 	return 0, nil
 }
+func (m DailyPollerMock) HighYieldSpread() (date string, spread float64, err error) {
+	return "", 0, nil
+}

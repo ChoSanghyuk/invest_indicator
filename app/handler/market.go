@@ -104,14 +104,21 @@ func (h *MarketHandler) WeekMarketIndicators(c *fiber.Ctx) error {
 		GraphData: spw,
 	}
 
-	hyw, err := h.r.RetrieveHighYieldSpreadWeekDesc()
+	hywd, err := h.r.RetrieveHighYieldSpreadWeekDesc()
 	if err != nil {
 		return fmt.Errorf("RetrieveHighYieldSpread 오류 발생. %w", err)
 	}
 
+	hl := len(hywd)
+
+	hyw := make([]float64, hl)
+	for i, idx := range hywd {
+		hyw[hl-(i+1)] = idx.Spread
+	}
+
 	hy := MarketIndexInner{
-		Value:     fmt.Sprintf("%.2f", hyw[l-1]),
-		Status:    fmt.Sprintf("%.2f", 100*(hyw[l-1]-hyw[l-2])/hyw[l-1]) + "%",
+		Value:     fmt.Sprintf("%.2f", hyw[hl-1]),
+		Status:    fmt.Sprintf("%.2f", 100*(hyw[hl-1]-hyw[hl-2])/hyw[hl-1]) + "%",
 		GraphData: hyw,
 	}
 

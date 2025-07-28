@@ -128,7 +128,7 @@ func TestCliIndex(t *testing.T) {
 	crwalByChromedp()
 }
 
-func TestTossApi(t *testing.T) {
+func TestHighYieldSpread(t *testing.T) {
 
 	s := NewScraper(transmitterMock{})
 
@@ -137,4 +137,15 @@ func TestTossApi(t *testing.T) {
 		t.Error(err)
 	}
 	t.Log(date, spread)
+}
+
+func TestSP500List(t *testing.T) {
+
+	s := NewScraper(transmitterMock{})
+
+	entry, err := s.RecentSP500Entries("2025-07-01")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(entry)
 }

@@ -18,6 +18,7 @@ type dailyPoller interface {
 	Sp500() (float64, error)
 	CliIdx() (float64, error)
 	HighYieldSpread() (date string, spread float64, err error)
+	RecentSP500Entries(targetDate string) ([]m.SP500Company, error)
 }
 
 type Poller interface {

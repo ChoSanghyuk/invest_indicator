@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"gorm.io/datatypes"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -366,7 +365,7 @@ func (s Storage) RetrieveMarketIndicatorWeekDesc() ([]m.DailyIndex, error) {
 func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error {
 
 	result := s.db.Create(&m.DailyIndex{
-		CreatedAt:      datatypes.Date(time.Now()),
+		CreatedAt:      time.Now(),
 		FearGreedIndex: fearGreedIndex,
 		NasDaq:         nasdaq,
 		Sp500:          sp500,
@@ -382,7 +381,7 @@ func (s Storage) SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, s
 func (s Storage) SaveMarketStatus(status uint) error {
 
 	result := s.db.Create(&m.Market{
-		CreatedAt: datatypes.Date(time.Now()),
+		CreatedAt: time.Now(),
 		Status:    status,
 	})
 	if result.Error != nil {
@@ -517,7 +516,7 @@ func (s Storage) RetreiveLatestEma(assetId uint) (*m.EmaHist, error) {
 
 func (s Storage) SaveEmaHist(newEma *m.EmaHist) error {
 
-	newEma.Date = datatypes.Date(time.Now())
+	newEma.Date = time.Now()
 
 	result := s.db.Create(newEma)
 	if result.Error != nil {
@@ -599,6 +598,17 @@ func (s Storage) RetrieveHighYieldSpreadWeekDesc() ([]m.HighYieldSpread, error) 
 		Error
 
 	return hy, err
+}
+
+func (s Storage) RetrieveLatestSP500Entry() (*m.SP500Company, error) {
+	var sp500 m.SP500Company
+
+	result := s.db.Order("date_added DESC").First(&sp500)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &sp500, nil
 }
 
 // func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {

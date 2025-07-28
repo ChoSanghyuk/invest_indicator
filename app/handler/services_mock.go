@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kr/pretty"
-	"gorm.io/datatypes"
 )
 
 /***************************** Asset ***********************************/
@@ -113,7 +112,7 @@ func (mock MaketRetrieverMock) RetrieveMarketStatus(date string) (*m.Market, err
 		return nil, mock.err
 	}
 	return &m.Market{
-		CreatedAt: datatypes.Date(time.Now()),
+		CreatedAt: time.Now(),
 		Status:    3,
 	}, nil
 }
@@ -125,11 +124,11 @@ func (mock MaketRetrieverMock) RetrieveMarketIndicator(date string) (*m.DailyInd
 		return nil, nil, mock.err
 	}
 	return &m.DailyIndex{
-			CreatedAt:      datatypes.Date(time.Now()),
+			CreatedAt:      time.Now(),
 			FearGreedIndex: 23,
 			NasDaq:         17556.03,
 		}, &m.CliIndex{
-			CreatedAt: datatypes.Date(time.Now()),
+			CreatedAt: time.Now(),
 			Index:     102,
 		}, nil
 }

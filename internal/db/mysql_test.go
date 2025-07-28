@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	m "investindicator/internal/model"
 	"log"
@@ -395,6 +396,16 @@ func TestUpdateInvestSummary(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestRetrieveLatestSP500Entry(t *testing.T) {
+	rtn, err := stg.RetrieveLatestSP500Entry()
+	if err != nil {
+		t.Error(err)
+	}
+
+	jsonBytes, _ := json.MarshalIndent(rtn, "", "  ")
+	t.Log(string(jsonBytes))
 }
 
 // func TestRetrieveInitAmountofAsset(t *testing.T) {

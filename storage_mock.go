@@ -102,3 +102,7 @@ func (m StorageMock) RetrieveLatestHighYieldSpread() (*md.HighYieldSpread, error
 func (m StorageMock) SaveHighYieldSpread(hy *md.HighYieldSpread) error {
 	return nil
 }
+
+func (m StorageMock) RetrieveLatestSP500Entry() (*md.SP500Company, error) {
+	return nil, nil
+}

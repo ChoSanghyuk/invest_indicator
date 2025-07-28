@@ -59,3 +59,7 @@ func (m DailyPollerMock) ClosingPrice(category md.Category, code string) (float6
 func (m DailyPollerMock) HighYieldSpread() (date string, spread float64, err error) {
 	return "", 0, nil
 }
+
+func (m DailyPollerMock) RecentSP500Entries(targetDate string) ([]md.SP500Company, error) {
+	return nil, nil
+}

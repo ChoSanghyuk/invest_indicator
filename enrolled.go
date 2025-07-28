@@ -25,6 +25,7 @@ func (e InvestIndicator) Run() {
 		e.runEmaUpdateEvent()
 		e.runHighYieldSpreadEvent()
 		e.runAssetRecommendEvent(false)
+		e.runFindNewSP500Event()
 	})
 	// c.AddFunc(EstateSpec, e.RealEstateEvent)
 

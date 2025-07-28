@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bytes"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	m "investindicator/internal/model"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
@@ -309,13 +311,13 @@ func (s *Scraper) HighYieldSpread() (date string, spread float64, err error) {
 	}
 
 	// Split last line by comma
-	parts := bytes.Split(lastLine, []byte(","))
-	if len(parts) < 2 {
+	line := bytes.Split(lastLine, []byte(","))
+	if len(line) < 2 {
 		panic("invalid last line format")
 	}
 
-	date = string(parts[0])
-	value := string(parts[1])
+	date = string(line[0])
+	value := string(line[1])
 
 	spread, err = strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -323,6 +325,58 @@ func (s *Scraper) HighYieldSpread() (date string, spread float64, err error) {
 	}
 
 	return date, spread, nil
+}
+
+const (
+	sp500ListUrl = "https://datahub-next-new.vercel.app/core/s-and-p-500-companies/_r/-/data/constituents.csv"
+)
+
+func (s *Scraper) RecentSP500Entries(targetDate string) ([]m.SP500Company, error) {
+	s.lg.Info().Msg("Starting SP500List")
+
+	if !regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`).MatchString(targetDate) {
+		return nil, errors.New("invalid date format")
+	}
+
+	resp, err := http.Get(sp500ListUrl)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	csvReader := csv.NewReader(resp.Body)
+	// scanner := bufio.NewScanner(resp.Body)
+	var latestEntry []m.SP500Company
+
+	csvReader.Read() // skip header
+	for {
+		line, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.Compare(targetDate, line[5]) < 0 {
+			date, err := time.Parse("2006-01-02", line[5])
+			if err != nil {
+				return nil, err
+			}
+			latestEntry = append(latestEntry, m.SP500Company{
+				Symbol:                line[0],
+				Security:              line[1],
+				GICS_Sector:           line[2],
+				GICS_Sub_Industry:     line[3],
+				Headquarters_Location: line[4],
+				Date_added:            date,
+				CIK:                   line[6],
+				Founded:               line[7],
+			})
+		}
+	}
+
+	return latestEntry, nil
 }
 
 // todo. refactor scraper 변경 필요

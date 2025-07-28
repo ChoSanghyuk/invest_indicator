@@ -2,6 +2,7 @@ package investind
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"investindicator/internal/cache"
 	m "investindicator/internal/model"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
-	"gorm.io/datatypes"
 )
 
 type InvestIndicator struct {
@@ -238,7 +238,7 @@ func (e InvestIndicator) runHighYieldSpreadEvent() {
 	}
 
 	err = e.stg.SaveHighYieldSpread(&m.HighYieldSpread{
-		CreatedAt: datatypes.Date(parsedDate),
+		CreatedAt: parsedDate,
 		Spread:    spread,
 	})
 	if err != nil {
@@ -317,6 +317,31 @@ func (e InvestIndicator) runRealEstateEvent() {
 		e.lg.Info().Str("status", rtn).Msg("연신내 변동 사항 없음. 현재 단계")
 	}
 	e.lg.Info().Str("status", rtn).Msg("RealEstateEvent completed")
+}
+
+func (e InvestIndicator) runFindNewSP500Event() {
+	e.lg.Info().Msg("Starting FindNewSP500Event")
+
+	last, err := e.stg.RetrieveLatestSP500Entry()
+	if err != nil {
+		e.lg.Error().Err(err).Msg("SP500 조회 시 오류 발생")
+		e.ch <- fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error())
+	}
+
+	entries, err := e.dp.RecentSP500Entries(last.Date_added.Format("2006-01-02"))
+	if err != nil {
+		e.lg.Error().Err(err).Msg("SP500 조회 시 오류 발생")
+		e.ch <- fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error())
+	}
+
+	for _, entry := range entries {
+		e.lg.Info().Str("symbol", entry.Symbol).Str("security", entry.Security).Msg("New SP500 Entry")
+		e.ch <- "New SP500 Entry"
+		jsonBytes, _ := json.MarshalIndent(entry, "", "  ")
+		e.ch <- string(jsonBytes)
+	}
+
+	e.lg.Info().Msg("FindNewSP500Event completed")
 }
 
 /**********************************************************************************************************************

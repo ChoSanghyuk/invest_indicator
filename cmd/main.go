@@ -20,11 +20,16 @@ func main() {
 		panic(err)
 	}
 
-	// level, err := conf.LogLevel()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	zerolog.SetGlobalLevel(zerolog.InfoLevel) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인. config로 이동
+	level, err := conf.LogLevel()
+	if err != nil {
+		panic(err)
+	}
+	/*
+		memo.
+		zerolog.SetGlobalLevel()는 이후에 생성되는 모든 zerolog.Logger의 로그 레벨을 설정함.
+		단, 이 프로그램의 경우, mysql.go에서는 별도의 gorm logger을 사용하기 때문에 영향을 받지 않음.
+	*/
+	zerolog.SetGlobalLevel(level) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인. config로 이동
 
 	ch := make(chan string)
 

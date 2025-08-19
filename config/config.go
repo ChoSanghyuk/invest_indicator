@@ -58,7 +58,7 @@ func (c Config) LogLevel() (zerolog.Level, error) {
 
 	level, err := zerolog.ParseLevel(c.Log)
 	if err != nil {
-		return -1, err
+		return zerolog.InfoLevel, err // Default로는 Info 레벨 설정
 	}
 
 	return level, nil

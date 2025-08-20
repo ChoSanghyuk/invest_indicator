@@ -12,9 +12,10 @@ type FundHandler struct {
 	w FundWriter
 	i InvestRetriever
 	e ExchageRateGetter
+	m MaketRetriever
 }
 
-func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter) *FundHandler {
+func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter) *FundHandler { // todo.
 	return &FundHandler{
 		r: r,
 		w: w,
@@ -31,6 +32,7 @@ func (h *FundHandler) InitRoute(app *fiber.App) {
 	router.Get("/:id/hist", h.FundHist)
 	router.Get("/:id/assets", h.FundAssets)
 	router.Get("/:id/portion", h.FundPortion)
+	router.Get("/:id/available_amounts", h.AvailableAmounts)
 }
 
 // 총 자금 금액
@@ -205,6 +207,50 @@ func (h *FundHandler) FundPortion(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(resp)
 
+}
+
+func (h *FundHandler) AvailableAmounts(c *fiber.Ctx) error {
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return fmt.Errorf("파라미터 id 조회 시 오류 발생. %w", err)
+	}
+
+	funds, err := h.r.RetreiveFundSummaryByFundId(uint(id))
+	if err != nil {
+		return fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
+	}
+
+	totalAmount := 0.0
+	volatileAmount := 0.0
+
+	for _, f := range funds {
+		if f.Count == 0 {
+			continue
+		}
+		v := 0.0
+		if f.Asset.Currency == model.KRW.String() {
+			v = f.Sum
+		} else {
+			v = f.Sum * h.e.ExchageRate()
+
+		}
+
+		if !f.Asset.Category.IsStable() {
+			volatileAmount += v
+		}
+		totalAmount += v
+	}
+
+	marketStatus, err := h.m.RetrieveMarketStatus("")
+	if err != nil {
+		return fmt.Errorf("RetrieveMarketStatus 시 오류 발생. %w", err)
+	}
+	marketLevel := model.MarketLevel(marketStatus.Status)
+
+	availableAmount := marketLevel.MaxVolatileAssetRate()*totalAmount - volatileAmount
+
+	return c.Status(fiber.StatusOK).JSON(availableAmount)
 }
 
 // 수익률 = (현재가치 + 판매가치) / 총 구입 가치

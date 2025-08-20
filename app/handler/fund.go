@@ -15,12 +15,13 @@ type FundHandler struct {
 	m MaketRetriever
 }
 
-func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter) *FundHandler { // todo.
+func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter, m MaketRetriever) *FundHandler {
 	return &FundHandler{
 		r: r,
 		w: w,
 		i: i,
 		e: e,
+		m: m,
 	}
 }
 

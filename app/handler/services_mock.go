@@ -102,7 +102,8 @@ func (mock FundWriterMock) SaveFund(name string) error {
 
 /***************************** Market ***********************************/
 type MaketRetrieverMock struct {
-	err error
+	err           error
+	marketStatus  uint
 }
 
 func (mock MaketRetrieverMock) RetrieveMarketStatus(date string) (*m.Market, error) {
@@ -111,9 +112,15 @@ func (mock MaketRetrieverMock) RetrieveMarketStatus(date string) (*m.Market, err
 	if mock.err != nil {
 		return nil, mock.err
 	}
+	
+	status := mock.marketStatus
+	if status == 0 {
+		status = 3 // Default to VOLATILIY if not set
+	}
+	
 	return &m.Market{
 		CreatedAt: time.Now(),
-		Status:    3,
+		Status:    status,
 	}, nil
 }
 

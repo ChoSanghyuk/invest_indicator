@@ -29,46 +29,70 @@ type Scraper struct {
 		appSecret    string
 		accessToken  string
 		tokenExpired string
+		account      string
 	}
 	lg zerolog.Logger
-	t  transmitter
+	t  transmitter // todo. 이거 제거 하자. 다 그냥 필드로 들고 있는 것으로.
 }
 
 type transmitter interface {
 	Key(target string) string
 }
 
-func NewScraper(t transmitter, options ...func(*Scraper)) *Scraper {
+type Option func(*Scraper) error
+
+// Functional Option Pattern
+func NewScraper(t transmitter, options ...Option) (*Scraper, error) {
 	s := &Scraper{
 		t:  t,
 		lg: zerolog.New(os.Stdout).With().Str("Module", "Scraper").Timestamp().Logger(),
 	}
 	for _, opt := range options {
-		opt(s)
+		if err := opt(s); err != nil {
+			return nil, fmt.Errorf("failed to create Scraper %w", err)
+		}
 	}
-	return s
+	return s, nil
 }
 
 type KisConfig struct {
 	AppKey    string
 	AppSecret string
+	Account   string
 }
 
-func WithKIS(conf *KisConfig) func(*Scraper) {
+func WithKIS(conf *KisConfig) Option {
 
-	return func(s *Scraper) {
+	return func(s *Scraper) error {
+		if conf.AppKey == "" {
+			return errors.New("kis appkey 미존재")
+		}
+		if conf.AppSecret == "" {
+			return errors.New("kis appsecret 미존재")
+		}
+		if conf.Account == "" {
+			return errors.New("kis accoount 미존재")
+		}
+
 		s.kis.appKey = conf.AppKey
 		s.kis.appSecret = conf.AppSecret
+		s.kis.account = conf.Account
+
+		return nil
 	}
 }
 
-func WithToken(token string) func(*Scraper) {
+func WithToken(token string) Option {
 
-	return func(s *Scraper) {
+	return func(s *Scraper) error {
 		s.kis.accessToken = token
 		s.kis.tokenExpired = time.Now().Add(time.Duration(1) * time.Hour).Format("2006-01-02 15:04:05")
+
+		return nil
 	}
 }
+
+// acount option 설정 추가
 
 /*
 종목 이름만 보고 어디서 가져올 지 정할 수 있어야 함

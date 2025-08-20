@@ -20,7 +20,7 @@ export cipher=""
 
 func TestEncrypt(t *testing.T) {
 
-	key := os.Getenv("key")
+	key := os.Getenv("mykey")
 	plain := os.Getenv("plain")
 
 	encrypted, err := Encrypt([]byte(key), plain)
@@ -32,7 +32,7 @@ func TestEncrypt(t *testing.T) {
 
 func TestDecrypt(t *testing.T) {
 
-	key := os.Getenv("key")
+	key := os.Getenv("mykey")
 	cipher := os.Getenv("cipher")
 
 	decrypted, err := Decrypt([]byte(key), cipher)

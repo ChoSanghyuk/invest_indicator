@@ -77,18 +77,17 @@ func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
 	}, nil
 }
 
-func (c Config) InitKIS(key string) (err error) {
-	*c.KIS["appkey"], err = util.Decrypt([]byte(key), *c.KIS["appkey"])
-	if err != nil {
-		return err
-	}
-
-	*c.KIS["appsecret"], err = util.Decrypt([]byte(key), *c.KIS["appsecret"])
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func (c Config) InitKIS(key string) (err error) {
+// 	*c.KIS["appkey"], err = util.Decrypt([]byte(key), *c.KIS["appkey"])
+// 	if err != nil {
+// 		return err
+// 	}
+// 	*c.KIS["appsecret"], err = util.Decrypt([]byte(key), *c.KIS["appsecret"])
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 // 복호화 키 전달
 type KeyPasser interface {
@@ -114,6 +113,7 @@ func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 	return &scrape.KisConfig{
 		AppKey:    appKey,
 		AppSecret: appSecret,
+		Account:   *c.KIS["account"],
 	}
 }
 

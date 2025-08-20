@@ -43,9 +43,12 @@ func main() {
 		panic(err)
 	}
 
-	scraper := scrape.NewScraper(conf,
+	scraper, err := scrape.NewScraper(conf,
 		scrape.WithKIS(conf.KisConfig(teleBot)), // todo. 여기에 봇을 집어넣고, config struct 반환
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	db, err := db.NewStorage(conf.Dsn())
 	if err != nil {

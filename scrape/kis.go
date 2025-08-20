@@ -17,6 +17,7 @@ const (
 	kisIndexUrlForm             = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/inquire-daily-chartprice?FID_COND_MRKT_DIV_CODE=N&FID_INPUT_ISCD=%s&FID_INPUT_DATE_1=%s&FID_INPUT_DATE_2=%s&FID_PERIOD_DIV_CODE=D"
 	kisDomesticEtfPriceUrlForm  = "https://openapi.koreainvestment.com:9443/uapi/etfetn/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=%s"
 	kisForeignDailyPriceUrlForm = "https://openapi.koreainvestment.com:9443/uapi/overseas-price/v1/quotations/dailyprice?EXCD=%s&SYMB=%s&GUBN=0&BYMD=%s&MODP=0"
+	kisDomesticStockBuyUrl      = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/trading/order-cash"
 )
 
 type TokenResponse struct {
@@ -44,6 +45,7 @@ func (s *Scraper) KisToken() (string, error) {
 	s.kis.accessToken = token.AccessToken
 	s.kis.tokenExpired = token.Expired
 
+	s.lg.Debug().Str("token", token.AccessToken)
 	return token.AccessToken, nil
 }
 
@@ -404,6 +406,50 @@ loop:
 	return math.Round(x*100) / 100, n, nil
 }
 
+/*
+국내주식주문 매도 : TTTC0011U
+국내주식주문 매수 : TTTC0012U
+*/
+func (s *Scraper) kisDomesticBuy(code string, qty uint) error {
+
+	token, err := s.KisToken()
+	if err != nil {
+		return err
+	}
+
+	var rtn KIsResp
+
+	header := map[string]string{
+		"Content-Type":  "application/json",
+		"authorization": "Bearer " + token,
+		"appkey":        s.kis.appKey,
+		"appsecret":     s.kis.appSecret,
+		"tr_id":         "TTTC0012U", // 국내 매수
+		"custtype":      "P",
+	}
+
+	accounts := strings.Split(s.kis.account, "-")
+	body := map[string]string{
+		"CANO":         accounts[0],            // 종합계좌번호	String	Y	8	계좌번호 체계(8-2)의 앞 8자리
+		"ACNT_PRDT_CD": accounts[1],            // 계좌상품코드	String	Y	2	계좌번호 체계(8-2)의 뒤 2자리
+		"PDNO":         code,                   // 상품번호	String	Y	12	종목코드
+		"ORD_DVSN":     "01",                   // 00 : 지정가 / 01 : 시장가
+		"ORD_QTY":      fmt.Sprintf("%d", qty), // 주문수량
+		"ORD_UNPR":     "0",                    // 주문단가	String	Y	31	1주당 가격. 시장가 = 0
+	}
+
+	err = sendRequest(kisDomesticStockBuyUrl, http.MethodPost, header, body, &rtn)
+	if err != nil {
+		return err
+	}
+
+	if rtn.RtCd != "0" {
+		s.lg.Error().Any("response", rtn).Msg("국내 주식 구매 실패")
+		return errors.New("해외 주식 거래 API 실패 코드 반환")
+	}
+	return nil
+}
+
 func (s *Scraper) kisForeignBuy(code string, qty uint) error {
 
 	url := ""
@@ -422,15 +468,24 @@ func (s *Scraper) kisForeignBuy(code string, qty uint) error {
 		"tr_id":         "TTTT1002U", // 미국 매수
 	}
 
+	accounts := strings.Split(s.kis.account, "-")
+
+	ovrsExcgCd := ""
+	if strings.HasPrefix(code, "NAS") {
+		ovrsExcgCd = "NASD"
+	} else if strings.HasPrefix(code, "NYS") {
+		ovrsExcgCd = "NYSE"
+	}
+
 	body := map[string]string{
-		"CANO":            "",                     // 종합계좌번호	String	Y	8	계좌번호 체계(8-2)의 앞 8자리
-		"ACNT_PRDT_CD":    "",                     // 계좌상품코드	String	Y	2	계좌번호 체계(8-2)의 뒤 2자리
-		"OVRS_EXCG_CD":    "",                     // 해외거래소코드	String	Y	4. NASD : 나스닥 / NYSE : 뉴욕
+		"CANO":            accounts[0],            // 종합계좌번호	String	Y	8	계좌번호 체계(8-2)의 앞 8자리
+		"ACNT_PRDT_CD":    accounts[1],            // 계좌상품코드	String	Y	2	계좌번호 체계(8-2)의 뒤 2자리
+		"OVRS_EXCG_CD":    ovrsExcgCd,             // 해외거래소코드	String	Y	4. NASD : 나스닥 / NYSE : 뉴욕
 		"PDNO":            code,                   // 상품번호	String	Y	12	종목코드
 		"ORD_QTY":         fmt.Sprintf("%d", qty), // 주문수량
 		"OVRS_ORD_UNPR":   "0",                    // 해외주문단가	String	Y	31	1주당 가격. 시장가 = 0
-		"ORD_SVR_DVSN_CD": "0",                    //주문서버구분코드
-		"ORD_DVSN":        "00",                   // 지정가
+		"ORD_SVR_DVSN_CD": "0",                    // 주문서버구분코드. 0 고정.
+		"ORD_DVSN":        "00",                   // 지정가. 시장가 코드가 없음. 주문단가가 0이면 시장가로 되는건가.
 	}
 
 	err = sendRequest(url, http.MethodPost, header, body, &rtn)
@@ -439,8 +494,9 @@ func (s *Scraper) kisForeignBuy(code string, qty uint) error {
 	}
 
 	if rtn.RtCd != "0" {
-		fmt.Printf("%v", rtn)
+		s.lg.Error().Any("response", rtn).Msg("해외 주식 구매 실패")
 		return errors.New("해외 주식 거래 API 실패 코드 반환")
 	}
+
 	return nil
 }

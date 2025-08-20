@@ -30,7 +30,10 @@ func TestGoldApi(t *testing.T) {
 
 func TestBitcoinApi(t *testing.T) {
 
-	s := NewScraper(transmitterMock{})
+	s, err := NewScraper(transmitterMock{})
+	if err != nil {
+		t.Error(err)
+	}
 
 	pp, cp, err := s.upbitApi("KRW-BTC")
 	if err != nil {
@@ -107,14 +110,14 @@ func TestEstateCrwal(t *testing.T) {
 
 func TestExchangeRate(t *testing.T) {
 
-	s := NewScraper(transmitterMock{})
+	s, _ := NewScraper(transmitterMock{})
 	exrate := s.ExchageRate()
 	t.Log(exrate)
 }
 
 func TestFearGreedIndex(t *testing.T) {
 
-	s := NewScraper(transmitterMock{})
+	s, _ := NewScraper(transmitterMock{})
 
 	rtn, err := s.FearGreedIndex()
 	if err != nil {
@@ -130,7 +133,7 @@ func TestCliIndex(t *testing.T) {
 
 func TestHighYieldSpread(t *testing.T) {
 
-	s := NewScraper(transmitterMock{})
+	s, _ := NewScraper(transmitterMock{})
 
 	date, spread, err := s.HighYieldSpread()
 	if err != nil {
@@ -141,11 +144,111 @@ func TestHighYieldSpread(t *testing.T) {
 
 func TestSP500List(t *testing.T) {
 
-	s := NewScraper(transmitterMock{})
+	s, _ := NewScraper(transmitterMock{})
 
 	entry, err := s.RecentSP500Entries("2025-07-01")
 	if err != nil {
 		t.Error(err)
 	}
 	t.Log(entry)
+}
+
+func TestNewScraper(t *testing.T) {
+	
+	t.Run("NewScraper with transmitter only", func(t *testing.T) {
+		s, err := NewScraper(transmitterMock{})
+		
+		assert.NoError(t, err)
+		assert.NotNil(t, s)
+		assert.NotNil(t, s.t)
+		assert.NotNil(t, s.lg)
+	})
+
+	t.Run("NewScraper with valid KIS option", func(t *testing.T) {
+		kisConfig := &KisConfig{
+			AppKey:    "test_appkey",
+			AppSecret: "test_appsecret", 
+			Account:   "test_account",
+		}
+		
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
+		
+		assert.NoError(t, err)
+		assert.NotNil(t, s)
+		assert.Equal(t, "test_appkey", s.kis.appKey)
+		assert.Equal(t, "test_appsecret", s.kis.appSecret)
+		assert.Equal(t, "test_account", s.kis.account)
+	})
+
+	t.Run("NewScraper with valid Token option", func(t *testing.T) {
+		token := "test_token"
+		
+		s, err := NewScraper(transmitterMock{}, WithToken(token))
+		
+		assert.NoError(t, err)
+		assert.NotNil(t, s)
+		assert.Equal(t, token, s.kis.accessToken)
+		assert.NotEmpty(t, s.kis.tokenExpired)
+	})
+
+	t.Run("NewScraper with multiple valid options", func(t *testing.T) {
+		kisConfig := &KisConfig{
+			AppKey:    "test_appkey",
+			AppSecret: "test_appsecret",
+			Account:   "test_account",
+		}
+		token := "test_token"
+		
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig), WithToken(token))
+		
+		assert.NoError(t, err)
+		assert.NotNil(t, s)
+		assert.Equal(t, "test_appkey", s.kis.appKey)
+		assert.Equal(t, "test_appsecret", s.kis.appSecret)
+		assert.Equal(t, "test_account", s.kis.account)
+		assert.Equal(t, token, s.kis.accessToken)
+		assert.NotEmpty(t, s.kis.tokenExpired)
+	})
+
+	t.Run("NewScraper with invalid KIS option - missing AppKey", func(t *testing.T) {
+		kisConfig := &KisConfig{
+			AppKey:    "", // empty
+			AppSecret: "test_appsecret",
+			Account:   "test_account",
+		}
+		
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
+		
+		assert.Error(t, err)
+		assert.Nil(t, s)
+		assert.Contains(t, err.Error(), "kis appkey 미존재")
+	})
+
+	t.Run("NewScraper with invalid KIS option - missing AppSecret", func(t *testing.T) {
+		kisConfig := &KisConfig{
+			AppKey:    "test_appkey",
+			AppSecret: "", // empty
+			Account:   "test_account",
+		}
+		
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
+		
+		assert.Error(t, err)
+		assert.Nil(t, s)
+		assert.Contains(t, err.Error(), "kis appsecret 미존재")
+	})
+
+	t.Run("NewScraper with invalid KIS option - missing Account", func(t *testing.T) {
+		kisConfig := &KisConfig{
+			AppKey:    "test_appkey",
+			AppSecret: "test_appsecret",
+			Account:   "", // empty
+		}
+		
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
+		
+		assert.Error(t, err)
+		assert.Nil(t, s)
+		assert.Contains(t, err.Error(), "kis accoount 미존재")
+	})
 }

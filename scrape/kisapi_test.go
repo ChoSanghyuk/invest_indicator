@@ -3,6 +3,8 @@ package scrape
 import (
 	"os"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 // todo. test 작성
@@ -17,16 +19,23 @@ func TestKis(t *testing.T) {
 
 	appkey := os.Getenv("appkey")
 	appsecret := os.Getenv("appsecret")
+	account := os.Getenv("account")
 	token := os.Getenv("token")
 
-	s := NewScraper(
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	s, err := NewScraper(
 		transmitterMock{},
 		WithKIS(&KisConfig{
 			AppKey:    appkey,
 			AppSecret: appsecret,
+			Account:   account,
 		}),
 		WithToken(token),
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("Token Generate", func(t *testing.T) {
 		token, err := s.KisToken()
@@ -91,6 +100,13 @@ func TestKis(t *testing.T) {
 		}
 		t.Log(ap)
 		t.Log(n)
+	})
+
+	t.Run("Domestic stock buy", func(t *testing.T) {
+		err := s.kisDomesticBuy("024950", 1) // 삼천리 자전거
+		if err != nil {
+			t.Error(err)
+		}
 	})
 
 }

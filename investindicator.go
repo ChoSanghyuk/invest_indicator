@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"investindicator/internal/cache"
+	"investindicator/internal/model"
 	m "investindicator/internal/model"
 	"math"
 	"os"
@@ -84,6 +85,49 @@ func (e InvestIndicator) LaunchEvent(id uint) error {
 	}
 
 	return nil
+}
+
+/**********************************************************************************************************************
+******************************************** Public Util functions ****************************************************
+**********************************************************************************************************************/
+
+func (e InvestIndicator) InvestAvailableAmount(id int) (float64, error) {
+
+	funds, err := e.stg.RetreiveFundSummaryByFundId(uint(id))
+	if err != nil {
+		return 0, fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
+	}
+
+	totalAmount := 0.0
+	volatileAmount := 0.0
+
+	for _, f := range funds {
+		if f.Count == 0 {
+			continue
+		}
+		v := 0.0
+		if f.Asset.Currency == m.KRW.String() {
+			v = f.Sum
+		} else {
+			v = f.Sum * e.dp.ExchageRate()
+
+		}
+
+		if !f.Asset.Category.IsStable() {
+			volatileAmount += v
+		}
+		totalAmount += v
+	}
+
+	marketStatus, err := e.stg.RetrieveMarketStatus("")
+	if err != nil {
+		return 0, fmt.Errorf("RetrieveMarketStatus 시 오류 발생. %w", err)
+	}
+	marketLevel := model.MarketLevel(marketStatus.Status)
+
+	availableAmount := marketLevel.MaxVolatileAssetRate()*totalAmount - volatileAmount
+
+	return availableAmount, nil
 }
 
 /**********************************************************************************************************************

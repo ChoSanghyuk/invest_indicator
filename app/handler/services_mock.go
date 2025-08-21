@@ -102,8 +102,8 @@ func (mock FundWriterMock) SaveFund(name string) error {
 
 /***************************** Market ***********************************/
 type MaketRetrieverMock struct {
-	err           error
-	marketStatus  uint
+	err          error
+	marketStatus uint
 }
 
 func (mock MaketRetrieverMock) RetrieveMarketStatus(date string) (*m.Market, error) {
@@ -112,12 +112,12 @@ func (mock MaketRetrieverMock) RetrieveMarketStatus(date string) (*m.Market, err
 	if mock.err != nil {
 		return nil, mock.err
 	}
-	
+
 	status := mock.marketStatus
 	if status == 0 {
 		status = 3 // Default to VOLATILIY if not set
 	}
-	
+
 	return &m.Market{
 		CreatedAt: time.Now(),
 		Status:    status,
@@ -400,4 +400,26 @@ func (mock *InvestSaverMock) UpdateInvestSummary(fundId uint, assetId uint, chan
 		})
 	}
 	return nil
+}
+
+/***************************** InvestStatusIndicator ***********************************/
+type InvestStatusIndicatorMock struct {
+	availableAmount float64
+	err             error
+}
+
+func NewInvestStatusIndicatorMock(availableAmount float64) *InvestStatusIndicatorMock {
+	return &InvestStatusIndicatorMock{
+		availableAmount: availableAmount,
+	}
+}
+
+func (mock InvestStatusIndicatorMock) InvestAvailableAmount(fundId int) (float64, error) {
+	fmt.Printf("InvestAvailableAmount Called with fundId: %d\n", fundId)
+
+	if mock.err != nil {
+		return 0, mock.err
+	}
+
+	return mock.availableAmount, nil
 }

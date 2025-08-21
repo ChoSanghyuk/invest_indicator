@@ -8,20 +8,20 @@ import (
 )
 
 type FundHandler struct {
-	r FundRetriever
-	w FundWriter
-	i InvestRetriever
-	e ExchageRateGetter
-	m MaketRetriever
+	r  FundRetriever
+	w  FundWriter
+	i  InvestRetriever
+	e  ExchageRateGetter
+	is InvestStatusIndicator
 }
 
-func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter, m MaketRetriever) *FundHandler {
+func NewFundHandler(r FundRetriever, w FundWriter, i InvestRetriever, e ExchageRateGetter, is InvestStatusIndicator) *FundHandler {
 	return &FundHandler{
-		r: r,
-		w: w,
-		i: i,
-		e: e,
-		m: m,
+		r:  r,
+		w:  w,
+		i:  i,
+		e:  e,
+		is: is,
 	}
 }
 
@@ -217,39 +217,10 @@ func (h *FundHandler) AvailableAmounts(c *fiber.Ctx) error {
 		return fmt.Errorf("파라미터 id 조회 시 오류 발생. %w", err)
 	}
 
-	funds, err := h.r.RetreiveFundSummaryByFundId(uint(id))
+	availableAmount, err := h.is.InvestAvailableAmount(id)
 	if err != nil {
-		return fmt.Errorf("RetreiveFundSummaryById 시 오류 발생. %w", err)
+		return fmt.Errorf("InvestAvailableAmount 시 오류 발생. %w", err)
 	}
-
-	totalAmount := 0.0
-	volatileAmount := 0.0
-
-	for _, f := range funds {
-		if f.Count == 0 {
-			continue
-		}
-		v := 0.0
-		if f.Asset.Currency == model.KRW.String() {
-			v = f.Sum
-		} else {
-			v = f.Sum * h.e.ExchageRate()
-
-		}
-
-		if !f.Asset.Category.IsStable() {
-			volatileAmount += v
-		}
-		totalAmount += v
-	}
-
-	marketStatus, err := h.m.RetrieveMarketStatus("")
-	if err != nil {
-		return fmt.Errorf("RetrieveMarketStatus 시 오류 발생. %w", err)
-	}
-	marketLevel := model.MarketLevel(marketStatus.Status)
-
-	availableAmount := marketLevel.MaxVolatileAssetRate()*totalAmount - volatileAmount
 
 	return c.Status(fiber.StatusOK).JSON(availableAmount)
 }

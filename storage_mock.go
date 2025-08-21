@@ -1,6 +1,7 @@
 package investind
 
 import (
+	m "investindicator/internal/model"
 	md "investindicator/internal/model"
 )
 
@@ -48,6 +49,21 @@ func (m StorageMock) RetreiveFundsSummaryOrderByFundId() ([]md.InvestSummary, er
 		return nil, m.err
 	}
 	return m.ivsm, nil
+}
+
+func (sm StorageMock) RetreiveFundSummaryByFundId(fundId uint) ([]m.InvestSummary, error) {
+	if sm.err != nil {
+		return nil, sm.err
+	}
+
+	rtn := make([]m.InvestSummary, 0)
+	for _, s := range sm.ivsm {
+		if s.FundID == fundId {
+			rtn = append(rtn, s)
+		}
+	}
+
+	return rtn, nil
 }
 
 func (m StorageMock) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) error {

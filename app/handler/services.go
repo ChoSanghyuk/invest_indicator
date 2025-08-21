@@ -77,3 +77,7 @@ type EventStatusChanger interface {
 type UserRetrierver interface {
 	User(userName string) (*m.User, error)
 }
+
+type InvestStatusIndicator interface {
+	InvestAvailableAmount(fundId int) (float64, error)
+}

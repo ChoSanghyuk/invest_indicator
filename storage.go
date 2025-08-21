@@ -13,6 +13,7 @@ type Storage interface {
 	UpdateAssetInfo(asset m.Asset) error
 
 	RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error)
+	RetreiveFundSummaryByFundId(fundId uint) ([]m.InvestSummary, error)
 	UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) error
 	RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error)
 

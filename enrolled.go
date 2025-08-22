@@ -27,6 +27,7 @@ func (e InvestIndicator) Run() {
 		e.runAssetRecommendEvent(false)
 		e.runFindNewSP500Event()
 	})
+
 	// c.AddFunc(EstateSpec, e.RealEstateEvent)
 
 	for _, enrolled := range e.enrolledEvents {
@@ -89,6 +90,13 @@ func (e *InvestIndicator) registerEvents() {
 			Description: "AVAX DEX 관리 행동 지시.\n매일 오전 8시~오후 12시 1분 주기로 실행",
 			schedule:    "0 */1 8-23 * * 0-6",
 			Event:       e.runAvaxDexEvent,
+		},
+		{
+			Id:          5,
+			Title:       "정기 분할 매수",
+			Description: "AVAX DEX 관리 행동 지시.\n매월 첫째주 월요일 저녁 11시",
+			schedule:    "0 0 23 1-7 * 1",
+			Event:       e.runBuySP500Event,
 		},
 	}
 

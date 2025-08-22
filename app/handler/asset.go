@@ -210,6 +210,11 @@ func (h *AssetHandler) Asset(c *fiber.Ctx) error {
 		return fmt.Errorf("RetrieveAsset 오류 발생. %w", err)
 	}
 
+	ema, err := h.r.RetreiveLatestEma(uint(id))
+	if err != nil {
+		return fmt.Errorf("RetreiveLatestEma 오류 발생. %w", err)
+	}
+
 	rtn := assetResponse{
 		ID:        asset.ID,
 		Name:      asset.Name,
@@ -220,6 +225,8 @@ func (h *AssetHandler) Asset(c *fiber.Ctx) error {
 		Bottom:    asset.Bottom,
 		SellPrice: asset.SellPrice,
 		BuyPrice:  asset.BuyPrice,
+		Ema:       ema.Ema,
+		NDays:     float64(ema.NDays),
 	}
 
 	return c.Status(fiber.StatusOK).JSON(rtn)

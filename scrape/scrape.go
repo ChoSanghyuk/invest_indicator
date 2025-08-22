@@ -404,12 +404,12 @@ func (s *Scraper) RecentSP500Entries(targetDate string) ([]m.SP500Company, error
 }
 
 // todo. refactor scraper 변경 필요
-func (s *Scraper) Buy(category m.Category, code string) error {
+func (s *Scraper) Buy(category m.Category, code string, qty uint) error {
 	s.lg.Info().Msgf("Starting Buy with category: %v, code: %s", category, code)
 
 	switch category {
 	case m.ForeignStock, m.ForeignETF:
-		err := s.kisForeignBuy(code, 0)
+		err := s.kisForeignBuy(code, qty)
 		return err
 	}
 

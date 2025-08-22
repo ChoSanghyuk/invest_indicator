@@ -22,6 +22,7 @@ type AssetRetriever interface {
 	RetrieveAssetHist(id uint) ([]m.Invest, error)
 	RetrieveAssetIdByName(name string) uint
 	RetrieveAssetIdByCode(code string) uint
+	RetreiveLatestEma(assetId uint) (*m.EmaHist, error)
 }
 
 type AssetInfoSaver interface {

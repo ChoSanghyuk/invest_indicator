@@ -265,6 +265,10 @@ func (mock AssetRetrieverMock) RetrieveAssetIdByCode(code string) uint {
 	return 0
 }
 
+func (mock AssetRetrieverMock) RetreiveLatestEma(assetId uint) (*m.EmaHist, error) {
+	return nil, nil
+}
+
 type AssetInfoSaverMock struct {
 	assets []m.Asset
 	hist   []m.EmaHist

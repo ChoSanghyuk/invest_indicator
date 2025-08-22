@@ -20,6 +20,7 @@ type InvestIndicator struct {
 	stg            Storage
 	rt             rtPoller
 	dp             dailyPoller
+	td             Trader
 	ch             chan<- string
 	enrolledEvents []*EnrolledEvent
 	lg             zerolog.Logger
@@ -388,21 +389,47 @@ func (e InvestIndicator) runFindNewSP500Event() {
 	e.lg.Info().Msg("FindNewSP500Event completed")
 }
 
-// func (e InvestIndicator) runBuySP500Event() {
-// 	e.lg.Info().Msg("Starting BuySP500Event")
+// 자금 1에 대해서만 자동 구매 수행
+// tip. 주 당 구모가 작은 SPLG로 수행
+func (e InvestIndicator) runBuySP500Event(isManual WayOfLaunch) {
+	e.lg.Info().Msg("Starting BuySP500Event")
 
-// 	// 현재 자산 비중 조회
+	av, err := e.InvestAvailableAmount(1) // availableAmount
+	if err != nil {
+		e.lg.Error().Err(err).Msg("자금 1 투자 가능 금액 조회 시 오류 발생")
+		e.ch <- fmt.Sprintf("자금 1 투자 가능 금액 조회 시 오류 발생. %s", err.Error())
+	}
 
-// 	// 현재 시장 단계 조회
+	mta := 300000.0 // monthTargetAmount // todo. config 전환
+	budget := 0.0
+	if av < mta {
+		budget = av
+	} else {
+		budget = mta
+	}
 
-// 	// 시장 단계의 최대치 보다 갭이 남아 있을 경우 아래 수행
+	category := m.ForeignETF
+	code := "AMS-SPLG"
 
-// 	// 살 수 있는 수량 조회
+	p, err := e.rt.PresentPrice(category, code)
+	if err != nil {
+		e.lg.Error().Err(err).Msg("SPLG 현재 조회 시 오류 발생")
+		e.ch <- fmt.Sprintf("SPLG 현재 조회 시 오류 발생. %s", err.Error())
+	}
 
-// 	// 구매
+	p *= e.dp.ExchageRate()
 
-// 	// tip. 주 당 구모가 작은 SPLG로 수행.
-// }
+	qty := uint(budget / p)
+
+	// 구매
+	err = e.td.Buy(category, code, qty)
+	if err != nil {
+		e.lg.Error().Err(err).Msg("SPLG 구매 시 오류 발생")
+		e.ch <- fmt.Sprintf("SPLG 구매 시 오류 발생. %s", err.Error())
+	}
+
+	e.ch <- fmt.Sprintf("SPLG 구매 완료. 가격: %f, 수량 %d", p, qty)
+}
 
 /**********************************************************************************************************************
 ********************************************* Munually Launchable Events **********************************************

@@ -86,7 +86,7 @@ func TestKis(t *testing.T) {
 	})
 
 	t.Run("Foreign ETF", func(t *testing.T) {
-		pp, cp, err := s.kisForeignPrice("AMS-SPY")
+		pp, cp, err := s.kisForeignPrice("AMS-SPLG")
 		if err != nil {
 			t.Error(err)
 		}

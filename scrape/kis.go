@@ -471,10 +471,15 @@ func (s *Scraper) kisForeignBuy(code string, qty uint) error {
 	accounts := strings.Split(s.kis.account, "-")
 
 	ovrsExcgCd := ""
-	if strings.HasPrefix(code, "NAS") {
+	switch strings.Split(code, "-")[0] {
+	case "NAS":
 		ovrsExcgCd = "NASD"
-	} else if strings.HasPrefix(code, "NYS") {
+	case "NYS":
 		ovrsExcgCd = "NYSE"
+	case "AMS":
+		ovrsExcgCd = "AMEX"
+	default:
+		return errors.New("미존재 거래소 코드")
 	}
 
 	body := map[string]string{

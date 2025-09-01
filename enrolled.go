@@ -28,9 +28,6 @@ func (e InvestIndicator) Run() {
 		e.runFindNewSP500Event()
 	})
 
-	c.AddFunc("0 0 11 * * 1-5", func() { // 임시 실행
-		e.runEmaUpdateEvent()
-	})
 	// c.AddFunc(EstateSpec, e.RealEstateEvent)
 
 	for _, enrolled := range e.enrolledEvents {

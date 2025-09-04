@@ -17,17 +17,14 @@ func init() {
 
 	user := os.Getenv("db_user")
 	password := os.Getenv("db_password")
-	ip := os.Getenv("db_ip")
-	if ip == "" {
-		ip = "127.0.0.1:3306"
-	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/investdb?charset=utf8mb4&parseTime=True&loc=Local",
-		user,
-		password,
-		ip,
-	)
-	s, err := NewStorage(dsn, &gorm.Config{
+	s, err := NewStorage(&StgConfig{
+		user:     user,
+		password: password,
+		ip:       "127.0.0.1",
+		port:     "3306",
+		scheme:   "investdb",
+	}, &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
 	if err != nil {

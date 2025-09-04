@@ -50,7 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	db, err := db.NewStorage(conf.Dsn())
+	db, err := db.NewStorage(conf.StgConfig())
 	if err != nil {
 		panic(err)
 	}

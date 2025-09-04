@@ -2,9 +2,9 @@ package config
 
 import (
 	_ "embed"
-	"fmt"
 
 	"investindicator/bot"
+	"investindicator/internal/db"
 	"investindicator/internal/util"
 	"investindicator/scrape"
 	"strconv"
@@ -117,8 +117,8 @@ func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 	}
 }
 
-func (c Config) Dsn() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)
+func (c Config) StgConfig() *db.StgConfig {
+	return db.NewStgConfig(c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)
 }
 
 func (c Config) Key(target string) string {

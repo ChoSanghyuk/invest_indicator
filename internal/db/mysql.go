@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	m "investindicator/internal/model"
 	"log"
 	"os"
@@ -19,7 +20,8 @@ type Storage struct {
 	lg zerolog.Logger
 }
 
-func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
+func NewStorage(conf *StgConfig, opts ...gorm.Option) (*Storage, error) {
+	dsn := stgDsn(conf)
 	sqlDB, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
@@ -48,6 +50,28 @@ func NewStorage(dsn string, opts ...gorm.Option) (*Storage, error) {
 		db: db,
 		lg: zerolog.New(os.Stdout).With().Str("Module", "Storage").Timestamp().Logger(),
 	}, nil
+}
+
+type StgConfig struct {
+	user     string
+	password string
+	ip       string
+	port     string
+	scheme   string
+}
+
+func NewStgConfig(user string, password string, ip string, port string, scheme string) *StgConfig {
+	return &StgConfig{
+		user:     user,
+		password: password,
+		ip:       ip,
+		port:     port,
+		scheme:   scheme,
+	}
+}
+
+func stgDsn(conf *StgConfig) string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.user, conf.password, conf.ip, conf.port, conf.scheme)
 }
 
 func (s Storage) RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error) {

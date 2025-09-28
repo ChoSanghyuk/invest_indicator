@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/rs/zerolog"
@@ -195,7 +196,7 @@ const realEstateCss = "#contents > table:nth-child(8) > tbody > tr:nth-child(2) 
 
 func (s *Scraper) RealEstateStatus() (string, error) {
 	s.lg.Info().Msg("Starting RealEstateStatus")
-	return s.crawl(realEstateUrl, realEstateCss)
+	return crawl(realEstateUrl, realEstateCss)
 }
 
 const exRateUrl = "https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=%ED%99%98%EC%9C%A8"
@@ -207,7 +208,7 @@ func (s *Scraper) ExchageRate() float64 {
 		return s.exchange.Rate
 	}
 
-	rtn, err := s.crawl(exRateUrl, exRateCssPath)
+	rtn, err := crawl(exRateUrl, exRateCssPath)
 	if err != nil {
 		log.Error(err)
 	}
@@ -427,4 +428,66 @@ func alpacaCrypto(symbol string) (float64, error) {
 	}
 
 	return bar.Close, nil
+}
+
+const upbitNotice = "https://upbit.com/service_center/notice"
+const upbitNoticeCssPath = "#UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr > td.css-1kasbu5.css-1j9r824 > a > span" //
+
+func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
+
+	titles := make([]string, 0)
+	urls := make([]string, 0)
+
+	// 1. Body 읽어오기
+	doc, err := crawlSpaBody(upbitNotice)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 2. 공지 타이틀 및 url 추출하기
+	doc.Find(upbitNoticeCssPath).Each(func(_ int, s *goquery.Selection) {
+		title := s.Text()
+		matched, err := regexp.MatchString("에어드랍|퀴즈|받아가", title)
+		if err != nil {
+			return
+		}
+
+		if matched {
+			titles = append(titles, title)
+			urls = append(urls, "https://upbit.com"+s.Parent().AttrOr("href", ""))
+		}
+	})
+
+	return titles, urls, nil
+}
+
+const bithumbNotice = "https://feed.bithumb.com/notice"
+const bithumbNoticeCssPath = "#__next > div.content > div > div > ul > li > a > span.NoticeContentList_notice-list__inner__aSUqu"
+
+func (s *Scraper) AirdropEventBithumb() ([]string, []string, error) {
+
+	titles := make([]string, 0)
+	urls := make([]string, 0)
+
+	// 1. Body 읽어오기
+	doc, err := crawlSpaBodyAvoidingClaudFlare(bithumbNotice)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 2. 공지 타이틀 및 url 추출하기
+	doc.Find(bithumbNoticeCssPath).Each(func(_ int, s *goquery.Selection) {
+		title := s.Text()
+		matched, err := regexp.MatchString("에어드랍|퀴즈|받아가", title)
+		if err != nil {
+			return
+		}
+
+		if matched {
+			titles = append(titles, title)
+			urls = append(urls, "https://feed.bithumb.com"+s.Parent().AttrOr("href", ""))
+		}
+	})
+
+	return titles, urls, nil
 }

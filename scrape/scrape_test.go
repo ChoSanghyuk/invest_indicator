@@ -53,13 +53,11 @@ func TestAlpaca(t *testing.T) {
 
 func TestGoldCrwal(t *testing.T) {
 
-	s := Scraper{}
-
 	// gold
 	url := "https://data-as.goldprice.org/dbXRates/USD"
 	cssPath := "#goldchange > div > div > div > div > div.tick-value-wrap.d-flex.align-items-center.justify-content-center.flex-wrap > div.tick-value.price-value > span"
 
-	rtn, err := s.crawl(url, cssPath)
+	rtn, err := crawl(url, cssPath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,15 +67,14 @@ func TestGoldCrwal(t *testing.T) {
 	t.Log(rtn)
 }
 
-func TestBitcoinCrwal(t *testing.T) {
+func TestCrwal(t *testing.T) {
 
 	s := Scraper{}
-
-	t.Run("Crwal", func(t *testing.T) {
+	t.Run("Sample", func(t *testing.T) {
 		url := ""
 		cssPath := ""
 
-		rtn, err := s.crawl(url, cssPath)
+		rtn, err := crawl(url, cssPath)
 		if err != nil {
 			t.Error(err)
 		}
@@ -87,17 +84,42 @@ func TestBitcoinCrwal(t *testing.T) {
 		t.Log(rtn)
 	})
 
+	t.Run("bithumb_airdrop", func(t *testing.T) {
+
+		titles, urls, err := s.AirdropEventBithumb()
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Log(titles)
+		t.Log(urls)
+	})
+
+	/*
+		음...
+	*/
+	t.Run("upbit_airdrop_test", func(t *testing.T) {
+		// url := "https://upbit.com/service_center/notice"
+		// cssPath := "#UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr > td.css-1kasbu5.css-1j9r824 > a > span" //tr::nth-child(2)
+
+		titles, urls, err := s.AirdropEventUpbit()
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Log(titles)
+		t.Log(urls)
+	})
+
 }
 
 func TestEstateCrwal(t *testing.T) {
-
-	s := Scraper{}
 
 	t.Run("Crwal", func(t *testing.T) {
 		url := ""
 		cssPath := ""
 
-		rtn, err := s.crawl(url, cssPath)
+		rtn, err := crawl(url, cssPath)
 		if err != nil {
 			t.Error(err)
 		}
@@ -154,10 +176,10 @@ func TestSP500List(t *testing.T) {
 }
 
 func TestNewScraper(t *testing.T) {
-	
+
 	t.Run("NewScraper with transmitter only", func(t *testing.T) {
 		s, err := NewScraper(transmitterMock{})
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, s)
 		assert.NotNil(t, s.t)
@@ -167,12 +189,12 @@ func TestNewScraper(t *testing.T) {
 	t.Run("NewScraper with valid KIS option", func(t *testing.T) {
 		kisConfig := &KisConfig{
 			AppKey:    "test_appkey",
-			AppSecret: "test_appsecret", 
+			AppSecret: "test_appsecret",
 			Account:   "test_account",
 		}
-		
+
 		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, s)
 		assert.Equal(t, "test_appkey", s.kis.appKey)
@@ -182,9 +204,9 @@ func TestNewScraper(t *testing.T) {
 
 	t.Run("NewScraper with valid Token option", func(t *testing.T) {
 		token := "test_token"
-		
+
 		s, err := NewScraper(transmitterMock{}, WithToken(token))
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, s)
 		assert.Equal(t, token, s.kis.accessToken)
@@ -198,9 +220,9 @@ func TestNewScraper(t *testing.T) {
 			Account:   "test_account",
 		}
 		token := "test_token"
-		
+
 		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig), WithToken(token))
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, s)
 		assert.Equal(t, "test_appkey", s.kis.appKey)
@@ -216,9 +238,9 @@ func TestNewScraper(t *testing.T) {
 			AppSecret: "test_appsecret",
 			Account:   "test_account",
 		}
-		
+
 		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, s)
 		assert.Contains(t, err.Error(), "kis appkey 미존재")
@@ -230,9 +252,9 @@ func TestNewScraper(t *testing.T) {
 			AppSecret: "", // empty
 			Account:   "test_account",
 		}
-		
+
 		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, s)
 		assert.Contains(t, err.Error(), "kis appsecret 미존재")
@@ -244,9 +266,9 @@ func TestNewScraper(t *testing.T) {
 			AppSecret: "test_appsecret",
 			Account:   "", // empty
 		}
-		
+
 		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig))
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, s)
 		assert.Contains(t, err.Error(), "kis accoount 미존재")

@@ -697,6 +697,43 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 	}
 }
 
+// todo. change it with redis. / 옛날 데이터는 만료시키기
+var upbitAirdropCache map[string]bool = make(map[string]bool)
+var bithumbAirdropCache map[string]bool = make(map[string]bool)
+
+func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
+
+	_ = isManual // no diff between manual or auto
+	upEvents, upUrls, err := e.rt.AirdropEventUpbit()
+	if err != nil {
+		e.ch <- fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventUpbit 시, 에러 발생. %s", err)
+		goto bithumb
+	}
+
+	for i, event := range upEvents {
+		if !upbitAirdropCache[event] {
+			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
+			e.ch <- upUrls[i]
+		}
+		upbitAirdropCache[event] = true
+	}
+
+bithumb:
+	bitEvents, bitUrls, err := e.rt.AirdropEventBithumb()
+	if err != nil {
+		e.ch <- fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventBithumb 시, 에러 발생. %s", err)
+		return
+	}
+
+	for i, event := range bitEvents {
+		if !bithumbAirdropCache[event] {
+			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
+			e.ch <- bitUrls[i]
+		}
+		bithumbAirdropCache[event] = true
+	}
+}
+
 /**********************************************************************************************************************
 *********************************************Inner Utility Function***************************************************
 **********************************************************************************************************************/

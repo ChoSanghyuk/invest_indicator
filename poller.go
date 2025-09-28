@@ -8,6 +8,8 @@ type rtPoller interface {
 	PresentPrice(category m.Category, code string) (float64, error)
 	RealEstateStatus() (string, error)
 	GoldPriceDollar() (float64, error)
+	AirdropEventUpbit() ([]string, []string, error)
+	AirdropEventBithumb() ([]string, []string, error)
 }
 
 type dailyPoller interface {

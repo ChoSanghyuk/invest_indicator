@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 /*
@@ -49,38 +47,4 @@ func sendRequest(url string, method string, header map[string]string, body map[s
 	defer res.Body.Close()
 
 	return json.NewDecoder(res.Body).Decode(response)
-}
-
-func (s Scraper) crawl(url string, cssPath string) (string, error) {
-
-	// Send the request
-	res, err := http.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("error making request\n%w", err)
-	}
-
-	defer res.Body.Close()
-
-	// Check the response status
-	if res.StatusCode != 200 {
-		return "", fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status)
-	}
-
-	// Create a goquery document from the response body
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	if err != nil {
-		return "", fmt.Errorf("error creating document\n%w", err)
-	}
-	// fmt.Println(doc.Text())
-
-	// fmt.Println(doc.Text())
-
-	var v string
-	// Find the elements by the CSS selector
-	doc.Find(cssPath).Each(func(i int, s *goquery.Selection) {
-		// Extract and print the data
-		v = s.Text()
-	})
-
-	return v, nil
 }

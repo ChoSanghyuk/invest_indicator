@@ -28,6 +28,14 @@ func (m RtPollerMock) GoldPriceDollar() (float64, error) {
 	return 0, nil
 }
 
+func (m RtPollerMock) AirdropEventUpbit() ([]string, []string, error) {
+	return nil, nil, nil
+}
+
+func (m RtPollerMock) AirdropEventBithumb() ([]string, []string, error) {
+	return nil, nil, nil
+}
+
 type DailyPollerMock struct {
 	err error
 }

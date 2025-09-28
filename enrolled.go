@@ -91,6 +91,13 @@ func (e *InvestIndicator) registerEvents() {
 			schedule:    "0 */1 8-23 * * 0-6",
 			Event:       e.runAvaxDexEvent,
 		},
+		{
+			Id:          5,
+			Title:       "신규 거래소 에어드랍 이벤트",
+			Description: "AVAX DEX 관리 행동 지시.\n매일 오전 8시~오후 12시 10분 주기로 실행",
+			schedule:    "0 */10 8-23 * * 0-6",
+			Event:       e.runAvaxDexEvent,
+		},
 		// 보류
 		// {
 		// 	Id:          5,

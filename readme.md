@@ -424,7 +424,7 @@ nohup ./{my-server} > $(date +%F).log 2>&1 &
 - 2>&1 includes stderr in the same log.
 
 
-
+ 
 
 
 

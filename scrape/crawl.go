@@ -110,6 +110,8 @@ func crawlSpaBody(url string) (*goquery.Document, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
 		return nil, fmt.Errorf("error creating document\n%w", err)
+	} else if doc == nil {
+		return nil, fmt.Errorf("no document. check chrome browser exists\n%w", err)
 	}
 
 	return doc, nil
@@ -155,6 +157,8 @@ func crawlSpaBodyAvoidingClaudFlare(url string) (*goquery.Document, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
 		return nil, fmt.Errorf("error creating document\n%w", err)
+	} else if doc == nil {
+		return nil, fmt.Errorf("no document. check chrome browser exists\n%w", err)
 	}
 
 	return doc, nil
@@ -188,40 +192,3 @@ func selectAllMatchedWithChildPath(doc *goquery.Document, cssPath string, pathCh
 
 	return matched
 }
-
-// func crawlSpa(url string, cssPath string) (string, error) {
-
-// 	ctx, cancel := chromedp.NewContext(context.Background())
-// 	defer cancel()
-
-// 	var htmlContent string
-// 	err := chromedp.Run(ctx,
-// 		chromedp.Navigate(url),
-// 		chromedp.WaitVisible("body", chromedp.ByQuery),
-// 		chromedp.Sleep(3*time.Second),
-// 		chromedp.OuterHTML("html", &htmlContent),
-// 	)
-// 	if err != nil {
-// 		return "", nil
-// 	}
-
-// 	// fmt.Println(htmlContent)
-
-// 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
-// 	if err != nil {
-// 		return "", fmt.Errorf("error creating document\n%w", err)
-// 	}
-// 	// fmt.Println(doc.Text())
-
-// 	// fmt.Println(doc.Text())
-
-// 	var v string
-// 	// Find the elements by the CSS selector
-// 	doc.Find(cssPath).Each(func(i int, s *goquery.Selection) {
-// 		// Extract and print the data
-// 		url, _ := s.Parent().Attr("href")
-// 		v += s.Text() + " | " + url + "\n"
-// 	})
-
-// 	return v, nil
-// }

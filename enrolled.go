@@ -93,8 +93,8 @@ func (e *InvestIndicator) registerEvents() {
 		},
 		{
 			Id:          5,
-			Title:       "신규 거래소 에어드랍 이벤트",
-			Description: "AVAX DEX 관리 행동 지시.\n매일 오전 8시~오후 12시 10분 주기로 실행",
+			Title:       "거래소 신규 에어드랍 이벤트",
+			Description: "거래소 에어드랍 이베트 생성 시 알람.\n매일 오전 8시~오후 12시 10분 주기로 실행",
 			schedule:    "0 */10 8-23 * * 0-6",
 			Event:       e.runNewlyOpenedAirdropEvent,
 		},

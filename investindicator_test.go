@@ -3,8 +3,12 @@ package investind
 import (
 	"fmt"
 	m "investindicator/internal/model"
+	"investindicator/scrape"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/robfig/cron"
 )
 
 func TestEventbuySellMsg(t *testing.T) {
@@ -151,4 +155,60 @@ func TestEnrolledEventLaunch(t *testing.T) {
 	}
 
 	event.Event(true)
+}
+
+func TestRunNewlyOpenedAirdropEvent(t *testing.T) {
+
+	stg := &StorageMock{}
+	scrp := &scrape.Scraper{}
+	dp := &DailyPollerMock{}
+	ch := make(chan string)
+
+	evt := NewInvestIndicator(InvestIndicatorConfig{
+		Storage:     stg,
+		RtPoller:    scrp,
+		DailyPoller: dp,
+		Channel:     ch,
+	})
+
+	t.Run("function_test", func(t *testing.T) {
+		go func(ch *chan string) {
+			for true {
+				msg := <-*ch
+				t.Log(msg)
+			}
+		}(&ch)
+
+		evt.runNewlyOpenedAirdropEvent(false)
+
+		// for true {
+		time.Sleep(1 * time.Second)
+	})
+
+	t.Run("function_test_with_cron", func(t *testing.T) {
+
+		go func(ch *chan string) {
+			for true {
+				msg := <-*ch
+				t.Log(msg)
+			}
+		}(&ch)
+
+		c := cron.New()
+		event := EnrolledEvent{
+			Id:          5,
+			Title:       "거래소 신규 에어드랍 이벤트",
+			Description: "거래소 에어드랍 이베트 생성 시 알람.\n매일 오전 8시~오후 12시 10분 주기로 실행",
+			schedule:    "*/20 * 8-23 * * 0-6",
+			Event:       evt.runNewlyOpenedAirdropEvent,
+			IsActive:    true,
+		}
+		c.AddFunc(event.schedule, func() {
+			if event.IsActive {
+				event.Event(false)
+			}
+		})
+		c.Start()
+		time.Sleep(1 * time.Minute)
+	})
 }

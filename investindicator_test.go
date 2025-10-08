@@ -17,11 +17,7 @@ func TestEventbuySellMsg(t *testing.T) {
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
 
-	evt := NewInvestIndicator(InvestIndicatorConfig{
-		Storage:     stg,
-		RtPoller:    scrp,
-		DailyPoller: dp,
-	})
+	evt := NewInvestIndicator(stg, scrp, dp, nil, nil)
 
 	pm := make(map[uint]float64)
 
@@ -88,12 +84,7 @@ func TestEventportfolioMsg(t *testing.T) {
 	dp := &DailyPollerMock{}
 	ch := make(chan<- string)
 
-	evt := NewInvestIndicator(InvestIndicatorConfig{
-		Storage:     stg,
-		RtPoller:    scrp,
-		DailyPoller: dp,
-		Channel:     ch,
-	})
+	evt := NewInvestIndicator(stg, scrp, dp, nil, ch)
 
 	/*
 		매도 필요상황
@@ -164,12 +155,7 @@ func TestRunNewlyOpenedAirdropEvent(t *testing.T) {
 	dp := &DailyPollerMock{}
 	ch := make(chan string)
 
-	evt := NewInvestIndicator(InvestIndicatorConfig{
-		Storage:     stg,
-		RtPoller:    scrp,
-		DailyPoller: dp,
-		Channel:     ch,
-	})
+	evt := NewInvestIndicator(stg, scrp, dp, nil, ch)
 
 	t.Run("function_test", func(t *testing.T) {
 		go func(ch *chan string) {

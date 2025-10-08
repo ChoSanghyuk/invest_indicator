@@ -2,7 +2,9 @@ package config
 
 import (
 	_ "embed"
+	"math/big"
 
+	"investindicator/blockchain"
 	"investindicator/bot"
 	"investindicator/internal/db"
 	"investindicator/internal/util"
@@ -38,6 +40,16 @@ type Config struct {
 		Port     string `yaml:"port"`
 		Scheme   string `yaml:"scheme"`
 	} `yaml:"db"`
+	Blockchain struct {
+		Uniswap struct {
+			Url             string `yaml:"url"`
+			Pk              string `yaml:"pk"`
+			UniversalRouter string `yaml:"universalrouter"`
+			Permit          string `yaml:"permit"`
+			GasLimit        int    `yaml:"gaslimit"`
+		} `yaml:"uniswap"`
+	} `yaml:"blockchain"`
+	decryptKey string
 }
 
 func NewConfig() (*Config, error) {
@@ -77,6 +89,31 @@ func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
 	}, nil
 }
 
+func (c Config) UniswapConfig(keyPasser KeyPasser) *blockchain.UniswapClientConfig {
+
+	var pk string
+	var err error
+	var key string
+
+init:
+	if c.decryptKey == "" { // 키 등록이 안 된 경우에는 키 입력 받기
+		key = keyPasser.InitKey(err)
+	}
+	pk, err = util.Decrypt([]byte(key), c.Blockchain.Uniswap.Pk)
+	if err != nil { // 오류인 경우, 키 입력 반복
+		goto init
+	}
+	c.decryptKey = key // 오류 없이 통과한 경우에만 등록
+
+	return blockchain.NewUniswapClientConfig(
+		c.Blockchain.Uniswap.Url,
+		pk,
+		c.Blockchain.Uniswap.UniversalRouter,
+		c.Blockchain.Uniswap.Permit,
+		big.NewInt(int64(c.Blockchain.Uniswap.GasLimit)),
+	)
+}
+
 // func (c Config) InitKIS(key string) (err error) {
 // 	*c.KIS["appkey"], err = util.Decrypt([]byte(key), *c.KIS["appkey"])
 // 	if err != nil {
@@ -94,22 +131,25 @@ type KeyPasser interface {
 	InitKey(err error) string
 }
 
-func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
+func (c *Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 
-	var appKey string
-	var appSecret string
 	var err error
+	var key string = c.decryptKey
 
-	for appKey == "" || appSecret == "" || err != nil {
-		key := keyPasser.InitKey(err)
-		appKey, err = util.Decrypt([]byte(key), *c.KIS["appkey"])
-		if err != nil {
-			continue
-		}
-
-		appSecret, err = util.Decrypt([]byte(key), *c.KIS["appsecret"])
+init:
+	if c.decryptKey == "" {
+		key = keyPasser.InitKey(err)
+	}
+	appKey, err := util.Decrypt([]byte(key), *c.KIS["appkey"])
+	if err != nil {
+		goto init
+	}
+	appSecret, err := util.Decrypt([]byte(key), *c.KIS["appsecret"])
+	if err != nil {
+		goto init
 	}
 
+	c.decryptKey = key
 	return &scrape.KisConfig{
 		AppKey:    appKey,
 		AppSecret: appSecret,

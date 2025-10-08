@@ -17,29 +17,32 @@ import (
 )
 
 type InvestIndicator struct {
-	stg            Storage
+	stg            storage
 	rt             rtPoller
 	dp             dailyPoller
-	td             Trader
+	td             trader
+	bt             bcTrader
 	ch             chan<- string
 	enrolledEvents []*EnrolledEvent
 	lg             zerolog.Logger
 }
 
-type InvestIndicatorConfig struct {
-	Storage     Storage
-	RtPoller    rtPoller
-	DailyPoller dailyPoller
-	Channel     chan<- string
-}
+// type InvestIndicatorConfig struct {
+// 	Storage     storage
+// 	RtPoller    rtPoller
+// 	DailyPoller dailyPoller
+// 	BcTrader    bcTrader
+// 	Channel     chan<- string
+// }
 
-func NewInvestIndicator(conf InvestIndicatorConfig) *InvestIndicator {
+func NewInvestIndicator(stg storage, rt rtPoller, dp dailyPoller, bt bcTrader, ch chan<- string) *InvestIndicator {
 
 	eh := &InvestIndicator{
-		stg: conf.Storage,
-		rt:  conf.RtPoller,
-		dp:  conf.DailyPoller,
-		ch:  conf.Channel,
+		stg: stg,
+		rt:  rt,
+		dp:  dp,
+		bt:  bt,
+		ch:  ch,
 		lg:  zerolog.New(os.Stdout).With().Str("Module", "EventHandler").Timestamp().Logger(),
 	}
 	eh.registerEvents()
@@ -732,6 +735,20 @@ bithumb:
 		}
 		bithumbAirdropCache[event] = true
 	}
+}
+
+func (e InvestIndicator) runAvalancheSwap10TxEvent(isManual WayOfLaunch) {
+
+	_ = isManual
+
+	var isUsdcIn bool
+	for i := 0; i < 10; i++ {
+		err := e.bt.SwapUsdtUsdc(isUsdcIn)
+		if err != nil {
+			e.ch <- err.Error()
+		}
+	}
+	// e.ch <- "AvalancheSwap10TxEvent 수행 완료"
 }
 
 /**********************************************************************************************************************

@@ -2,6 +2,7 @@ package main
 
 import (
 	app "investindicator/app"
+	"investindicator/blockchain"
 
 	investind "investindicator"
 	"investindicator/bot"
@@ -55,12 +56,13 @@ func main() {
 		panic(err)
 	}
 
-	eventHandler := investind.NewInvestIndicator(investind.InvestIndicatorConfig{
-		Storage:     db,
-		RtPoller:    scraper,
-		DailyPoller: scraper,
-		Channel:     ch,
-	})
+	us, err := blockchain.NewUniswapClient(conf.UniswapConfig(teleBot))
+	if err != nil {
+		panic(err)
+	}
+	bt := blockchain.NewBlockChainTrader(us)
+
+	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, ch)
 	eventHandler.Run()
 
 	go func() {

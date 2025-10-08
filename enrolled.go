@@ -2,6 +2,8 @@ package investind
 
 import "github.com/robfig/cron"
 
+// todo. db로 이동
+
 const (
 	AssetSpec  = "0 */15 9-23 * * 1-5"
 	CoinSpec   = "0 */15 8-23 * * 0,6"
@@ -97,6 +99,13 @@ func (e *InvestIndicator) registerEvents() {
 			Description: "거래소 에어드랍 이베트 생성 시 알람.\n매일 오전 8시~오후 12시 10분 주기로 실행",
 			schedule:    "0 */10 8-23 * * 0-6",
 			Event:       e.runNewlyOpenedAirdropEvent,
+		},
+		{
+			Id:          6,
+			Title:       "아발란체 일 swap tx 10회",
+			Description: "거래소 에어드랍 이베트 생성 시 알람.\n매일 12시 실행",
+			schedule:    "0 0 12 * * 0-6",
+			Event:       e.runAvalancheSwap10TxEvent,
 		},
 		// 보류
 		// {

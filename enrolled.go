@@ -103,7 +103,7 @@ func (e *InvestIndicator) registerEvents() {
 		{
 			Id:          6,
 			Title:       "아발란체 일 swap tx 10회",
-			Description: "거래소 에어드랍 이베트 생성 시 알람.\n매일 12시 실행",
+			Description: "아발란체 USDC <=> USDT swap tx 10회 수행.\n매일 12시 실행",
 			schedule:    "0 0 12 * * 0-6",
 			Event:       e.runAvalancheSwap10TxEvent,
 		},

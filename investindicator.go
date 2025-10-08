@@ -714,11 +714,10 @@ func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
 	}
 
 	for i, event := range upEvents {
-		if !upbitAirdropCache[event] {
+		if !upbitAirdropCache[upUrls[i]] {
 			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
-			e.ch <- upUrls[i]
 		}
-		upbitAirdropCache[event] = true
+		upbitAirdropCache[upUrls[i]] = true
 	}
 
 bithumb:
@@ -729,11 +728,10 @@ bithumb:
 	}
 
 	for i, event := range bitEvents {
-		if !bithumbAirdropCache[event] {
-			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
-			e.ch <- bitUrls[i]
+		if !bithumbAirdropCache[bitUrls[i]] {
+			e.ch <- fmt.Sprintf("[New Bitthumb Event] %s", event)
 		}
-		bithumbAirdropCache[event] = true
+		bithumbAirdropCache[bitUrls[i]] = true
 	}
 }
 

@@ -454,7 +454,7 @@ func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
 
 		if matched {
 			titles = append(titles, title)
-			urls = append(urls, "https://upbit.com"+s.Parent().AttrOr("href", ""))
+			urls = append(urls, s.Parent().AttrOr("href", ""))
 		}
 	})
 
@@ -485,7 +485,7 @@ func (s *Scraper) AirdropEventBithumb() ([]string, []string, error) {
 
 		if matched {
 			titles = append(titles, title)
-			urls = append(urls, "https://feed.bithumb.com"+s.Parent().AttrOr("href", ""))
+			urls = append(urls, s.Parent().AttrOr("href", ""))
 		}
 	})
 

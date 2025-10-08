@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"investindicator/blockchain/evmtxbroker"
 	"math/big"
-	"os"
 	"strings"
 	"time"
 
@@ -77,10 +76,6 @@ func NewUniswapClient(conf *UniswapClientConfig) (*UniswapClient, error) {
 	universalRouter := evmtxbroker.NewEvmTxBroker(client, common.HexToAddress(conf.urAddr), &urAbi)
 
 	// permitRouter
-	permit2Json, err := os.ReadFile("./abi/Permit2.json")
-	if err != nil {
-		return nil, err
-	}
 	permitAbi, err := abi.JSON(bytes.NewReader(permit2Json))
 	if err != nil {
 		return nil, err

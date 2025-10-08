@@ -89,11 +89,11 @@ func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
 	}, nil
 }
 
-func (c Config) UniswapConfig(keyPasser KeyPasser) *blockchain.UniswapClientConfig {
+func (c *Config) UniswapConfig(keyPasser KeyPasser) *blockchain.UniswapClientConfig {
 
 	var pk string
 	var err error
-	var key string
+	var key string = c.decryptKey
 
 init:
 	if c.decryptKey == "" { // 키 등록이 안 된 경우에는 키 입력 받기
@@ -131,7 +131,7 @@ type KeyPasser interface {
 	InitKey(err error) string
 }
 
-func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
+func (c *Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 
 	var err error
 	var key string = c.decryptKey

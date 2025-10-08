@@ -131,7 +131,7 @@ type KeyPasser interface {
 	InitKey(err error) string
 }
 
-func (c *Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
+func (c Config) KisConfig(keyPasser KeyPasser) *scrape.KisConfig {
 
 	var err error
 	var key string = c.decryptKey

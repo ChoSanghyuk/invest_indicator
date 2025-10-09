@@ -745,6 +745,7 @@ func (e InvestIndicator) runAvalancheSwap10TxEvent(isManual WayOfLaunch) {
 		if err != nil {
 			e.ch <- err.Error()
 		}
+		isUsdcIn = !isUsdcIn
 	}
 	// e.ch <- "AvalancheSwap10TxEvent 수행 완료"
 }

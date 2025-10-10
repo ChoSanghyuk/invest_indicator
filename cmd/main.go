@@ -51,7 +51,7 @@ func main() {
 		panic(err)
 	}
 
-	db, err := db.NewStorage(conf.StgConfig())
+	db, err := db.NewStorage(conf.MysqlConfig(), conf.RedisConfig())
 	if err != nil {
 		panic(err)
 	}

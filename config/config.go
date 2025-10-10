@@ -40,6 +40,12 @@ type Config struct {
 		Port     string `yaml:"port"`
 		Scheme   string `yaml:"scheme"`
 	} `yaml:"db"`
+	Redis struct {
+		Password string `yaml:"pwd"`
+		IP       string `yaml:"ip"`
+		Port     string `yaml:"port"`
+		Db       int    `yaml:"db"`
+	} `yaml:"redis"`
 	Blockchain struct {
 		Uniswap struct {
 			Url             string `yaml:"url"`
@@ -157,8 +163,12 @@ init:
 	}
 }
 
-func (c Config) StgConfig() *db.StgConfig {
-	return db.NewStgConfig(c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)
+func (c Config) MysqlConfig() *db.MysqlConfig {
+	return db.NewMysqlConfig(c.Db.User, c.Db.Password, c.Db.IP, c.Db.Port, c.Db.Scheme)
+}
+
+func (c Config) RedisConfig() *db.RedisConfig {
+	return db.NewRedisConfig(c.Redis.Password, c.Redis.IP, c.Redis.Port, c.Redis.Db)
 }
 
 func (c Config) Key(target string) string {

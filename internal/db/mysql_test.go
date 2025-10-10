@@ -13,20 +13,21 @@ import (
 
 var stg *Storage
 
-func init() {
+func setupStg(t *testing.T) {
 
 	user := os.Getenv("db_user")
 	password := os.Getenv("db_password")
 
-	s, err := NewStorage(&StgConfig{
+	s, err := NewStorage(&MysqlConfig{
 		user:     user,
 		password: password,
 		ip:       "127.0.0.1",
 		port:     "3306",
 		scheme:   "investdb",
-	}, &gorm.Config{
-		SkipDefaultTransaction: true,
-	})
+	}, nil,
+		&gorm.Config{
+			SkipDefaultTransaction: true,
+		})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,6 +36,7 @@ func init() {
 }
 
 func TestRetreiveFundsSummary(t *testing.T) {
+	setupStg(t)
 	rtn, err := stg.RetreiveFundsSummaryOrderByFundId()
 	if err != nil {
 		t.Error(t)
@@ -43,6 +45,7 @@ func TestRetreiveFundsSummary(t *testing.T) {
 }
 
 func TestRetreiveFundSummaryById(t *testing.T) {
+	setupStg(t)
 
 	rtn, err := stg.RetreiveFundSummaryByFundId(1)
 	if err != nil {
@@ -51,6 +54,7 @@ func TestRetreiveFundSummaryById(t *testing.T) {
 	t.Log(rtn)
 }
 func TestRetreiveAFundInvestsById(t *testing.T) {
+	setupStg(t)
 
 	rtn, err := stg.RetreiveFundInvestsById(1)
 	if err != nil {
@@ -60,6 +64,7 @@ func TestRetreiveAFundInvestsById(t *testing.T) {
 }
 
 func TestRetrieveFundInvestsByIdAndRange(t *testing.T) {
+	setupStg(t)
 	fundId := 1
 	startDate := "2024-01-01"
 	endDate := "2024-12-31"
@@ -80,6 +85,7 @@ func TestRetrieveFundInvestsByIdAndRange(t *testing.T) {
 //		t.Log(rtn)
 //	}
 func TestSaveFund(t *testing.T) {
+	setupStg(t)
 
 	err := stg.SaveFund("테스트")
 	if err != nil {
@@ -98,6 +104,7 @@ func TestSaveFund(t *testing.T) {
 }
 
 func TestCreateAsset(t *testing.T) {
+	setupStg(t)
 
 	_, err := stg.SaveAssetInfo(m.Asset{
 		Name:      "bitcoin",
@@ -130,6 +137,7 @@ func TestCreateAsset(t *testing.T) {
 }
 
 func TestRetrieveAssetList(t *testing.T) {
+	setupStg(t)
 
 	rtn, err := stg.RetrieveAssetList()
 	if err != nil {
@@ -138,6 +146,7 @@ func TestRetrieveAssetList(t *testing.T) {
 	t.Log(rtn)
 }
 func TestRetrieveAsset(t *testing.T) {
+	setupStg(t)
 
 	rtn, err := stg.RetrieveAsset(1)
 	if err != nil {
@@ -146,6 +155,7 @@ func TestRetrieveAsset(t *testing.T) {
 	t.Log(rtn)
 }
 func TestRetrieveAssetHist(t *testing.T) {
+	setupStg(t)
 
 	rtn, err := stg.RetrieveAssetHist(2)
 	if err != nil {
@@ -154,6 +164,7 @@ func TestRetrieveAssetHist(t *testing.T) {
 	t.Log(rtn)
 }
 func TestSaveAssetInfo(t *testing.T) {
+	setupStg(t)
 	id, err := stg.SaveAssetInfo(
 		m.Asset{
 			Name:      "테스트",
@@ -182,6 +193,7 @@ func TestSaveAssetInfo(t *testing.T) {
 
 }
 func TestUpdateAssetInfo(t *testing.T) {
+	setupStg(t)
 
 	id, err := stg.SaveAssetInfo(m.Asset{
 		Name:      "테스트",
@@ -229,6 +241,7 @@ func TestUpdateAssetInfo(t *testing.T) {
 	}
 }
 func TestDeleteAssetInfo(t *testing.T) {
+	setupStg(t)
 
 	_, err := stg.SaveAssetInfo(m.Asset{}) //"테스트", m.DomesticStock, "test", "WON", 82300, 60000, 80000, 62300
 	if err != nil {
@@ -254,6 +267,7 @@ func TestDeleteAssetInfo(t *testing.T) {
 
 }
 func TestRetrieveMarketStatus(t *testing.T) {
+	setupStg(t)
 
 	t.Run("날짜 미지정", func(t *testing.T) {
 		rtn, err := stg.RetrieveMarketStatus("")
@@ -273,6 +287,7 @@ func TestRetrieveMarketStatus(t *testing.T) {
 
 }
 func TestRetrieveMarketIndicator(t *testing.T) {
+	setupStg(t)
 
 	t.Run("날짜 미지정", func(t *testing.T) {
 		rtn1, rtn2, err := stg.RetrieveMarketIndicator("")
@@ -303,6 +318,7 @@ func TestRetrieveMarketIndicator(t *testing.T) {
 }
 
 func TestSaveDailyMarketIndicator(t *testing.T) {
+	setupStg(t)
 
 	err := stg.SaveDailyMarketIndicator(20, 183.35, 234.354)
 	if err != nil {
@@ -311,6 +327,7 @@ func TestSaveDailyMarketIndicator(t *testing.T) {
 
 }
 func TestSaveMarketStatus(t *testing.T) {
+	setupStg(t)
 
 	err := stg.SaveMarketStatus(3)
 	if err != nil {
@@ -330,6 +347,7 @@ func TestSaveMarketStatus(t *testing.T) {
 
 }
 func TestRetrieveInvestHist(t *testing.T) {
+	setupStg(t)
 
 	t.Run("날짜 미지정", func(t *testing.T) {
 		rtn, err := stg.RetrieveInvestHist(1, 0, "", "")
@@ -352,6 +370,7 @@ func TestRetrieveInvestHist(t *testing.T) {
 }
 
 func TestSaveInvest(t *testing.T) {
+	setupStg(t)
 
 	err := stg.SaveInvest(1, 1, 62000, 10)
 	if err != nil {
@@ -372,6 +391,7 @@ func TestSaveInvest(t *testing.T) {
 }
 
 func TestRetreiveLatestEma(t *testing.T) {
+	setupStg(t)
 	rtn, err := stg.RetreiveLatestEma(2)
 	if err != nil {
 		t.Error(err)
@@ -380,7 +400,7 @@ func TestRetreiveLatestEma(t *testing.T) {
 }
 
 func TestSaveEmaHist(t *testing.T) {
-
+	// setupStg(t)
 	// err := stg.SaveEmaHist(1, 64425.30)
 	// if err != nil {
 	// 	t.Error(err)
@@ -389,6 +409,7 @@ func TestSaveEmaHist(t *testing.T) {
 }
 
 func TestUpdateInvestSummary(t *testing.T) {
+	setupStg(t)
 	err := stg.UpdateInvestSummary(1, 1, -4, 500)
 	if err != nil {
 		t.Error(err)
@@ -396,6 +417,7 @@ func TestUpdateInvestSummary(t *testing.T) {
 }
 
 func TestRetrieveLatestSP500Entry(t *testing.T) {
+	setupStg(t)
 	rtn, err := stg.RetrieveLatestSP500Entry()
 	if err != nil {
 		t.Error(err)

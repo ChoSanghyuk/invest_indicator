@@ -701,8 +701,8 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 }
 
 // todo. change it with redis. / 옛날 데이터는 만료시키기
-var upbitAirdropCache map[string]bool = make(map[string]bool)
-var bithumbAirdropCache map[string]bool = make(map[string]bool)
+// var upbitAirdropCache map[string]bool = make(map[string]bool)
+// var bithumbAirdropCache map[string]bool = make(map[string]bool)
 
 func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
 
@@ -714,10 +714,11 @@ func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
 	}
 
 	for i, event := range upEvents {
-		if !upbitAirdropCache[upUrls[i]] {
+		isExist, _ := e.stg.GetCache("upbit" + upUrls[i]).Bool()
+		if !isExist {
 			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
+			e.stg.SetCache("upbit"+upUrls[i], true, time.Hour*24*30*3)
 		}
-		upbitAirdropCache[upUrls[i]] = true
 	}
 
 bithumb:
@@ -728,10 +729,11 @@ bithumb:
 	}
 
 	for i, event := range bitEvents {
-		if !bithumbAirdropCache[bitUrls[i]] {
+		isExist, _ := e.stg.GetCache("bithumb" + bitUrls[i]).Bool()
+		if isExist {
 			e.ch <- fmt.Sprintf("[New Bitthumb Event] %s", event)
+			e.stg.SetCache("bithumb"+bitUrls[i], true, time.Hour*24*30*3)
 		}
-		bithumbAirdropCache[bitUrls[i]] = true
 	}
 }
 

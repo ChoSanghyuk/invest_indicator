@@ -3,6 +3,9 @@ package investind
 import (
 	m "investindicator/internal/model"
 	md "investindicator/internal/model"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type StorageMock struct {
@@ -121,4 +124,12 @@ func (m StorageMock) SaveHighYieldSpread(hy *md.HighYieldSpread) error {
 
 func (m StorageMock) RetrieveLatestSP500Entry() (*md.SP500Company, error) {
 	return nil, nil
+}
+
+func (m StorageMock) SetCache(key string, value interface{}, exp time.Duration) {
+
+}
+
+func (m StorageMock) GetCache(key string) *redis.StringCmd {
+	return nil
 }

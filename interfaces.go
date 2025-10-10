@@ -2,6 +2,9 @@ package investind
 
 import (
 	m "investindicator/internal/model"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type rtPoller interface { // realtime poller
@@ -52,6 +55,9 @@ type storage interface {
 
 	RetreiveEventIsActive(eventId uint) bool
 	UpdateEventIsActive(eventId uint, isActive bool) error
+
+	SetCache(key string, value interface{}, exp time.Duration)
+	GetCache(key string) *redis.StringCmd
 }
 
 type trader interface {

@@ -730,7 +730,7 @@ bithumb:
 
 	for i, event := range bitEvents {
 		isExist, _ := e.stg.GetCache("bithumb" + bitUrls[i]).Bool()
-		if isExist {
+		if !isExist {
 			e.ch <- fmt.Sprintf("[New Bitthumb Event] %s", event)
 			e.stg.SetCache("bithumb"+bitUrls[i], true, time.Hour*24*30*3)
 		}

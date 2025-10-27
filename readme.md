@@ -426,7 +426,20 @@ nohup ./{my-server} > $(date +%F).log 2>&1 &
 
 
 
+## float64의 precision(정확도) 문제
 
+현재(25.10.20)까지는 어느 정도의 오차는 신경 안 쓰는 주의였지만, 수수료 및 코인의 수량 같은 것을 체크하기 위해 float64를 계속 쓰는 것이 맞냐에 대한 의문이 생김.
+방안으로는 go 코드에서는 decimal.Decimal library를 사용하고, MySQL에서는 `gorm:"type:decimal(30,18);"` 로 decimal 타입을 쓴다면 정확한 계산과 저장이 가능해짐.
+다만, 문제는 그에 따라 코드의 복잡성이 증가함. 예를 들어, ema 계산식인 `math.Round((a*cp+(1-a)*oldEma.Ema)*100) / 100` 와 같이 수학적인 계산을 할 때 사칙연산 기호가 아닌 library의 method로 길게 풀어지다보니 직관성이 떨어지게 됨.
+따라서 코드의 직관성과 계산의 정확도를 저울질해서 반영할 필요가 있음.
+방안 1. 현안 유지. float64 및 Double 타입 사용
+방안 2. float64 전체 decimal.Decimal 변경
+방안 3. 현재 price 및 count만 decimal.Decimal로 변경
+방안 4. DB 패키지에서만 decimal.Decimal로 변경.
+  - 저장에서의 float rounding error을 해결할 뿐 실질적인 go 코드에서의 사용은 변함없기에 좋은 방안은 아닌 것 같음.
+
+결론. float은 어차피 소수점 15자리 정도까지의 수에 대해서만 신뢰를 가지기 때문에, 그 아래 자리까지 사용하지 않는 이상 코드에서의 별 차이는 없어보임.
+후에 토큰의 수량을 정밀하게 확인해야 하는 경우가 있을 때에 다시 고민하여 수정. 
 
 
 

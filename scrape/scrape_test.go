@@ -205,7 +205,7 @@ func TestNewScraper(t *testing.T) {
 	t.Run("NewScraper with valid Token option", func(t *testing.T) {
 		token := "test_token"
 
-		s, err := NewScraper(transmitterMock{}, WithToken(token))
+		s, err := NewScraper(transmitterMock{}, WithKisToken(token))
 
 		assert.NoError(t, err)
 		assert.NotNil(t, s)
@@ -221,7 +221,7 @@ func TestNewScraper(t *testing.T) {
 		}
 		token := "test_token"
 
-		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig), WithToken(token))
+		s, err := NewScraper(transmitterMock{}, WithKIS(kisConfig), WithKisToken(token))
 
 		assert.NoError(t, err)
 		assert.NotNil(t, s)

@@ -31,8 +31,11 @@ type Config struct {
 		Token  string `yaml:"token"`
 	} `yaml:"telegram"`
 
-	KIS map[string]*string `yaml:"KIS"`
-
+	KIS   map[string]*string `yaml:"KIS"`
+	Upbit struct {
+		AccessKey string `yaml:"accesskey"`
+		SecretKey string `yaml:"secretkey"`
+	} `yaml:"upbit"`
 	Db struct {
 		User     string `yaml:"user"`
 		Password string `yaml:"pwd"`
@@ -161,6 +164,28 @@ init:
 		AppSecret: appSecret,
 		Account:   *c.KIS["account"],
 	}
+}
+
+func (c *Config) UpbitConfig(keyPasser KeyPasser) (accessKey string, secretKey string) {
+
+	var err error
+	var key string = c.decryptKey
+
+init:
+	if c.decryptKey == "" {
+		key = keyPasser.InitKey(err)
+	}
+	appAccess, err := util.Decrypt([]byte(key), c.Upbit.AccessKey)
+	if err != nil {
+		goto init
+	}
+	appSecret, err := util.Decrypt([]byte(key), c.Upbit.SecretKey)
+	if err != nil {
+		goto init
+	}
+
+	c.decryptKey = key
+	return appAccess, appSecret
 }
 
 func (c Config) MysqlConfig() *db.MysqlConfig {

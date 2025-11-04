@@ -13,6 +13,18 @@ func stgDsn(conf *MysqlConfig) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", conf.user, conf.password, conf.ip, conf.port, conf.scheme)
 }
 
+func (s Storage) initTables() error {
+
+	err := s.db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.EmaHist{},
+		&m.Invest{}, &m.InvestSummary{}, &m.Market{},
+		&m.DailyIndex{}, &m.CliIndex{}, &m.HighYieldSpread{},
+		&m.User{}, &m.Event{}, &m.SP500Company{})
+	if err != nil {
+		panic("failed to migrate database")
+	}
+	return nil
+}
+
 func (s Storage) RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error) {
 
 	var fundsSummary []m.InvestSummary

@@ -32,6 +32,10 @@ type Scraper struct {
 		tokenExpired string
 		account      string
 	}
+	upbit struct {
+		token     string
+		isRunning bool
+	}
 	lg zerolog.Logger
 	t  transmitter // todo. 이거 제거 하자. 다 그냥 필드로 들고 있는 것으로.
 }
@@ -83,7 +87,7 @@ func WithKIS(conf *KisConfig) Option {
 	}
 }
 
-func WithToken(token string) Option {
+func WithKisToken(token string) Option {
 
 	return func(s *Scraper) error {
 		s.kis.accessToken = token
@@ -177,7 +181,7 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 		stock, err := s.kisDomesticStockPrice(code)
 		return stock.op, err
 	case m.DomesticCoin:
-		_, cp, err = s.bithumbApi(code)
+		_, cp, err = s.bithumbApi("KRW-" + code)
 		return cp, err
 	case m.DomesticETF, m.DomesticStableETF:
 		stock, err := s.kisDomesticEtfPrice(code)
@@ -490,4 +494,34 @@ func (s *Scraper) AirdropEventBithumb() ([]string, []string, error) {
 	})
 
 	return titles, urls, nil
+}
+
+func (s *Scraper) StreamMyOrders(c chan<- m.MyOrder) error {
+
+	upCh := make(chan UpbitMyOrders)
+
+	if s.upbit.isRunning {
+		go func() {
+			err := s.upbitMyOrders(upCh)
+			s.lg.Error().Err(err).Msg("upbitMyOrders 오류 발생")
+			upCh <- UpbitMyOrders{Error: err}
+		}()
+	}
+
+	for true {
+		select {
+		case upOrder := <-upCh:
+			if upOrder.Error != nil {
+				return upOrder.Error
+			}
+			code, _ := strings.CutPrefix(upOrder.Code, "KRW-")
+			c <- m.MyOrder{
+				Code:  code,
+				Price: upOrder.Price,
+				Count: upOrder.Volume,
+			}
+		}
+	}
+
+	return nil
 }

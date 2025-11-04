@@ -2,7 +2,6 @@ package main
 
 import (
 	app "investindicator/app"
-	"investindicator/blockchain"
 
 	investind "investindicator"
 	"investindicator/bot"
@@ -32,8 +31,6 @@ func main() {
 	*/
 	zerolog.SetGlobalLevel(level) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인. config로 이동
 
-	ch := make(chan string)
-
 	botConf, err := conf.BotConfig()
 	if err != nil {
 		panic(err)
@@ -46,6 +43,7 @@ func main() {
 
 	scraper, err := scrape.NewScraper(conf,
 		scrape.WithKIS(conf.KisConfig(teleBot)), // todo. 여기에 봇을 집어넣고, config struct 반환
+		scrape.WithUpbitToken(conf.UpbitConfig(teleBot)),
 	)
 	if err != nil {
 		panic(err)
@@ -56,18 +54,18 @@ func main() {
 		panic(err)
 	}
 
-	us, err := blockchain.NewUniswapClient(conf.UniswapConfig(teleBot))
-	if err != nil {
-		panic(err)
-	}
-	bt := blockchain.NewBlockChainTrader(us)
+	// us, err := blockchain.NewUniswapClient(conf.UniswapConfig(teleBot))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// bt := blockchain.NewBlockChainTrader(us)
 
-	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, ch)
+	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, nil, teleBot)
 	eventHandler.Run()
 
 	go func() {
 		app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler)
 	}()
 
-	teleBot.Run(ch, conf.App.Port, conf.App.Passkey) // todo. telegram login
+	teleBot.Run(conf.App.Port, conf.App.Passkey) // todo. telegram login
 }

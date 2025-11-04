@@ -31,7 +31,7 @@ func TestKis(t *testing.T) {
 			AppSecret: appsecret,
 			Account:   account,
 		}),
-		WithToken(token),
+		WithKisToken(token),
 	)
 	if err != nil {
 		t.Fatal(err)

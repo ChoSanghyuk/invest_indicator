@@ -113,3 +113,9 @@ type SP500Company struct {
 	CIK                   string    `json:"cik" gorm:"column:cik"`
 	Founded               string    `json:"founded" gorm:"column:founded"`
 }
+
+type MyOrder struct {
+	Code  string
+	Price float64
+	Count float64
+}

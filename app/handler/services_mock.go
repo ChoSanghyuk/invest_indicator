@@ -367,16 +367,11 @@ func (mock *InvestSaverMock) prettyPrint() {
 	pretty.Println(mock.summaries)
 }
 
-func (mock *InvestSaverMock) SaveInvest(fundId uint, assetId uint, price float64, count float64) error {
+func (mock *InvestSaverMock) RecordInvest(invest m.Invest) error {
 	if mock.err != nil {
 		return mock.err
 	}
-	mock.invests = append(mock.invests, m.Invest{
-		FundID:  fundId,
-		AssetID: assetId,
-		Price:   price,
-		Count:   count,
-	})
+	mock.invests = append(mock.invests, invest)
 	return nil
 }
 

@@ -16,6 +16,9 @@ type StorageMock struct {
 	err    error
 }
 
+func (m StorageMock) RetrieveAssetIdByCode(code string) uint {
+	return 0
+}
 func (m StorageMock) RetrieveMarketStatus(date string) (*md.Market, error) {
 	if m.err != nil {
 		return nil, m.err
@@ -70,6 +73,20 @@ func (sm StorageMock) RetreiveFundSummaryByFundId(fundId uint) ([]m.InvestSummar
 }
 
 func (m StorageMock) UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) error {
+	if m.err != nil {
+		return m.err
+	}
+	return nil
+}
+
+func (m StorageMock) UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error {
+	if m.err != nil {
+		return m.err
+	}
+	return nil
+}
+
+func (m StorageMock) SaveInvest(fundId uint, assetId uint, price float64, count float64) error {
 	if m.err != nil {
 		return m.err
 	}

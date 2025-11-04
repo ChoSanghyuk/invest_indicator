@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ type InvestIndicator struct {
 	dp             dailyPoller
 	td             trader
 	bt             bcTrader
-	ch             chan<- string
+	ms             messenger
 	enrolledEvents []*EnrolledEvent
 	lg             zerolog.Logger
 }
@@ -35,18 +36,38 @@ type InvestIndicator struct {
 // 	Channel     chan<- string
 // }
 
-func NewInvestIndicator(stg storage, rt rtPoller, dp dailyPoller, bt bcTrader, ch chan<- string) *InvestIndicator {
+func NewInvestIndicator(stg storage, rt rtPoller, dp dailyPoller, bt bcTrader, ms messenger) *InvestIndicator {
 
 	eh := &InvestIndicator{
 		stg: stg,
 		rt:  rt,
 		dp:  dp,
 		bt:  bt,
-		ch:  ch,
+		ms:  ms,
 		lg:  zerolog.New(os.Stdout).With().Str("Module", "EventHandler").Timestamp().Logger(),
 	}
 	eh.registerEvents()
+	eh.redisCurrencyIdInit()
 	return eh
+}
+
+func (e InvestIndicator) redisCurrencyIdInit() error {
+	_, err := e.stg.GetCache(model.KRW.String()).Uint64()
+	if err != nil {
+		li, err := e.stg.RetrieveAssetList()
+		if err != nil {
+			panic("InvestIndicator 기동시 RetrieveAssetList 오류. Shutdown")
+		}
+
+		for _, a := range li {
+			if a.Category == model.Won {
+				e.stg.SetCache(model.KRW.String(), a.ID, time.Duration(0))
+			} else if a.Category == model.Dollar {
+				e.stg.SetCache(model.USD.String(), a.ID, time.Duration(0))
+			}
+		}
+	}
+	return nil
 }
 
 func (e InvestIndicator) Events() []*EnrolledEvent {
@@ -134,6 +155,104 @@ func (e InvestIndicator) InvestAvailableAmount(id int) (float64, error) {
 	return availableAmount, nil
 }
 
+func (e InvestIndicator) RecordInvest(invest m.Invest) error {
+
+	err := e.stg.SaveInvest(invest.FundID, invest.AssetID, invest.Price, invest.Count)
+	if err != nil {
+		return fmt.Errorf("SaveInvest 오류 발생. %w", err)
+	}
+
+	err = e.stg.UpdateInvestSummary(invest.FundID, invest.AssetID, invest.Count, invest.Price)
+	if err != nil {
+		return fmt.Errorf("UpdateInvestSummaryCount 오류 발생. %w", err)
+	}
+
+	// 현금/달러 갱신
+	asset, err := e.stg.RetrieveAsset(invest.AssetID)
+	if err != nil {
+		return fmt.Errorf("RetrieveAsset 오류 발생. %w", err)
+	}
+
+	krwId, err := e.stg.GetCache(model.KRW.String()).Uint64() // todo. 서버 기동 시, 캐시 저장 여부 확인.
+	if err != nil {
+		return fmt.Errorf("GetCache KRW id 오류 발생. %w", err)
+	}
+
+	usdId, err := e.stg.GetCache(model.USD.String()).Uint64() // todo. 서버 기동 시, 캐시 저장 여부 확인.
+	if err != nil {
+		return fmt.Errorf("GetCache USD id 오류 발생. %w", err)
+	}
+
+	// 원화 잔고 업데이트
+	if invest.AssetID == uint(krwId) {
+		// pass
+	} else if asset.Currency == model.USD.String() && invest.AssetID != uint(usdId) { // 달러 자산
+		err = e.stg.UpdateInvestSummary(invest.FundID, uint(usdId), -1*invest.Price*invest.Count, e.dp.ExchageRate())
+	} else {
+		err = e.stg.UpdateInvestSummary(invest.FundID, uint(krwId), -1*invest.Price*invest.Count, 1) // 원화 자산 및 달러 충전
+	}
+
+	return nil
+}
+
+/**********************************************************************************************************************
+********************************************* Always On Events *******************************************************
+**********************************************************************************************************************/
+
+func (e InvestIndicator) runRecordMyOrdersEvent() {
+
+	oc := make(chan m.MyOrder) // order channel
+
+	go func() {
+		err := e.rt.StreamMyOrders(oc)
+		e.lg.Error().Err(err).Msg("my orders streaming event 오류")
+		e.ms.SendMessage(fmt.Errorf("my orders streaming event 오류 발생 및 event shutdown. 재기동 필요. 오류 내역: %w", err).Error())
+	}()
+
+	for {
+		myOrder := <-oc
+
+		assetId := e.stg.RetrieveAssetIdByCode(myOrder.Code)
+		if assetId == 0 { // 미등록된 Asset
+			continue
+		}
+		fundId, err := e.ChooseFundId(myOrder)
+		if err != nil {
+			e.lg.Error().Err(err).Msg("[runRecordMyOrdersEvent] ChooseFundId, 에러 발생")
+			e.ms.SendMessage(fmt.Sprintf("[runRecordMyOrdersEvent] ChooseFundId, 에러 발생. %s", err))
+			continue
+		}
+
+		err = e.RecordInvest(m.Invest{
+			FundID:  fundId,
+			AssetID: assetId,
+			Price:   myOrder.Price,
+			Count:   myOrder.Count,
+		})
+		if err != nil {
+			e.lg.Error().Err(err).Msg("[runRecordMyOrdersEvent] RecordInvest, 에러 발생")
+			e.ms.SendMessage(fmt.Sprintf("[runRecordMyOrdersEvent] RecordInvest, 에러 발생. %s", err))
+			continue
+		}
+
+	}
+}
+
+func (e InvestIndicator) ChooseFundId(order m.MyOrder) (uint, error) {
+	prompt := fmt.Sprintf("하기 거래에 대한 자금 id를 선택하세요.\n Code: %s\n Price: %.3f\n Count : %.3f", order.Code, order.Price, order.Count)
+	ans, err := e.ms.SendButtonsAndGetResult(prompt, "1", "2", "3")
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.Atoi(ans)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint(id), nil
+}
+
 /**********************************************************************************************************************
 ********************************************* Cron Job Events *******************************************************
 **********************************************************************************************************************/
@@ -166,10 +285,10 @@ func (e InvestIndicator) runAssetEvent() {
 	msg, err := e.genPortfolioMsg(ivsmLi, priceMap)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[AssetEvent] portfolioMsg시, 에러 발생")
-		e.ch <- fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err))
 	}
 	if msg != "" {
-		e.ch <- msg
+		e.ms.SendMessage(msg)
 	}
 
 	e.lg.Info().Msg("AssetEvent completed")
@@ -182,7 +301,7 @@ func (e InvestIndicator) runCoinEvent() {
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[CoinEvent] RetrieveAssetList 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[CoinEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[CoinEvent] RetrieveAssetList 시, 에러 발생. %s", err))
 		return
 	}
 	priceMap := make(map[uint]float64)
@@ -193,11 +312,11 @@ func (e InvestIndicator) runCoinEvent() {
 		if a.Category == m.DomesticCoin { // 코인에 대해서만 수행
 			if err != nil {
 				e.lg.Error().Err(err).Msg("[CoinEvent] buySellMsg시, 에러 발생")
-				e.ch <- fmt.Sprintf("[CoinEvent] buySellMsg시, 에러 발생. %s", err)
+				e.ms.SendMessage(fmt.Sprintf("[CoinEvent] buySellMsg시, 에러 발생. %s", err))
 				return
 			}
 			if msg != "" {
-				e.ch <- msg
+				e.ms.SendMessage(msg)
 			}
 		}
 	}
@@ -211,14 +330,14 @@ func (e InvestIndicator) runIndexEvent() {
 	fgi, err := e.dp.FearGreedIndex()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("공포 탐욕 지수 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("공포 탐욕 지수 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("공포 탐욕 지수 조회 시 오류 발생. %s", err.Error()))
 		return
 	}
 	// 2. Nasdaq 지수 조회
 	nasdaq, err := e.dp.Nasdaq()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("Nasdaq Index 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("Nasdaq Index 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("Nasdaq Index 조회 시 오류 발생. %s", err.Error()))
 		return
 	}
 
@@ -226,7 +345,7 @@ func (e InvestIndicator) runIndexEvent() {
 	sp500, err := e.dp.Sp500()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("S&P 500 Index 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("S&P 500 Index 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("S&P 500 Index 조회 시 오류 발생. %s", err.Error()))
 		return
 	}
 
@@ -234,7 +353,7 @@ func (e InvestIndicator) runIndexEvent() {
 	err = e.stg.SaveDailyMarketIndicator(fgi, nasdaq, sp500)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("Nasdaq Index 저장 시 오류 발생")
-		e.ch <- fmt.Sprintf("Nasdaq Index 저장 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("Nasdaq Index 저장 시 오류 발생. %s", err.Error()))
 	}
 
 	// 어제꺼 조회
@@ -248,9 +367,9 @@ func (e InvestIndicator) runIndexEvent() {
 	di, _, err := e.stg.RetrieveMarketIndicator(former)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("RetrieveMarketIndicator 시 오류 발생")
-		e.ch <- fmt.Sprintf("금일 공포 탐욕 지수 : %d\n금일 Nasdaq : %.2f", fgi, nasdaq)
+		e.ms.SendMessage(fmt.Sprintf("금일 공포 탐욕 지수 : %d\n금일 Nasdaq : %.2f", fgi, nasdaq))
 	} else {
-		e.ch <- fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq)
+		e.ms.SendMessage(fmt.Sprintf("금일 공포 탐욕 지수 : %d (전일 : %d)\n금일 Nasdaq : %.2f\n   (전일 : %.2f)", fgi, di.FearGreedIndex, nasdaq, di.NasDaq))
 	}
 	e.lg.Info().
 		Uint("fgi", fgi).
@@ -265,13 +384,13 @@ func (e InvestIndicator) runHighYieldSpreadEvent() {
 	date, spread, err := e.dp.HighYieldSpread()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("HighYieldSpread 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("HighYieldSpread 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("HighYieldSpread 조회 시 오류 발생. %s", err.Error()))
 	}
 
 	hy, err := e.stg.RetrieveLatestHighYieldSpread()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("RetrieveMarketIndicator 시 오류 발생")
-		e.ch <- fmt.Sprintf("RetrieveMarketIndicator 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("RetrieveMarketIndicator 시 오류 발생. %s", err.Error()))
 	}
 	if time.Time(hy.CreatedAt).Format("2006-01-02") == date {
 		e.lg.Info().Str("date", date).Float64("spread", spread).Msg("HighYieldSpreadEvent Existing")
@@ -281,7 +400,7 @@ func (e InvestIndicator) runHighYieldSpreadEvent() {
 	parsedDate, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("Date parsing failed")
-		e.ch <- fmt.Sprintf("Date parsing failed. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("Date parsing failed. %s", err.Error()))
 		return
 	}
 
@@ -291,7 +410,7 @@ func (e InvestIndicator) runHighYieldSpreadEvent() {
 	})
 	if err != nil {
 		e.lg.Error().Err(err).Msg("SaveHighYieldSpread 시 오류 발생")
-		e.ch <- fmt.Sprintf("SaveHighYieldSpread 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("SaveHighYieldSpread 시 오류 발생. %s", err.Error()))
 	}
 
 	e.lg.Info().Str("date", date).Float64("spread", spread).Msg("HighYieldSpreadEvent completed")
@@ -304,7 +423,7 @@ func (e InvestIndicator) runEmaUpdateEvent() {
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[EmaUpdateEvent] RetrieveAssetList 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[EmaUpdateEvent] RetrieveAssetList 시, 에러 발생. %s", err))
 		return
 	}
 
@@ -312,7 +431,7 @@ func (e InvestIndicator) runEmaUpdateEvent() {
 		asset, err := e.stg.RetrieveAsset(a.ID)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[EmaUpdateEvent] RetrieveAsset 시, 에러 발생")
-			e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetrieveAsset 시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[EmaUpdateEvent] RetrieveAsset 시, 에러 발생. %s", err))
 			return
 		}
 		// EMA 갱신 제외
@@ -323,14 +442,14 @@ func (e InvestIndicator) runEmaUpdateEvent() {
 		cp, err := e.dp.ClosingPrice(asset.Category, asset.Code)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[EmaUpdateEvent] ClosingPrice 시, 에러 발생")
-			e.ch <- fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[EmaUpdateEvent] ClosingPrice 시, 에러 발생. %s", err))
 			continue
 		}
 
 		oldEma, err := e.stg.RetreiveLatestEma(asset.ID)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[EmaUpdateEvent] RetreiveLatestEma 시, 에러 발생")
-			e.ch <- fmt.Sprintf("[EmaUpdateEvent] RetreiveLatestEma 시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[EmaUpdateEvent] RetreiveLatestEma 시, 에러 발생. %s", err))
 			continue
 		}
 
@@ -342,7 +461,7 @@ func (e InvestIndicator) runEmaUpdateEvent() {
 		err = e.stg.SaveEmaHist(newEma)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[EmaUpdateEvent] SaveEmaHist 시, 에러 발생")
-			e.ch <- fmt.Sprintf("[EmaUpdateEvent] SaveEmaHist 시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[EmaUpdateEvent] SaveEmaHist 시, 에러 발생. %s", err))
 			continue
 		}
 	}
@@ -355,12 +474,12 @@ func (e InvestIndicator) runRealEstateEvent() {
 	rtn, err := e.rt.RealEstateStatus()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[RealEstateEvent] 크롤링 시 오류 발생")
-		e.ch <- fmt.Sprintf("[RealEstateEvent] 크롤링 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("[RealEstateEvent] 크롤링 시 오류 발생. %s", err.Error()))
 		return
 	}
 
 	if rtn != "예정지구 지정" {
-		e.ch <- fmt.Sprintf("연신내 재개발 변동 사항 존재. 예정지구 지정 => %s", rtn)
+		e.ms.SendMessage(fmt.Sprintf("연신내 재개발 변동 사항 존재. 예정지구 지정 => %s", rtn))
 	} else {
 		e.lg.Info().Str("status", rtn).Msg("연신내 변동 사항 없음. 현재 단계")
 	}
@@ -373,20 +492,20 @@ func (e InvestIndicator) runFindNewSP500Event() {
 	last, err := e.stg.RetrieveLatestSP500Entry()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("SP500 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error()))
 	}
 
 	entries, err := e.dp.RecentSP500Entries(last.Date_added.Format("2006-01-02"))
 	if err != nil {
 		e.lg.Error().Err(err).Msg("SP500 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("SP500 조회 시 오류 발생. %s", err.Error()))
 	}
 
 	for _, entry := range entries {
 		e.lg.Info().Str("symbol", entry.Symbol).Str("security", entry.Security).Msg("New SP500 Entry")
-		e.ch <- "New SP500 Entry"
+		e.ms.SendMessage("New SP500 Entry")
 		jsonBytes, _ := json.MarshalIndent(entry, "", "  ")
-		e.ch <- string(jsonBytes)
+		e.ms.SendMessage(string(jsonBytes))
 	}
 
 	e.lg.Info().Msg("FindNewSP500Event completed")
@@ -400,7 +519,7 @@ func (e InvestIndicator) runBuySP500Event(isManual WayOfLaunch) {
 	av, err := e.InvestAvailableAmount(1) // availableAmount
 	if err != nil {
 		e.lg.Error().Err(err).Msg("자금 1 투자 가능 금액 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("자금 1 투자 가능 금액 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("자금 1 투자 가능 금액 조회 시 오류 발생. %s", err.Error()))
 	}
 
 	mta := 300000.0 // monthTargetAmount // todo. config 전환
@@ -417,7 +536,7 @@ func (e InvestIndicator) runBuySP500Event(isManual WayOfLaunch) {
 	p, err := e.rt.PresentPrice(category, code)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("SPLG 현재 조회 시 오류 발생")
-		e.ch <- fmt.Sprintf("SPLG 현재 조회 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("SPLG 현재 조회 시 오류 발생. %s", err.Error()))
 	}
 
 	p *= e.dp.ExchageRate()
@@ -428,10 +547,10 @@ func (e InvestIndicator) runBuySP500Event(isManual WayOfLaunch) {
 	err = e.td.Buy(category, code, qty)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("SPLG 구매 시 오류 발생")
-		e.ch <- fmt.Sprintf("SPLG 구매 시 오류 발생. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("SPLG 구매 시 오류 발생. %s", err.Error()))
 	}
 
-	e.ch <- fmt.Sprintf("SPLG 구매 완료. 가격: %f, 수량 %d", p, qty)
+	e.ms.SendMessage(fmt.Sprintf("SPLG 구매 완료. 가격: %f, 수량 %d", p, qty))
 }
 
 /**********************************************************************************************************************
@@ -448,11 +567,11 @@ func (e InvestIndicator) runAssetRecommendEvent(isManual WayOfLaunch) {
 	os := make([]priority, 0, len(ivsmLi))
 	err := e.loadOrderSlice(&os, pm)
 	if err != nil {
-		e.ch <- err.Error()
+		e.ms.SendMessage(err.Error())
 	}
 	// li, err := e.stg.RetrieveTotalAssets()
 	// if err != nil {
-	// 	e.ch <- fmt.Sprintf("RetrieveTotalAssets, 에러 발생. %s", err.Error())
+	// 	e.ms.SendMessage(fmt.Sprintf("RetrieveTotalAssets, 에러 발생. %s", err.Error()))
 	// 	return
 	// }
 	// os := make([]priority, 0, len(li)) // ordered slice
@@ -461,7 +580,7 @@ func (e InvestIndicator) runAssetRecommendEvent(isManual WayOfLaunch) {
 	// 	pp := pm[a.ID]
 	// 	ap, err := e.stg.RetreiveLatestEma(a.ID)
 	// 	if err != nil {
-	// 		e.ch <- fmt.Sprintf("RetreiveLatestEma, 에러 발생. ID: %d. %s", a.ID, err.Error())
+	// 		e.ms.SendMessage(fmt.Sprintf("RetreiveLatestEma, 에러 발생. ID: %d. %s", a.ID, err.Error()))
 	// 		return
 	// 	}
 	// 	hp := a.Top
@@ -483,7 +602,7 @@ func (e InvestIndicator) runAssetRecommendEvent(isManual WayOfLaunch) {
 		sb.WriteString(fmt.Sprintf("AssetId : %d\n  AssetName : %s\n  PresentPrice : %.2f\n  WeighedAveragePrice : %.2f\n  HighestPrice : %.2f\n\n", p.asset.ID, p.asset.Name, p.pp, p.ap, p.hp))
 	}
 
-	e.ch <- sb.String()
+	e.ms.SendMessage(sb.String())
 	e.lg.Info().Msg("AssetRecommendEvent completed")
 }
 
@@ -493,7 +612,7 @@ func (e InvestIndicator) runCoinKimchiPremiumEvent(isManual WayOfLaunch) {
 	assetList, err := e.stg.RetrieveTotalAssets()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[CoinKimchiPremiumEvent] RetrieveAssetList 시, 에러 발생. %s", err))
 		return
 	}
 
@@ -502,13 +621,13 @@ func (e InvestIndicator) runCoinKimchiPremiumEvent(isManual WayOfLaunch) {
 			kp, err := e.rt.PresentPrice(a.Category, a.Code)
 			if err != nil {
 				e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생")
-				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)
+				e.ms.SendMessage(fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err))
 				return
 			}
 			dp, err := e.rt.PresentPrice(m.ForeignCoin, a.Code)
 			if err != nil {
 				e.lg.Error().Err(err).Msg("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생")
-				e.ch <- fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err)
+				e.ms.SendMessage(fmt.Sprintf("[CoinKimchiPremiumEvent] PresentPrice 시, 에러 발생. %s", err))
 				return
 			}
 
@@ -518,13 +637,13 @@ func (e InvestIndicator) runCoinKimchiPremiumEvent(isManual WayOfLaunch) {
 			kPrm := 100 * (kp - cp) / cp // k-premium
 
 			if kPrm >= 10 {
-				e.ch <- fmt.Sprintf("[매도] %s 김치 프리미엄 10프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm)
+				e.ms.SendMessage(fmt.Sprintf("[매도] %s 김치 프리미엄 10프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm))
 			} else if kPrm >= 5 {
-				e.ch <- fmt.Sprintf("[알림] %s 김치 프리미엄 5프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm)
+				e.ms.SendMessage(fmt.Sprintf("[알림] %s 김치 프리미엄 5프로 이상. 현재 프리미엄: %.2f", a.Name, kPrm))
 			} else if kPrm < -2 {
-				e.ch <- fmt.Sprintf("[매수] %s - 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", a.Name, kPrm)
+				e.ms.SendMessage(fmt.Sprintf("[매수] %s - 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", a.Name, kPrm))
 			} else if isManual {
-				e.ch <- fmt.Sprintf("[알림] %s 현재 프리미엄: %.2f", a.Name, kPrm)
+				e.ms.SendMessage(fmt.Sprintf("[알림] %s 현재 프리미엄: %.2f", a.Name, kPrm))
 			}
 
 		}
@@ -540,7 +659,7 @@ func (e InvestIndicator) runGoldKimchiPremium(isManual WayOfLaunch) {
 		assets, err := e.stg.RetrieveTotalAssets()
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAssetList 시, 에러 발생")
-			e.ch <- err.Error() //todo log
+			e.ms.SendMessage(err.Error())
 			return
 		}
 
@@ -555,14 +674,14 @@ func (e InvestIndicator) runGoldKimchiPremium(isManual WayOfLaunch) {
 	goldAsset, err := e.stg.RetrieveAsset(goldId)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[goldKimchiPremium] RetrieveAsset 시, 에러 발생")
-		e.ch <- err.Error() //todo log
+		e.ms.SendMessage(err.Error())
 	}
 
 	kp, err := e.rt.PresentPrice(goldAsset.Category, goldAsset.Code) // kimchi price
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[goldKimchiPremium] PresentPrice 시, 에러 발생")
 		//todo log
-		e.ch <- fmt.Sprintf("금 한국 가격 조회 시 오류. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("금 한국 가격 조회 시 오류. %s", err.Error()))
 		return
 	}
 
@@ -570,7 +689,7 @@ func (e InvestIndicator) runGoldKimchiPremium(isManual WayOfLaunch) {
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[goldKimchiPremium] GoldPriceDollar 시, 에러 발생")
 		//todo log
-		e.ch <- fmt.Sprintf("금 달러 가격 조회 시 오류. %s", err.Error())
+		e.ms.SendMessage(fmt.Sprintf("금 달러 가격 조회 시 오류. %s", err.Error()))
 		return
 	}
 	ex := e.dp.ExchageRate() // exchange rate
@@ -579,15 +698,15 @@ func (e InvestIndicator) runGoldKimchiPremium(isManual WayOfLaunch) {
 	kPrm := 100 * (kp - cp) / cp // k-premium
 
 	if kPrm > 10 {
-		e.ch <- fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm)
+		e.ms.SendMessage(fmt.Sprintf("[매도] 금 김치 프리미엄 10프로 초과. 현재 프리미엄: %.2f", kPrm))
 	} else if kPrm > 5 {
-		e.ch <- fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm)
+		e.ms.SendMessage(fmt.Sprintf("[알림] 금 김치 프리미엄 5프로 초과. 현재 프리미엄: %.2f", kPrm))
 	} else if kPrm < -2 {
-		e.ch <- fmt.Sprintf("[매수] 금 역 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", kPrm)
+		e.ms.SendMessage(fmt.Sprintf("[매수] 금 역 김치 프리미엄 2프로 초과. 현재 프리미엄: %.2f", kPrm))
 	}
 
 	if isManual {
-		e.ch <- fmt.Sprintf("[알림] 현재 프리미엄: %.2f", kPrm)
+		e.ms.SendMessage(fmt.Sprintf("[알림] 현재 프리미엄: %.2f", kPrm))
 	}
 }
 
@@ -624,13 +743,13 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 	// todo. 상태 가져오기
 
 	if isManual {
-		e.ch <- fmt.Sprintf("[ManageAvaxDex] 현재 단계 %d. 범위: %.2f ~ %.2f", currentPhase, dexRange[0], dexRange[1])
+		e.ms.SendMessage(fmt.Sprintf("[ManageAvaxDex] 현재 단계 %d. 범위: %.2f ~ %.2f", currentPhase, dexRange[0], dexRange[1]))
 	}
 
 	assets, err := e.stg.RetrieveAssetList()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[ManageAvaxDex] RetrieveAssetList 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[ManageAvaxDex] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[ManageAvaxDex] RetrieveAssetList 시, 에러 발생. %s", err))
 		return
 	}
 
@@ -645,13 +764,13 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 
 	avaxInfo, err := e.stg.RetrieveAsset(avaxId)
 	if err != nil {
-		e.ch <- fmt.Sprintf("[ManageAvaxDex] RetrieveAsset 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[ManageAvaxDex] RetrieveAsset 시, 에러 발생. %s", err))
 		return
 	}
 
 	cp, err := e.rt.PresentPrice(m.ForeignCoin, avaxInfo.Code)
 	if err != nil {
-		e.ch <- fmt.Sprintf("[ManageAvaxDex] PresentPrice 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[ManageAvaxDex] PresentPrice 시, 에러 발생. %s", err))
 		return
 	}
 
@@ -667,7 +786,7 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 		// todo 컨트랙트 조회로 수정 필요
 		invests, err := e.stg.RetreiveFundSummaryByAssetId(avaxId)
 		if err != nil {
-			e.ch <- fmt.Sprintf("[ManageAvaxDex] RetreiveFundSummaryByAssetId 시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[ManageAvaxDex] RetreiveFundSummaryByAssetId 시, 에러 발생. %s", err))
 			return
 		}
 		for _, invest := range invests {
@@ -680,20 +799,20 @@ func (e InvestIndicator) runAvaxDexEvent(isManual WayOfLaunch) {
 		switch currentPhase {
 		case empty, full:
 			if currentPhase == empty {
-				e.ch <- "[AVAX DEX Management] 현재 Phase EMPTY. 행동 필요. 아래 구간 진입 필요"
+				e.ms.SendMessage("[AVAX DEX Management] 현재 Phase EMPTY. 행동 필요. 아래 구간 진입 필요")
 			} else {
-				e.ch <- "[AVAX DEX Management] 헌재 Phase Full. 행동 필요. 전체 회수 및 아래 구간 진입 필요"
+				e.ms.SendMessage("[AVAX DEX Management] 헌재 Phase Full. 행동 필요. 전체 회수 및 아래 구간 진입 필요")
 			}
-			e.ch <- fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount/3, amount/3*cp)
-			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
-			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
+			e.ms.SendMessage(fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount/3, amount/3*cp))
+			e.ms.SendMessage(fmt.Sprintf("%.2f", dexRange[0]))
+			e.ms.SendMessage(fmt.Sprintf("%.2f", dexRange[1]))
 			inputedAvax = 2 * math.Round(amount/3)
 			currentPhase = twoThird
 		case twoThird:
-			e.ch <- "[AVAX DEX Management] 헌재 Phase 2/3. 행동 필요. 아래 구간 진입 필요"
-			e.ch <- fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount-inputedAvax, (amount-inputedAvax)*cp)
-			e.ch <- fmt.Sprintf("%.2f", dexRange[0])
-			e.ch <- fmt.Sprintf("%.2f", dexRange[1])
+			e.ms.SendMessage("[AVAX DEX Management] 헌재 Phase 2/3. 행동 필요. 아래 구간 진입 필요")
+			e.ms.SendMessage(fmt.Sprintf("PUT %.0f Avax AND %.0f USDC", amount-inputedAvax, (amount-inputedAvax)*cp))
+			e.ms.SendMessage(fmt.Sprintf("%.2f", dexRange[0]))
+			e.ms.SendMessage(fmt.Sprintf("%.2f", dexRange[1]))
 			currentPhase = full
 			inputedAvax = amount
 		}
@@ -709,14 +828,14 @@ func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
 	_ = isManual // no diff between manual or auto
 	upEvents, upUrls, err := e.rt.AirdropEventUpbit()
 	if err != nil {
-		e.ch <- fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventUpbit 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventUpbit 시, 에러 발생. %s", err))
 		goto bithumb
 	}
 
 	for i, event := range upEvents {
 		isExist, _ := e.stg.GetCache("upbit" + upUrls[i]).Bool()
 		if !isExist {
-			e.ch <- fmt.Sprintf("[New Upbit Event] %s", event)
+			e.ms.SendMessage(fmt.Sprintf("[New Upbit Event] %s", event))
 			e.stg.SetCache("upbit"+upUrls[i], true, time.Hour*24*30*3)
 		}
 	}
@@ -724,14 +843,14 @@ func (e InvestIndicator) runNewlyOpenedAirdropEvent(isManual WayOfLaunch) {
 bithumb:
 	bitEvents, bitUrls, err := e.rt.AirdropEventBithumb()
 	if err != nil {
-		e.ch <- fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventBithumb 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[runNewlyOpenedAirdropEvent] AirdropEventBithumb 시, 에러 발생. %s", err))
 		return
 	}
 
 	for i, event := range bitEvents {
 		isExist, _ := e.stg.GetCache("bithumb" + bitUrls[i]).Bool()
 		if !isExist {
-			e.ch <- fmt.Sprintf("[New Bitthumb Event] %s", event)
+			e.ms.SendMessage(fmt.Sprintf("[New Bitthumb Event] %s", event))
 			e.stg.SetCache("bithumb"+bitUrls[i], true, time.Hour*24*30*3)
 		}
 	}
@@ -745,11 +864,11 @@ func (e InvestIndicator) runAvalancheSwap10TxEvent(isManual WayOfLaunch) {
 	for i := 0; i < 10; i++ {
 		err := e.bt.SwapUsdtUsdc(isUsdcIn)
 		if err != nil {
-			e.ch <- err.Error()
+			e.ms.SendMessage(err.Error())
 		}
 		isUsdcIn = !isUsdcIn
 	}
-	// e.ch <- "AvalancheSwap10TxEvent 수행 완료"
+	// e.ms.SendMessage("AvalancheSwap10TxEvent 수행 완료")
 }
 
 /**********************************************************************************************************************
@@ -790,7 +909,7 @@ func (e InvestIndicator) updateAsset(priceMap map[uint]float64, ivsmLi *[]m.Inve
 	assetList, err := e.stg.RetrieveAssetList()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[assetUpdate] RetrieveAssetList 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[assetUpdate] RetrieveAssetList 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[assetUpdate] RetrieveAssetList 시, 에러 발생. %s", err))
 		return
 	}
 
@@ -799,11 +918,11 @@ func (e InvestIndicator) updateAsset(priceMap map[uint]float64, ivsmLi *[]m.Inve
 		msg, err := e.buySellMsg(a.ID, priceMap)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[assetUpdate] buySellMsg시, 에러 발생")
-			e.ch <- fmt.Sprintf("[assetUpdate] buySellMsg시, 에러 발생. %s", err)
+			e.ms.SendMessage(fmt.Sprintf("[assetUpdate] buySellMsg시, 에러 발생. %s", err))
 			return
 		}
 		if msg != "" {
-			e.ch <- msg
+			e.ms.SendMessage(msg)
 		}
 	}
 
@@ -811,7 +930,7 @@ func (e InvestIndicator) updateAsset(priceMap map[uint]float64, ivsmLi *[]m.Inve
 	*ivsmLi, err = e.stg.RetreiveFundsSummaryOrderByFundId()
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[assetUpdate] RetreiveFundsSummaryOrderByFundId 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[assetUpdate] RetreiveFundsSummaryOrderByFundId 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[assetUpdate] RetreiveFundsSummaryOrderByFundId 시, 에러 발생. %s", err))
 		return
 	}
 	if len(*ivsmLi) == 0 {
@@ -822,7 +941,7 @@ func (e InvestIndicator) updateAsset(priceMap map[uint]float64, ivsmLi *[]m.Inve
 	err = e.updateFundSummarys(*ivsmLi, priceMap)
 	if err != nil {
 		e.lg.Error().Err(err).Msg("[assetUpdate] updateFundSummary 시, 에러 발생")
-		e.ch <- fmt.Sprintf("[assetUpdate] updateFundSummary 시, 에러 발생. %s", err)
+		e.ms.SendMessage(fmt.Sprintf("[assetUpdate] updateFundSummary 시, 에러 발생. %s", err))
 		return
 	}
 }

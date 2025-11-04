@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -15,12 +14,28 @@ type TeleBot struct {
 	bot     *tgbotapi.BotAPI
 	chatId  int64
 	updates tgbotapi.UpdatesChannel
+	ch      chan string
 }
 
 type TeleBotConfig struct {
 	Token  string
 	ChatId int64
 }
+
+var helpMsg = `
+				조회 API 목록
+				/funds
+				/funds/{id}/hist
+				/funds/{id}/assets
+				/funds/{id}/portion
+				/assets
+				/assets/list
+				/assets/{id}
+				/assets/{id}/hist
+				/market
+				/market/indicators/{date?}
+				/events
+				`
 
 func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
 
@@ -34,25 +49,56 @@ func NewTeleBot(conf *TeleBotConfig) (*TeleBot, error) {
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
 
+	ch := make(chan string) // channel은 telebot 내부에서 thread간 소통용. telebot 외부에서는 다 동기처럼 보이게끔 설계.
+
 	return &TeleBot{
 		bot:     bot,
 		chatId:  conf.ChatId,
 		updates: updates,
+		ch:      ch,
 	}, nil
 }
 
-func (t TeleBot) Run(ch chan string, port int, passkey string) {
+func (t TeleBot) Run(port int, passkey string) {
 	t.SendMessage("LAUNCHED SUCCESSFULLY")
 
-	go func() {
-		t.communicate(ch, port, passkey)
-	}()
+	for update := range t.updates {
+		if update.Message != nil {
+			txt := update.Message.Text
+			if txt[0] != '/' {
+				switch txt {
+				case "/help":
+					t.SendMessage(helpMsg)
+				default:
+					rtn, err := httpsend(fmt.Sprintf("http://localhost:%d%s", port, txt), passkey)
+					if err != nil {
+						t.SendMessage(err.Error())
+					} else {
+						t.SendMessage(rtn)
+					}
+				}
+			}
+		} else if update.CallbackQuery != nil {
+			// Answer the callback to remove loading state
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+			t.bot.Request(callback)
 
-	for true {
-		msg := <-ch
-		t.SendMessage(msg)
-		log.Println(msg)
+			// Parse and return the selected value
+			t.ch <- update.CallbackQuery.Data
+
+			newKeyboard := tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData("SUCCESSFULLY SELECTED", update.CallbackQuery.Data),
+				),
+			)
+			// Edit the message with the updated keyboard
+			editMsg := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, newKeyboard)
+			if _, err := t.bot.Send(editMsg); err != nil {
+				t.SendMessage("Callback 오류. " + err.Error())
+			}
+		}
 	}
+
 }
 
 func (t TeleBot) InitKey(msg error) string {
@@ -71,75 +117,45 @@ func (t TeleBot) SendMessage(msg string) {
 	t.bot.Send(tgbotapi.NewMessage(t.chatId, msg))
 }
 
-func (t TeleBot) communicate(ch chan string, port int, passkey string) {
+func (t TeleBot) SendButtonsAndGetResult(prompt string, options ...string) (answer string, err error) {
 
-	for update := range t.updates {
-		if update.Message != nil {
-			txt := update.Message.Text
-			if txt[0] != '/' {
-				continue
-			}
-
-			switch txt {
-			case "/help":
-				ch <- `
-				조회 API 목록
-				/funds
-				/funds/{id}/hist
-				/funds/{id}/assets
-				/funds/{id}/portion
-				/assets
-				/assets/list
-				/assets/{id}
-				/assets/{id}/hist
-				/market
-				/market/indicators/{date?}
-				/events
-				`
-			case "/form":
-				ch <- `Asset
-				{
-				  ("id" : , )
-				  "name": "",
-				  "category": ,
-				  "code": "",
-				  "currency": "",
-				  "top": ,
-				  "bottom": ,
-				  "ema": ,
-				  "sel_price": ,
-				  "buy_price": 
-				}`
-
-				ch <- `Invest
-				{
-				  "fund_id" : ,
-				  "asset_id" : ,
-				  "price" : ,
-				  "count" :
-				}
-				`
-				ch <- `AddFunds
-				{
-				  "name" : ""
-				}
-				`
-				ch <- `SaveMarketStatus
-				{
-				  "status" : 
-				}
-				`
-			default:
-				rtn, err := httpsend(fmt.Sprintf("http://localhost:%d%s", port, txt), passkey)
-				if err != nil {
-					ch <- err.Error()
-				} else {
-					ch <- rtn
-				}
-			}
-
-		}
+	err = t.sendButtons(prompt, options...)
+	if err != nil {
+		return "", err
 	}
+	answer = <-t.ch
+
+	return answer, nil
+
+}
+
+/**********************************************************************************************************************
+*************************************************Inner Function*******************************************************
+**********************************************************************************************************************/
+
+// SendButtonsAndGetSelection sends a message with inline keyboard buttons for the given integer options
+// and returns the selected button value. The prompt parameter is the message text to display.
+func (t TeleBot) sendButtons(prompt string, options ...string) error {
+	// Create inline keyboard buttons
+	var buttons [][]tgbotapi.InlineKeyboardButton
+	for _, option := range options {
+		button := tgbotapi.NewInlineKeyboardButtonData(option, option)
+		buttons = append(buttons, []tgbotapi.InlineKeyboardButton{button})
+	}
+
+	// Create the inline keyboard markup
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(buttons...)
+
+	// Create and send the message with buttons
+	msg := tgbotapi.NewMessage(t.chatId, prompt)
+	msg.ReplyMarkup = keyboard
+	_, err := t.bot.Send(msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func httpsend(url string, passkey string) (string, error) {

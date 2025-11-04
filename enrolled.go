@@ -44,6 +44,10 @@ func (e InvestIndicator) Run() {
 	}
 
 	c.Start()
+
+	go func() {
+		e.runRecordMyOrdersEvent()
+	}()
 	e.lg.Info().Msg("EventHandler Run completed")
 }
 

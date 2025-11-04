@@ -9,7 +9,7 @@ const bithumbUrlForm = "https://api.bithumb.com/v1/candles/days?market=%s&count=
 
 func (s Scraper) bithumbApi(sym string) (float64, float64, error) {
 
-	url := fmt.Sprintf(bithumbUrlForm, "KRW-"+sym)
+	url := fmt.Sprintf(bithumbUrlForm, sym)
 
 	var rtn []map[string]any
 	err := sendRequest(url, http.MethodGet, nil, nil, &rtn)

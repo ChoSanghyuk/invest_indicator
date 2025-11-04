@@ -3,7 +3,6 @@ package investind
 import (
 	"fmt"
 	m "investindicator/internal/model"
-	"investindicator/scrape"
 	"strings"
 	"testing"
 	"time"
@@ -82,9 +81,8 @@ func TestEventportfolioMsg(t *testing.T) {
 	}
 	scrp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
-	ch := make(chan<- string)
 
-	evt := NewInvestIndicator(stg, scrp, dp, nil, ch)
+	evt := NewInvestIndicator(stg, scrp, dp, nil, nil)
 
 	/*
 		매도 필요상황
@@ -151,11 +149,11 @@ func TestEnrolledEventLaunch(t *testing.T) {
 func TestRunNewlyOpenedAirdropEvent(t *testing.T) {
 
 	stg := &StorageMock{}
-	scrp := &scrape.Scraper{}
+	rp := &RtPollerMock{}
 	dp := &DailyPollerMock{}
 	ch := make(chan string)
 
-	evt := NewInvestIndicator(stg, scrp, dp, nil, ch)
+	evt := NewInvestIndicator(stg, rp, dp, nil, nil)
 
 	t.Run("function_test", func(t *testing.T) {
 		go func(ch *chan string) {

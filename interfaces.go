@@ -13,6 +13,7 @@ type rtPoller interface { // realtime poller
 	GoldPriceDollar() (float64, error)
 	AirdropEventUpbit() ([]string, []string, error)
 	AirdropEventBithumb() ([]string, []string, error)
+	StreamMyOrders(chan<- m.MyOrder) error
 }
 
 type dailyPoller interface {
@@ -38,11 +39,15 @@ type storage interface {
 	RetrieveAsset(id uint) (*m.Asset, error)
 	RetrieveTotalAssets() ([]m.Asset, error)
 	UpdateAssetInfo(asset m.Asset) error
+	RetrieveAssetIdByCode(code string) uint
 
 	RetreiveFundsSummaryOrderByFundId() ([]m.InvestSummary, error)
 	RetreiveFundSummaryByFundId(fundId uint) ([]m.InvestSummary, error)
 	UpdateInvestSummarySum(fundId uint, assetId uint, sum float64) error
+	UpdateInvestSummary(fundId uint, assetId uint, change float64, price float64) error
 	RetreiveFundSummaryByAssetId(id uint) ([]m.InvestSummary, error)
+
+	SaveInvest(fundId uint, assetId uint, price float64, count float64) error
 
 	RetrieveMarketIndicator(date string) (*m.DailyIndex, *m.CliIndex, error)
 	SaveDailyMarketIndicator(fearGreedIndex uint, nasdaq float64, sp500 float64) error
@@ -66,4 +71,9 @@ type trader interface {
 
 type bcTrader interface { // blockchain trader
 	SwapUsdtUsdc(isUsdcIn bool) error
+}
+
+type messenger interface {
+	SendMessage(msg string)
+	SendButtonsAndGetResult(prompt string, options ...string) (answer string, err error)
 }

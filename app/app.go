@@ -22,7 +22,7 @@ func Run(port int, authKey, passKey string, stg *db.Storage, scraper *scrape.Scr
 	handler.NewAuthHandler(stg, authKey, passKey).InitRoute(app)
 	handler.NewAssetHandler(stg, stg, scraper).InitRoute(app)
 	handler.NewFundHandler(stg, stg, stg, scraper, eh).InitRoute(app)
-	handler.NewInvestHandler(stg, stg, scraper).InitRoute(app)
+	handler.NewInvestHandler(stg, eh, scraper).InitRoute(app)
 	handler.NewMarketHandler(stg, stg).InitRoute(app)
 	handler.NewCategoryHandler().InitRoute(app)
 	handler.NewEventHandler(eh, eh, eh).InitRoute(app)

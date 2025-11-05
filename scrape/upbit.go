@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,7 +36,7 @@ const upbitUrlForm = "https://api.upbit.com/v1/candles/days?market=%s&count=1"
 
 func (s Scraper) upbitApi(sym string) (float64, float64, error) {
 
-	url := fmt.Sprintf(upbitUrlForm, sym) // KRW-SYMBOL 형식
+	url := fmt.Sprintf(upbitUrlForm, "KRW-"+sym) // KRW-SYMBOL 형식
 
 	var rtn []map[string]any
 	err := sendRequest(url, http.MethodGet, nil, nil, &rtn)
@@ -128,6 +129,8 @@ func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
 			return err
 		}
 		if order.State == "done" {
+			code, _ := strings.CutPrefix(order.Code, "KRW-")
+			order.Code = code
 			c <- order
 		}
 	}

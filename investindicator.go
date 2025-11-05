@@ -48,6 +48,7 @@ func NewInvestIndicator(stg storage, rt rtPoller, dp dailyPoller, bt bcTrader, m
 	}
 	eh.registerEvents()
 	eh.redisCurrencyIdInit()
+
 	return eh
 }
 

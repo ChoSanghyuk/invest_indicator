@@ -81,6 +81,9 @@ func (c Config) LogLevel() (zerolog.Level, error) {
 	if err != nil {
 		return zerolog.InfoLevel, err // Default로는 Info 레벨 설정
 	}
+	if level == zerolog.NoLevel {
+		return zerolog.InfoLevel, nil
+	}
 
 	return level, nil
 }

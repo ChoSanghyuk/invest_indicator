@@ -124,7 +124,7 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 		stock, err := s.kisDomesticEtfPrice(code)
 		return stock.pp, err
 	case m.DomesticCoin:
-		pp, _, err := s.bithumbApi("KRW-" + code)
+		pp, _, err := s.bithumbApi(code)
 		return pp, err
 	case m.ForeignCoin:
 		pp, err := alpacaCrypto(code)
@@ -181,7 +181,7 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 		stock, err := s.kisDomesticStockPrice(code)
 		return stock.op, err
 	case m.DomesticCoin:
-		_, cp, err = s.bithumbApi("KRW-" + code)
+		_, cp, err = s.bithumbApi(code)
 		return cp, err
 	case m.DomesticETF, m.DomesticStableETF:
 		stock, err := s.kisDomesticEtfPrice(code)
@@ -514,9 +514,9 @@ func (s *Scraper) StreamMyOrders(c chan<- m.MyOrder) error {
 			if upOrder.Error != nil {
 				return upOrder.Error
 			}
-			code, _ := strings.CutPrefix(upOrder.Code, "KRW-")
+
 			c <- m.MyOrder{
-				Code:  code,
+				Code:  upOrder.Code,
 				Price: upOrder.Price,
 				Count: upOrder.Volume,
 			}

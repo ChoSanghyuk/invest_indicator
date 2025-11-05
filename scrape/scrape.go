@@ -124,7 +124,7 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 		stock, err := s.kisDomesticEtfPrice(code)
 		return stock.pp, err
 	case m.DomesticCoin:
-		pp, _, err := s.bithumbApi(code)
+		pp, _, err := s.bithumbApi("KRW-" + code)
 		return pp, err
 	case m.ForeignCoin:
 		pp, err := alpacaCrypto(code)

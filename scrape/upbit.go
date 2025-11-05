@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -91,6 +92,9 @@ func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
 	}
 	defer conn.Close()
 
+	// Set up ping/pong handlers
+	go keepPing(conn)
+
 	// Create your JSON message
 	message := []interface{}{
 		map[string]interface{}{
@@ -128,4 +132,36 @@ func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
 		}
 	}
 	return nil
+}
+
+func keepPing(conn *websocket.Conn) {
+	const pongWait = 2 * time.Minute
+	const pingInterval = (pongWait * 9) / 10 // Send ping before pong timeout
+
+	// Set read deadline
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+
+	// Handle pong messages to reset read deadline
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	// Start goroutine to send periodic pings
+	done := make(chan struct{})
+	defer close(done)
+
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		case <-done:
+			return
+		}
+	}
 }

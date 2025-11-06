@@ -215,6 +215,7 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 
 		assetId := e.stg.RetrieveAssetIdByCode(myOrder.Code)
 		if assetId == 0 { // 미등록된 Asset
+			e.ms.SendMessage(fmt.Sprintf("미등록 자산 %s 거래 발생", myOrder.Code))
 			continue
 		}
 		fundId, err := e.ChooseFundId(myOrder)

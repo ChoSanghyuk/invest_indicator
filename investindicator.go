@@ -205,9 +205,19 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 	oc := make(chan m.MyOrder) // order channel
 
 	go func() {
-		err := e.rt.StreamMyOrders(oc)
-		e.lg.Error().Err(err).Msg("my orders streaming event 오류")
-		e.ms.SendMessage(fmt.Errorf("my orders streaming event 오류 발생 및 event shutdown. 재기동 필요. 오류 내역: %w", err).Error())
+		t := time.Now()
+
+		for {
+			err := e.rt.StreamMyOrders(oc)
+			e.lg.Error().Err(err).Msg("my orders streaming event 오류")
+			e.ms.SendMessage(fmt.Errorf("my orders streaming event 오류 발생. 오류 내역: %w", err).Error())
+			if t.After(time.Now().Add(-5 * time.Minute)) { // 5분 이내로 오류 반복 발생 시, shutdown
+				e.ms.SendMessage("my orders streaming event shutdown")
+				break
+			} else {
+				t = time.Now()
+			}
+		}
 	}()
 
 	for {
@@ -218,10 +228,10 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 			e.ms.SendMessage(fmt.Sprintf("미등록 자산 %s 거래 발생", myOrder.Code))
 			continue
 		}
-		fundId, err := e.ChooseFundId(myOrder)
+		fundId, err := e.chooseFundId(myOrder)
 		if err != nil {
-			e.lg.Error().Err(err).Msg("[runRecordMyOrdersEvent] ChooseFundId, 에러 발생")
-			e.ms.SendMessage(fmt.Sprintf("[runRecordMyOrdersEvent] ChooseFundId, 에러 발생. %s", err))
+			e.lg.Error().Err(err).Msg("[runRecordMyOrdersEvent] chooseFundId, 에러 발생")
+			e.ms.SendMessage(fmt.Sprintf("[runRecordMyOrdersEvent] chooseFundId, 에러 발생. %s", err))
 			continue
 		}
 
@@ -240,7 +250,7 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 	}
 }
 
-func (e InvestIndicator) ChooseFundId(order m.MyOrder) (uint, error) {
+func (e InvestIndicator) chooseFundId(order m.MyOrder) (uint, error) {
 	prompt := fmt.Sprintf("하기 거래에 대한 자금 id를 선택하세요.\n Code: %s\n Price: %.3f\n Count : %.3f", order.Code, order.Price, order.Count)
 	ans, err := e.ms.SendButtonsAndGetResult(prompt, "1", "2", "3")
 	if err != nil {

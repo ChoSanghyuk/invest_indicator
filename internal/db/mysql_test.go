@@ -435,6 +435,90 @@ func TestRetrieveLatestSP500Entry(t *testing.T) {
 // 	t.Logf("%+v", rtn)
 // }
 
+func TestDeleteAssetAndSeeInvest(t *testing.T) {
+	setupStg(t)
+
+	// 1. Create a test asset
+	assetID, err := stg.SaveAssetInfo(m.Asset{
+		Name:      "TestAsset",
+		Category:  m.DomesticStock,
+		Code:      "TEST001",
+		Currency:  "WON",
+		Top:       100000,
+		Bottom:    50000,
+		SellPrice: 90000,
+		BuyPrice:  60000,
+	})
+	if err != nil {
+		t.Error("Failed to save asset:", err)
+		return
+	}
+	t.Logf("Created asset with ID: %d", assetID)
+
+	// 2. Record some invests for this asset
+	err = stg.SaveInvest(1, assetID, 70000, 10)
+	if err != nil {
+		t.Error("Failed to save first invest:", err)
+	}
+
+	err = stg.SaveInvest(1, assetID, 80000, 5)
+	if err != nil {
+		t.Error("Failed to save second invest:", err)
+	}
+
+	// 3. Verify invests were created
+	invests, err := stg.RetrieveAssetHist(assetID)
+	if err != nil {
+		t.Error("Failed to retrieve asset history:", err)
+	}
+	t.Logf("Before delete - Found %d invests for asset ID %d", len(invests), assetID)
+	if len(invests) != 2 {
+		t.Errorf("Expected 2 invests, got %d", len(invests))
+	}
+
+	// 4. Delete the asset (soft delete)
+	err = stg.DeleteAssetInfo(assetID)
+	if err != nil {
+		t.Error("Failed to delete asset:", err)
+	}
+	t.Logf("Deleted asset with ID: %d", assetID)
+
+	// 5. Verify asset is soft deleted - should not be found in normal query
+	_, err = stg.RetrieveAsset(assetID)
+	if err == nil {
+		t.Error("Expected error when retrieving deleted asset, but got none")
+	}
+	t.Log("Confirmed: Deleted asset not found in normal query")
+
+	// 6. Verify asset still exists in DB with deleted_at set using Unscoped
+	var deletedAsset m.Asset
+	result := stg.db.Unscoped().First(&deletedAsset, assetID)
+	if result.Error != nil {
+		t.Error("Failed to retrieve asset with Unscoped:", result.Error)
+	}
+	if deletedAsset.DeletedAt.Valid == false {
+		t.Error("Expected deleted_at to be set, but it's not")
+	}
+	t.Logf("Confirmed: Asset exists with deleted_at = %v", deletedAsset.DeletedAt.Time)
+
+	// 7. Verify invests still exist and can be retrieved
+	investsAfterDelete, err := stg.RetrieveAssetHist(assetID)
+	if err != nil {
+		t.Error("Failed to retrieve asset history after delete:", err)
+	}
+	t.Logf("After delete - Found %d invests for asset ID %d", len(investsAfterDelete), assetID)
+	if len(investsAfterDelete) != 2 {
+		t.Errorf("Expected 2 invests after delete, got %d", len(investsAfterDelete))
+	}
+
+	// 8. Cleanup - permanently delete test data
+	stg.db.Unscoped().Delete(&deletedAsset)
+	for _, inv := range investsAfterDelete {
+		stg.db.Delete(&inv)
+	}
+	t.Log("Cleanup completed")
+}
+
 /***************************************************** Inner Function ********************************************************************************/
 
 func compareAssets(asset1 m.Asset, asset2 m.Asset) bool {

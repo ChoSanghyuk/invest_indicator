@@ -47,11 +47,14 @@ func NewStorage(mc *MysqlConfig, rc *RedisConfig, opts ...gorm.Option) (*Storage
 		return nil, err
 	}
 
-	rds := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", rc.ip, rc.port),
-		Password: rc.password, //
-		DB:       rc.db,       // memo. DB는 우선 0번 하나만 사용. 레디시는 0~15까지의 16개의 DB를 제공함.
-	})
+	var rds *redis.Client
+	if rc != nil {
+		rds = redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", rc.ip, rc.port),
+			Password: rc.password, //
+			DB:       rc.db,       // memo. DB는 우선 0번 하나만 사용. 레디시는 0~15까지의 16개의 DB를 제공함.
+		})
+	}
 
 	stg := &Storage{
 		db:  db,

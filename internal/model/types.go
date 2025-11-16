@@ -27,6 +27,7 @@ type Asset struct {
 	Bottom    float64
 	SellPrice float64
 	BuyPrice  float64
+	gorm.Model
 }
 
 type EmaHist struct {

@@ -261,7 +261,7 @@ func (s Storage) DeleteAssetInfo(id uint) error {
 		return result.Error
 	}
 
-	s.lg.Info().Msgf("Deleted asset with ID %d", id)
+	s.lg.Info().Msgf("Soft deleted asset with ID %d", id)
 	return nil
 }
 

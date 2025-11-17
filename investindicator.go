@@ -235,6 +235,10 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 			continue
 		}
 
+		if fundId == 0 {
+			continue
+		}
+
 		err = e.RecordInvest(m.Invest{
 			FundID:  fundId,
 			AssetID: assetId,
@@ -252,9 +256,13 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 
 func (e InvestIndicator) chooseFundId(order m.MyOrder) (uint, error) {
 	prompt := fmt.Sprintf("하기 거래에 대한 자금 id를 선택하세요.\n Code: %s\n Price: %.3f\n Count : %.3f", order.Code, order.Price, order.Count)
-	ans, err := e.ms.SendButtonsAndGetResult(prompt, "1", "2", "3")
+	ans, err := e.ms.SendButtonsAndGetResult(prompt, "1", "2", "3", "미대상 거래")
 	if err != nil {
 		return 0, err
+	}
+
+	if ans == "미대상 거래" {
+		return 0, nil
 	}
 
 	id, err := strconv.Atoi(ans)

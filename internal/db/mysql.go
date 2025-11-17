@@ -243,7 +243,7 @@ func (s Storage) SaveAssetInfo(asset m.Asset) (uint, error) {
 // Default value도 updated 되게 끔
 func (s Storage) UpdateAssetInfo(asset m.Asset) error {
 
-	result := s.db.Select("*").Updates(asset)
+	result := s.db.Select("*").Omit("created_at").Updates(asset)
 
 	if result.Error != nil {
 		return result.Error

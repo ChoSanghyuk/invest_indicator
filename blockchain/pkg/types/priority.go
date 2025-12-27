@@ -1,4 +1,4 @@
-package evmtxbroker
+package types
 
 type Priority uint8
 

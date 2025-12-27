@@ -1,4 +1,4 @@
-package evmtxbroker
+package contractclient
 
 import (
 	"context"
@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	txtypes "investindicator/blockchain/pkg/types"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -17,7 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type EvmTxBroker struct {
+type ContractClient struct {
 	contractAddress common.Address
 	abi             *abi.ABI
 	client          *ethclient.Client
@@ -35,13 +37,17 @@ func (cm *EvmContractCodec) ChainId() (*big.Int, error) {
 }
 */
 
-func NewEvmTxBroker(client *ethclient.Client, contractAddress common.Address, abi *abi.ABI) *EvmTxBroker {
-	chainID, err := client.ChainID(context.Background())
-	if err != nil {
-		return nil // todo.
+func NewContractClient(client *ethclient.Client, contractAddress common.Address, abi *abi.ABI) *ContractClient {
+	chainID := big.NewInt(0)
+	if client != nil {
+		cid, err := client.ChainID(context.Background())
+		if err != nil {
+			// todo. logging
+		}
+		chainID = cid
 	}
 
-	return &EvmTxBroker{
+	return &ContractClient{
 		contractAddress: contractAddress,
 		abi:             abi,
 		client:          client,
@@ -49,7 +55,7 @@ func NewEvmTxBroker(client *ethclient.Client, contractAddress common.Address, ab
 	}
 }
 
-func (cm *EvmTxBroker) Call(from *common.Address, method string, args ...interface{}) ([]interface{}, error) {
+func (cm *ContractClient) Call(from *common.Address, method string, args ...interface{}) ([]interface{}, error) {
 
 	if from == nil {
 		from = &common.Address{}
@@ -76,15 +82,15 @@ func (cm *EvmTxBroker) Call(from *common.Address, method string, args ...interfa
 	return rtn, nil
 }
 
-func (cm *EvmTxBroker) Send(priority Priority, fixedGasLimit *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+func (cm *ContractClient) Send(priority txtypes.Priority, fixedGasLimit *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
 	return cm.send(priority, fixedGasLimit, nil, from, privateKey, method, args...)
 }
 
-func (cm *EvmTxBroker) SendWithValue(priority Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+func (cm *ContractClient) SendWithValue(priority txtypes.Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
 	return cm.send(priority, fixedGasLimit, value, from, privateKey, method, args...)
 }
 
-func (cm *EvmTxBroker) send(priority Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+func (cm *ContractClient) send(priority txtypes.Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
 	if from == nil {
 		from = &common.Address{}
 	}
@@ -93,7 +99,7 @@ func (cm *EvmTxBroker) send(priority Priority, fixedGasLimit *big.Int, value *bi
 		return common.Hash{}, errors.Join(fmt.Errorf("%s Send 시, abi Pack Error", method), err)
 	}
 
-	// fmt.Println("packed :", common.Bytes2Hex(packed))
+	fmt.Println("packed :", common.Bytes2Hex(packed))
 
 	nonce, err := cm.client.PendingNonceAt(context.Background(), *from)
 	if err != nil {
@@ -118,7 +124,7 @@ func (cm *EvmTxBroker) send(priority Priority, fixedGasLimit *big.Int, value *bi
 		if err != nil {
 			return common.Hash{}, errors.Join(fmt.Errorf("%s Send 시, EstimateGas Error", method), err)
 		}
-		if priority == High {
+		if priority == txtypes.High {
 			gasLimit = gasLimit * 2
 		}
 	} else {
@@ -160,7 +166,7 @@ func (cm *EvmTxBroker) send(priority Priority, fixedGasLimit *big.Int, value *bi
 	return signedTx.Hash(), nil
 }
 
-func (cm *EvmTxBroker) unparseTxData(txData string, method string) error {
+func (cm *ContractClient) unparseTxData(txData string, method string) error {
 
 	// hex to bytes
 	txDataBytes, err := hex.DecodeString(txData)
@@ -178,7 +184,7 @@ func (cm *EvmTxBroker) unparseTxData(txData string, method string) error {
 	return nil
 }
 
-func (cm *EvmTxBroker) TestSend(priority Priority, from *common.Address, privateKeyHex string, method string) (common.Hash, error) {
+func (cm *ContractClient) TestSend(priority txtypes.Priority, from *common.Address, privateKeyHex string, method string) (common.Hash, error) {
 	if from == nil {
 		from = &common.Address{}
 	}
@@ -209,7 +215,7 @@ func (cm *EvmTxBroker) TestSend(priority Priority, from *common.Address, private
 
 	gasLimit := uint64(398130)
 
-	if priority == High {
+	if priority == txtypes.High {
 		gasLimit = gasLimit * 2
 	}
 
@@ -252,29 +258,9 @@ func (cm *EvmTxBroker) TestSend(priority Priority, from *common.Address, private
 	return signedTx.Hash(), nil
 }
 
-type TxReceipt struct {
-	// types.Receipt
-	// RevertReason string `json:"revertReason"`
-	BlockHash         common.Hash  `json:"blockHash"`
-	BlockNumber       string       `json:"blockNumber"`
-	ContractAddress   string       `json:"contractAddress"`
-	CumulativeGasUsed string       `json:"cumulativeGasUsed"`
-	EffectiveGasPrice string       `json:"effectiveGasPrice"`
-	From              string       `json:"from"`
-	GasUsed           string       `json:"gasUsed"`
-	Logs              []*types.Log `json:"logs"`
-	Bloom             types.Bloom  `json:"logsBloom"`
-	RevertReason      string       `json:"revertReason"`
-	Status            string       `json:"status"`
-	To                string       `json:"to"`
-	TxHash            common.Hash  `json:"transactionHash" gencodec:"required"`
-	TransactionIndex  string       `json:"transactionIndex"`
-	Type              string       `json:"type"`
-}
+func (cm *ContractClient) GetReceipt(txHash common.Hash) (*txtypes.TxReceipt, error) {
 
-func (cm *EvmTxBroker) GetReceipt(txHash common.Hash) (*TxReceipt, error) {
-
-	var r *TxReceipt
+	var r *txtypes.TxReceipt
 
 	err := cm.client.Client().CallContext(context.Background(), &r, "eth_getTransactionReceipt", txHash)
 	if err == nil && r == nil {
@@ -284,27 +270,23 @@ func (cm *EvmTxBroker) GetReceipt(txHash common.Hash) (*TxReceipt, error) {
 	return r, nil
 }
 
-type EventInfo struct {
-	Address   common.Address         `json:"address"`
-	EventName string                 `json:"event"`
-	Index     uint                   `json:"index"`
-	Parameter map[string]interface{} `json:"parameter"`
-}
+func (cm *ContractClient) ParseReceipt(receipt *txtypes.TxReceipt) (string, error) {
 
-func (cm *EvmTxBroker) ParseReceipt(receipt *TxReceipt) (string, error) {
-
-	events := make([]*EventInfo, len(receipt.Logs))
+	events := make([]*txtypes.EventInfo, len(receipt.Logs))
 	for i, log := range receipt.Logs {
 
-		eventInfo := EventInfo{}
+		eventInfo := txtypes.EventInfo{}
 		events[i] = &eventInfo
 
+		if log.Address != cm.contractAddress {
+			continue // 내 컨트랙트에서 발생한 것 아니면 패쓰하기
+		}
 		eventInfo.Address = log.Address
 		eventInfo.Index = log.Index
 
 		var abiEvent *abi.Event
 		for _, event := range cm.abi.Events {
-			fmt.Printf("event.ID.Hex(): %s | log.Topics[0].Hex(): %s\n", event.ID.Hex(), log.Topics[0].Hex())
+			// fmt.Printf("event.ID.Hex(): %s | log.Topics[0].Hex(): %s\n", event.ID.Hex(), log.Topics[0].Hex())
 			if event.ID.Hex() == log.Topics[0].Hex() {
 				abiEvent = &event
 				break
@@ -327,7 +309,9 @@ func (cm *EvmTxBroker) ParseReceipt(receipt *TxReceipt) (string, error) {
 		indexed := make([]abi.Argument, len(log.Topics)-1)
 		idx := 0
 		for _, input := range abiEvent.Inputs {
-			if input.Indexed {
+			// memo. 자기 자신의 receipt일 경우에는 idx < len(indexed) 필요 없음. log.Topics이 시그니처 + indexed params로 구성되기 때문.
+			// 다만, 컨트랙트 내부에서 다른 컨트랙트 호출되어서 찍히는 로그는 제대로 파싱을 못하기에 여기서 오류가 생김
+			if input.Indexed && idx < len(indexed) {
 				indexed[idx] = input
 				idx++
 			}
@@ -355,10 +339,257 @@ func (cm *EvmTxBroker) ParseReceipt(receipt *TxReceipt) (string, error) {
 	return string(jsonData), nil
 }
 
-func (cm *EvmTxBroker) ContractAddress() *common.Address {
+func (cm *ContractClient) ContractAddress() *common.Address {
 	return &cm.contractAddress
 }
 
-func (cm *EvmTxBroker) ChainId() *big.Int {
+func (cm *ContractClient) ChainId() *big.Int {
 	return cm.chainId
+}
+
+func (cm *ContractClient) Abi() *abi.ABI {
+	return cm.abi
+}
+
+// PrintFunctionSelectors prints a mapping of function selectors (method IDs) to function names
+// from the contract's ABI. This is useful for debugging and understanding contract interfaces.
+func (cm *ContractClient) PrintFunctionSelectors() {
+	fmt.Println("=== Function Selector Mapping ===")
+	fmt.Printf("Contract Address: %s\n\n", cm.contractAddress.Hex())
+	fmt.Printf("%-12s %-30s %s\n", "Selector", "Function Name", "Signature")
+	fmt.Println(strings.Repeat("-", 80))
+
+	// Iterate through all methods in the ABI
+	for name, method := range cm.abi.Methods {
+		// Get the 4-byte selector (method ID)
+		selector := hex.EncodeToString(method.ID)
+
+		// Build the full signature
+		signature := buildMethodSignature(&method)
+
+		// Print the mapping
+		fmt.Printf("0x%-10s %-30s %s\n", selector, name, signature)
+	}
+
+	fmt.Println(strings.Repeat("=", 80))
+	fmt.Printf("Total functions: %d\n", len(cm.abi.Methods))
+}
+
+// GetFunctionSelectors returns a map of function selectors to function information
+// Key: selector hex string (e.g., "a9059cbb")
+// Value: map with "name" and "signature" keys
+func (cm *ContractClient) GetFunctionSelectors() map[string]map[string]string {
+	selectors := make(map[string]map[string]string)
+
+	for name, method := range cm.abi.Methods {
+		selector := hex.EncodeToString(method.ID)
+		signature := buildMethodSignature(&method)
+
+		selectors[selector] = map[string]string{
+			"name":      name,
+			"signature": signature,
+		}
+	}
+
+	return selectors
+}
+
+func (cm *ContractClient) TransactionData(hash common.Hash) ([]byte, error) {
+	tx, _, err := cm.client.TransactionByHash(context.Background(), hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return tx.Data(), nil
+}
+
+// DecodeTransaction decodes raw transaction input data using the contract's ABI
+func (cm *ContractClient) DecodeTransaction(data []byte) (*txtypes.DecodedTransaction, error) {
+	if len(data) < 4 {
+		return nil, errors.New("transaction data too short: must be at least 4 bytes for method selector")
+	}
+
+	// Extract method selector (first 4 bytes)
+	methodSelector := data[:4]
+
+	// Find the method by selector
+	method, err := cm.abi.MethodById(methodSelector)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find method by selector %s: %w", hex.EncodeToString(methodSelector), err)
+	}
+
+	// Unpack the arguments
+	args, err := method.Inputs.Unpack(data[4:])
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack arguments for method %s: %w", method.Name, err)
+	}
+
+	// Build decoded parameters
+	params := make([]txtypes.DecodedParam, len(method.Inputs))
+	for i, input := range method.Inputs {
+		value := args[i]
+
+		// Convert special types for better JSON representation
+		value = convertValueForJSON(value, input.Type)
+
+		params[i] = txtypes.DecodedParam{
+			Name:  input.Name,
+			Type:  input.Type.String(),
+			Value: value,
+		}
+	}
+
+	// Build method signature
+	signature := buildMethodSignature(method)
+
+	return &txtypes.DecodedTransaction{
+		ContractAddress: cm.contractAddress,
+		MethodName:      method.Name,
+		MethodSignature: signature,
+		Parameters:      params,
+		RawData:         data,
+	}, nil
+}
+
+// DecodeTransactionHex decodes hex-encoded transaction data
+func (cm *ContractClient) DecodeTransactionHex(hexData string) (*txtypes.DecodedTransaction, error) {
+	// Remove 0x prefix if present
+	if len(hexData) >= 2 && hexData[:2] == "0x" {
+		hexData = hexData[2:]
+	}
+
+	data, err := hex.DecodeString(hexData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode hex data: %w", err)
+	}
+
+	return cm.DecodeTransaction(data)
+}
+
+// DecodeByHash fetches a transaction by hash and decodes its input data
+func (cm *ContractClient) DecodeByHash(txHash common.Hash) (*txtypes.DecodedTransaction, error) {
+	tx, _, err := cm.client.TransactionByHash(context.Background(), txHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch transaction %s: %w", txHash.Hex(), err)
+	}
+
+	return cm.DecodeTransaction(tx.Data())
+}
+
+/*********************************** internal utils *********************************************/
+
+// buildMethodSignature constructs the full method signature string
+func buildMethodSignature(method *abi.Method) string {
+	var inputs []string
+	for _, input := range method.Inputs {
+		inputs = append(inputs, input.Type.String())
+	}
+	return fmt.Sprintf("%s(%s)", method.Name, joinStrings(inputs, ","))
+}
+
+// joinStrings joins strings with a separator
+func joinStrings(strs []string, sep string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	result := strs[0]
+	for i := 1; i < len(strs); i++ {
+		result += sep + strs[i]
+	}
+	return result
+}
+
+// convertValueForJSON converts ABI values to JSON-friendly representations
+func convertValueForJSON(value interface{}, abiType abi.Type) interface{} {
+	switch abiType.T {
+	case abi.AddressTy:
+		if addr, ok := value.(common.Address); ok {
+			return addr.Hex()
+		}
+	case abi.BytesTy, abi.FixedBytesTy:
+		switch v := value.(type) {
+		case []byte:
+			return "0x" + hex.EncodeToString(v)
+		case [1]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [2]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [3]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [4]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [8]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [16]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [20]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		case [32]byte:
+			return "0x" + hex.EncodeToString(v[:])
+		}
+	case abi.IntTy, abi.UintTy:
+		if bigInt, ok := value.(*big.Int); ok {
+			return bigInt.String()
+		}
+	case abi.SliceTy, abi.ArrayTy:
+		return convertSliceForJSON(value, abiType.Elem)
+	case abi.TupleTy:
+		return convertTupleForJSON(value, abiType)
+	}
+	return value
+}
+
+// convertSliceForJSON converts slice/array values for JSON representation
+func convertSliceForJSON(value interface{}, elemType *abi.Type) interface{} {
+	if elemType == nil {
+		return value
+	}
+
+	switch slice := value.(type) {
+	case []common.Address:
+		result := make([]string, len(slice))
+		for i, addr := range slice {
+			result[i] = addr.Hex()
+		}
+		return result
+	case []*big.Int:
+		result := make([]string, len(slice))
+		for i, v := range slice {
+			result[i] = v.String()
+		}
+		return result
+	case [][]byte:
+		result := make([]string, len(slice))
+		for i, v := range slice {
+			result[i] = "0x" + hex.EncodeToString(v)
+		}
+		return result
+	}
+
+	return value
+}
+
+// convertTupleForJSON converts tuple values for JSON representation
+func convertTupleForJSON(value interface{}, abiType abi.Type) interface{} {
+	if abiType.TupleElems == nil {
+		return value
+	}
+
+	// Handle struct types - convert to map for better JSON representation
+	result := make(map[string]interface{})
+
+	// Use reflection to extract struct fields
+	switch v := value.(type) {
+	case struct {
+		From   common.Address
+		To     common.Address
+		Stable bool
+	}:
+		result["from"] = v.From.Hex()
+		result["to"] = v.To.Hex()
+		result["stable"] = v.Stable
+		return result
+	}
+
+	return value
 }

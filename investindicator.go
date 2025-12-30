@@ -900,7 +900,7 @@ func (e InvestIndicator) runBlackholeDexStrategy() { // todo. 이벤트 등록
 	}()
 
 	for update := range c {
-		println(update)
+		e.ms.SendMessage(update)
 	}
 }
 

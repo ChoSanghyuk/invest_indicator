@@ -235,7 +235,7 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 			continue
 		}
 
-		if fundId == 0 {
+		if fundId == 0 { // 미대상 거래
 			continue
 		}
 
@@ -889,6 +889,19 @@ func (e InvestIndicator) runAvalancheSwap10TxEvent(isManual WayOfLaunch) {
 		isUsdcIn = !isUsdcIn
 	}
 	// e.ms.SendMessage("AvalancheSwap10TxEvent 수행 완료")
+}
+
+func (e InvestIndicator) runBlackholeDexStrategy() { // todo. 이벤트 등록
+
+	c := make(chan string)
+	go func() {
+		err := e.bt.RunBlackholeDexStrategy(c)
+		e.ms.SendMessage("RunBlackholeDexStrategy Shutdown. " + err.Error())
+	}()
+
+	for update := range c {
+		println(update)
+	}
 }
 
 /**********************************************************************************************************************

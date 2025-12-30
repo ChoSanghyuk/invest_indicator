@@ -1,4 +1,4 @@
-package blockchain
+package uniswap
 
 import (
 	"bytes"
@@ -465,4 +465,8 @@ func (u *UniswapClient) permit2Hash(permitSingle PermitSingle) ([]byte, error) {
 	}
 
 	return finalHash, nil
+}
+
+func (u *UniswapClient) GetReceipt(txHash common.Hash) (*txtypes.TxReceipt, error) {
+	return u.uo.GetReceipt(txHash)
 }

@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"context"
 	"fmt"
+	blackholedex "investindicator/blockchain/blackhole"
+	"investindicator/blockchain/uniswap"
 	"math/big"
 	"time"
 
@@ -9,12 +12,16 @@ import (
 )
 
 type BlockChainTrader struct {
-	us *UniswapClient
+	us  *uniswap.UniswapClient
+	bd  *blackholedex.Blackhole
+	bdc *blackholedex.StrategyConfig // blackholedex config
 }
 
-func NewBlockChainTrader(us *UniswapClient) *BlockChainTrader {
+func NewBlockChainTrader(us *uniswap.UniswapClient, bd *blackholedex.Blackhole, bdc *blackholedex.StrategyConfig) *BlockChainTrader {
 	return &BlockChainTrader{
-		us: us,
+		us:  us,
+		bd:  bd,
+		bdc: bdc,
 	}
 }
 
@@ -39,7 +46,7 @@ func (b *BlockChainTrader) SwapUsdtUsdc(isUsdcIn bool) error {
 
 	var i int
 	for i = 0; i < 10; i++ {
-		receipt, err := b.us.uo.GetReceipt(*tx)
+		receipt, err := b.us.GetReceipt(*tx)
 		if err != nil {
 			time.Sleep(1 * time.Second)
 		} else {
@@ -54,5 +61,18 @@ func (b *BlockChainTrader) SwapUsdtUsdc(isUsdcIn bool) error {
 		return fmt.Errorf("SwapUsdtUsdc tx 조회 실패. 시도 횟수 10회 초과. tx: %s", tx.Hex())
 	}
 
+	return nil
+}
+
+func (b *BlockChainTrader) RunBlackholeDexStrategy(reportChan chan<- string) error {
+
+	err := b.bd.RunStrategy1(
+		context.Background(),
+		reportChan,
+		b.bdc,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }

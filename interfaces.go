@@ -71,6 +71,7 @@ type trader interface {
 
 type bcTrader interface { // blockchain trader
 	SwapUsdtUsdc(isUsdcIn bool) error
+	RunBlackholeDexStrategy(reportChan chan<- string) error
 }
 
 type messenger interface {

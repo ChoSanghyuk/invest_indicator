@@ -1,9 +1,11 @@
 package main
 
 import (
-	app "investindicator/app"
-
 	investind "investindicator"
+	app "investindicator/app"
+	"investindicator/blockchain"
+	blackhole "investindicator/blockchain/blackhole"
+	"investindicator/blockchain/uniswap"
 	"investindicator/bot"
 	"investindicator/config"
 	"investindicator/internal/db"
@@ -54,13 +56,22 @@ func main() {
 		panic(err)
 	}
 
-	// us, err := blockchain.NewUniswapClient(conf.UniswapConfig(teleBot))
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// bt := blockchain.NewBlockChainTrader(us)
+	/* blockchain */
+	us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBot))
+	if err != nil {
+		panic(err)
+	}
+	bd, err := blackhole.NewBlackhole(
+		conf.BlackholeConfig(teleBot),
+		nil,
+	)
+	if err != nil {
+		panic(err)
+	}
 
-	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, nil, teleBot)
+	bt := blockchain.NewBlockChainTrader(us, bd, conf.ToStrategyConfig())
+
+	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, teleBot)
 	eventHandler.Run()
 
 	go func() {

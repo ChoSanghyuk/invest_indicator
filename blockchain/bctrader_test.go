@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"investindicator/blockchain/uniswap"
 	"math/big"
 	"os"
 	"testing"
@@ -10,7 +11,7 @@ func TestBlockchain(t *testing.T) {
 
 	pk := os.Getenv("PK")
 
-	us, err := NewUniswapClient(NewUniswapClientConfig(
+	us, err := uniswap.NewUniswapClient(uniswap.NewUniswapClientConfig(
 		"https://api.avax.network/ext/bc/C/rpc",
 		pk,
 		"0x94b75331AE8d42C1b61065089B7d48FE14aA73b7",
@@ -20,7 +21,7 @@ func TestBlockchain(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	bt := NewBlockChainTrader(us)
+	bt := NewBlockChainTrader(us, nil, nil)
 
 	err = bt.SwapUsdtUsdc(true)
 	if err != nil {

@@ -10,6 +10,9 @@ import (
 	"investindicator/blockchain/pkg/types"
 	"investindicator/blockchain/pkg/util"
 	"math/big"
+	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"log"
@@ -78,6 +81,15 @@ func NewBlackhole(conf *BlackholeConfig, tl TxListener) (*Blackhole, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
 	}
+
+	// Change working directory to that location
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	err = os.Chdir(dir)
+	if err != nil {
+		panic(err)
+	}
+
 	ccm := make(map[string]ContractClient)
 	for _, c := range conf.configs {
 		ABI, err := util.LoadABI(c.Abipath)

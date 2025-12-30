@@ -118,7 +118,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	permit2Json, err = os.ReadFile("./abi/Permit2.json")
+	permit2Json, err = os.ReadFile("../abi/Permit2.json")
 	if err != nil {
 		panic(err)
 	}

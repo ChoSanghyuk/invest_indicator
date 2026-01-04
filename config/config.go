@@ -192,7 +192,7 @@ func (c *Config) ToStrategyConfig() *blackholedex.StrategyConfig {
 		SlippagePct:             c.Blockchain.Blackhole.StrategyYAMLData.SlippagePct,
 		CircuitBreakerWindow:    time.Duration(c.Blockchain.Blackhole.StrategyYAMLData.CircuitBreakerWindow) * time.Minute,
 		CircuitBreakerThreshold: c.Blockchain.Blackhole.StrategyYAMLData.CircuitBreakerThreshold,
-		InitPhase:               blackholedex.StrategyPhase(c.Blockchain.Blackhole.StrategyYAMLData.InitPhase),
+		// InitPhase:               blackholedex.StrategyPhase(c.Blockchain.Blackhole.StrategyYAMLData.InitPhase),
 	}
 }
 

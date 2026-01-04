@@ -64,7 +64,7 @@ func NewBlackholeConfig(url string, pk string, configs []ContractClientConfig) *
 	}
 }
 
-func NewBlackhole(conf *BlackholeConfig, tl TxListener) (*Blackhole, error) {
+func NewBlackhole(client *ethclient.Client, conf *BlackholeConfig, tl TxListener) (*Blackhole, error) {
 
 	privateKey, err := crypto.HexToECDSA(conf.pk)
 	if err != nil {
@@ -76,11 +76,6 @@ func NewBlackhole(conf *BlackholeConfig, tl TxListener) (*Blackhole, error) {
 		return nil, fmt.Errorf("error casting public key to ECDSA")
 	}
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	client, err := ethclient.Dial(conf.url)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
-	}
 
 	// Change working directory to that location
 	_, filename, _, _ := runtime.Caller(0)
@@ -127,7 +122,7 @@ func (b *Blackhole) RunStrategy1(
 
 	// T052: Initialize StrategyState
 	state := &StrategyState{
-		CurrentState:      config.InitPhase,
+		// CurrentState:      config.InitPhase,
 		NFTTokenID:        nil,
 		TickLower:         0,
 		TickUpper:         0,
@@ -158,24 +153,17 @@ func (b *Blackhole) RunStrategy1(
 		StableCount:       0,
 	}
 
-	// T055: Send strategy_start report
-	sendReport(reportChan, StrategyReport{
-		Timestamp: time.Now(),
-		EventType: "strategy_start",
-		Message:   "RunStrategy1 starting - automated liquidity repositioning",
-		Phase:     &state.CurrentState,
-	})
+	tokenIDs, err := b.GetUserPositions()
+	if err != nil {
+		return fmt.Errorf("failed to get user positions: %w", err)
+	}
 
-	// Load existing positions if starting in ActiveMonitoring phase
-	if config.InitPhase == ActiveMonitoring {
-		tokenIDs, err := b.GetUserPositions()
-		if err != nil {
-			return fmt.Errorf("failed to get user positions: %w", err)
-		}
-
-		if len(tokenIDs) == 0 {
-			return fmt.Errorf("no positions found for user, cannot start in ActiveMonitoring phase")
-		}
+	if tokenIDs == nil || len(tokenIDs) == 0 {
+		// starting in Initializing phase
+		state.CurrentState = Initializing
+	} else {
+		// starting in ActiveMonitoring phase
+		state.CurrentState = ActiveMonitoring
 
 		// Use the first position (most recent)
 		// In the future, you might want to filter by token pair or let user specify
@@ -226,6 +214,14 @@ func (b *Blackhole) RunStrategy1(
 
 		log.Printf("Loaded existing position: NFT ID %s", nftTokenID.String())
 	}
+
+	// T055: Send strategy_start report
+	sendReport(reportChan, StrategyReport{
+		Timestamp: time.Now(),
+		EventType: "strategy_start",
+		Message:   "RunStrategy1 starting - automated liquidity repositioning",
+		Phase:     &state.CurrentState,
+	})
 
 	// T056, T057: Create initial position and transition to ActiveMonitoring
 	// mintResult, err := b.initialPositionEntry(config, state, reportChan)

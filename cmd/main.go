@@ -76,6 +76,7 @@ func main() {
 	}
 
 	bd, err := blackhole.NewBlackhole(
+		client,
 		conf.BlackholeConfig(teleBot),
 		listener,
 	)

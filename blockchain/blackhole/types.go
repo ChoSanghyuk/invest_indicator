@@ -342,7 +342,7 @@ type StrategyConfig struct {
 	// CircuitBreakerThreshold defines max errors allowed in window before halting (default: 5, minimum: 3)
 	CircuitBreakerThreshold int
 
-	InitPhase StrategyPhase
+	// InitPhase StrategyPhase
 }
 
 // StrategyState tracks the current operational state and position information during strategy execution
@@ -441,7 +441,7 @@ func DefaultStrategyConfig() *StrategyConfig {
 		// MaxUSDC:                 nil,              // Must be set by user
 		CircuitBreakerWindow:    5 * time.Minute, // 5-minute error window
 		CircuitBreakerThreshold: 5,               // 5 errors before halt
-		InitPhase:               Initializing,
+		// InitPhase:               Initializing,
 	}
 }
 

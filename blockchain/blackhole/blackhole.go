@@ -1938,10 +1938,14 @@ func (b *Blackhole) initialPositionEntry(
 			Deadline:     big.NewInt(time.Now().Add(20 * time.Minute).Unix()),
 		}
 
+		var direction = "=>"
+		if tokenToSwap == 1 { // 0=WAVAX, 1=USDC
+			direction = "<="
+		}
 		sendReport(reportChan, StrategyReport{
 			Timestamp: time.Now(),
 			EventType: "swap_complete",
-			Message:   fmt.Sprintf("Rebalancing: swapping token %d amount %s", tokenToSwap, swapAmount.String()),
+			Message:   fmt.Sprintf("Rebalancing: Wavax %s USDC. Amount: %s", direction, swapAmount.String()),
 			Phase:     &state.CurrentState,
 		})
 

@@ -425,7 +425,3 @@ nohup ./invest_indicator > $(date +%F).log 2>&1 &
 - API 키 및 로그인 정보는 암호화하여 DB 저장
 - 서버에서 복호화 후 사용
 - 복호화 키는 서버 재시작 시 Telegram Bot을 통해 요청
-
-## 라이선스
-
-Private Project - All Rights Reserved

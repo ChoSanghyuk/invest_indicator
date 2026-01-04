@@ -1938,9 +1938,9 @@ func (b *Blackhole) initialPositionEntry(
 			Deadline:     big.NewInt(time.Now().Add(20 * time.Minute).Unix()),
 		}
 
-		var direction = "=>"
+		var direction = `=>`
 		if tokenToSwap == 1 { // 0=WAVAX, 1=USDC
-			direction = "<="
+			direction = `<=`
 		}
 		sendReport(reportChan, StrategyReport{
 			Timestamp: time.Now(),

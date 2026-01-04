@@ -701,7 +701,7 @@ func (b *Blackhole) Mint(
 			ErrorMessage: fmt.Sprintf("failed to calculate tick bounds: %v", err),
 		}, fmt.Errorf("failed to calculate tick bounds: %w", err)
 	}
-
+	log.Printf("CurrentTick: %d,TickLower: %d, TickUpper: %d", state.Tick, tickLower, tickUpper)
 	// T015: Calculate optimal amounts using existing ComputeAmounts utility
 	amount0Desired, amount1Desired, _ := util.ComputeAmounts(
 		state.SqrtPrice,

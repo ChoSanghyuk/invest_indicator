@@ -1895,7 +1895,7 @@ func (b *Blackhole) initialPositionEntry(
 			Pair:         common.HexToAddress(wavaxUsdcPair),
 			From:         fromToken,
 			To:           toToken,
-			Stable:       true,
+			Stable:       false,
 			Concentrated: true,
 			Receiver:     b.myAddr,
 		}

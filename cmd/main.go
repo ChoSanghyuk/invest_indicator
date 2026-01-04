@@ -5,12 +5,15 @@ import (
 	app "investindicator/app"
 	"investindicator/blockchain"
 	blackhole "investindicator/blockchain/blackhole"
+	"investindicator/blockchain/pkg/txlistener"
 	"investindicator/blockchain/uniswap"
 	"investindicator/bot"
 	"investindicator/config"
 	"investindicator/internal/db"
 	"investindicator/scrape"
+	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rs/zerolog"
 )
 
@@ -57,13 +60,24 @@ func main() {
 	}
 
 	/* blockchain */
+	client, err := ethclient.Dial(conf.Blockchain.Blackhole.Url)
+	if err != nil {
+		panic(err)
+	}
+	listener := txlistener.NewTxListener(
+		client,
+		txlistener.WithPollInterval(2*time.Second),
+		txlistener.WithTimeout(5*time.Minute),
+	)
+
 	us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBot))
 	if err != nil {
 		panic(err)
 	}
+
 	bd, err := blackhole.NewBlackhole(
 		conf.BlackholeConfig(teleBot),
-		nil,
+		listener,
 	)
 	if err != nil {
 		panic(err)

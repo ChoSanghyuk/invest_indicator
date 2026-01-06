@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	txtypes "investindicator/blockchain/pkg/types"
+	contracttypes "investindicator/blockchain/pkg/types"
 	"math/big"
 	"strings"
 
@@ -24,6 +24,7 @@ type ContractClient struct {
 	abi             *abi.ABI
 	client          *ethclient.Client
 	chainId         *big.Int
+	defaultGasLimit *big.Int
 }
 
 /*
@@ -37,7 +38,7 @@ func (cm *EvmContractCodec) ChainId() (*big.Int, error) {
 }
 */
 
-func NewContractClient(client *ethclient.Client, contractAddress common.Address, abi *abi.ABI) *ContractClient {
+func NewContractClient(client *ethclient.Client, contractAddress common.Address, abi *abi.ABI, opts ...Option) *ContractClient {
 	chainID := big.NewInt(0)
 	if client != nil {
 		cid, err := client.ChainID(context.Background())
@@ -47,11 +48,26 @@ func NewContractClient(client *ethclient.Client, contractAddress common.Address,
 		chainID = cid
 	}
 
-	return &ContractClient{
+	cc := &ContractClient{
 		contractAddress: contractAddress,
 		abi:             abi,
 		client:          client,
 		chainId:         chainID,
+	}
+
+	for _, opt := range opts {
+		opt(cc)
+	}
+
+	return cc
+}
+
+// Option is a functional option for configuring ContractClient
+type Option func(*ContractClient)
+
+func WithDefaultGasLimit(gasLimit *big.Int) Option {
+	return func(cc *ContractClient) {
+		cc.defaultGasLimit = gasLimit
 	}
 }
 
@@ -82,15 +98,15 @@ func (cm *ContractClient) Call(from *common.Address, method string, args ...inte
 	return rtn, nil
 }
 
-func (cm *ContractClient) Send(priority txtypes.Priority, fixedGasLimit *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
-	return cm.send(priority, fixedGasLimit, nil, from, privateKey, method, args...)
+func (cm *ContractClient) Send(priority contracttypes.Priority, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+	return cm.send(priority, nil, from, privateKey, method, args...)
 }
 
-func (cm *ContractClient) SendWithValue(priority txtypes.Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
-	return cm.send(priority, fixedGasLimit, value, from, privateKey, method, args...)
+func (cm *ContractClient) SendWithValue(priority contracttypes.Priority, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+	return cm.send(priority, value, from, privateKey, method, args...)
 }
 
-func (cm *ContractClient) send(priority txtypes.Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
+func (cm *ContractClient) send(priority contracttypes.Priority, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error) {
 	if from == nil {
 		from = &common.Address{}
 	}
@@ -114,21 +130,21 @@ func (cm *ContractClient) send(priority txtypes.Priority, fixedGasLimit *big.Int
 
 	gasLimit := uint64(0)
 	// Estimate gas limit
-	if fixedGasLimit == nil {
-		gasLimit, err = cm.client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:  *from,
-			To:    &cm.contractAddress,
-			Data:  packed,
-			Value: nil, //big.NewInt(),
-		})
-		if err != nil {
+	gasLimit, err = cm.client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:  *from,
+		To:    &cm.contractAddress,
+		Data:  packed,
+		Value: nil, //big.NewInt(),
+	})
+	if err != nil {
+		if cm.defaultGasLimit != nil {
+			gasLimit = cm.defaultGasLimit.Uint64()
+		} else {
 			return common.Hash{}, errors.Join(fmt.Errorf("%s Send 시, EstimateGas Error", method), err)
 		}
-		if priority == txtypes.High {
-			gasLimit = gasLimit * 2
-		}
-	} else {
-		gasLimit = fixedGasLimit.Uint64()
+	}
+	if priority == contracttypes.High {
+		gasLimit = gasLimit * 2
 	}
 
 	// Calculate gas tip cap (priority fee) - typically 1-2 Gwei
@@ -184,7 +200,7 @@ func (cm *ContractClient) unparseTxData(txData string, method string) error {
 	return nil
 }
 
-func (cm *ContractClient) TestSend(priority txtypes.Priority, from *common.Address, privateKeyHex string, method string) (common.Hash, error) {
+func (cm *ContractClient) TestSend(priority contracttypes.Priority, from *common.Address, privateKeyHex string, method string) (common.Hash, error) {
 	if from == nil {
 		from = &common.Address{}
 	}
@@ -200,22 +216,11 @@ func (cm *ContractClient) TestSend(priority txtypes.Priority, from *common.Addre
 		return common.Hash{}, errors.Join(fmt.Errorf("%s Send 시, SuggestGasPrice Error", ""), err)
 	}
 
-	// Estimate gas limit
-	// gasLimit, err := cm.client.EstimateGas(context.Background(), ethereum.CallMsg{
-	// 	From:  *from,
-	// 	To:    &cm.contractAddress,
-	// 	Data:  packed,
-	// 	Value: nil, //big.NewInt(),
-	// })
-	// if err != nil {
-	// 	return common.Hash{}, errors.Join(fmt.Errorf("%s Send 시, EstimateGas Error", method), err)
-	// }
-
 	packed := common.Hex2Bytes("3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000686c74a80000000000000000000000000000000000000000000000000000000000000003000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000f4240000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002bb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e0001f4b31f66aa3c1e785363f0875a1b74e27b85fd66c70000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000b31f66aa3c1e785363f0875a1b74e27b85fd66c70000000000000000000000001682f533c2359834167e5e4e108c1bfb69920e7800000000000000000000000000000000000000000000000000000000000000190000000000000000000000000000000000000000000000000000000000000060000000000000000000000000b31f66aa3c1e785363f0875a1b74e27b85fd66c7000000000000000000000000b4dd4fb3d4bced984cce972991fb100488b5922300000000000000000000000000000000000000000000000000c4e7233be3d9df0c")
 
 	gasLimit := uint64(398130)
 
-	if priority == txtypes.High {
+	if priority == contracttypes.High {
 		gasLimit = gasLimit * 2
 	}
 
@@ -258,9 +263,9 @@ func (cm *ContractClient) TestSend(priority txtypes.Priority, from *common.Addre
 	return signedTx.Hash(), nil
 }
 
-func (cm *ContractClient) GetReceipt(txHash common.Hash) (*txtypes.TxReceipt, error) {
+func (cm *ContractClient) GetReceipt(txHash common.Hash) (*contracttypes.TxReceipt, error) {
 
-	var r *txtypes.TxReceipt
+	var r *contracttypes.TxReceipt
 
 	err := cm.client.Client().CallContext(context.Background(), &r, "eth_getTransactionReceipt", txHash)
 	if err == nil && r == nil {
@@ -270,12 +275,12 @@ func (cm *ContractClient) GetReceipt(txHash common.Hash) (*txtypes.TxReceipt, er
 	return r, nil
 }
 
-func (cm *ContractClient) ParseReceipt(receipt *txtypes.TxReceipt) (string, error) {
+func (cm *ContractClient) ParseReceipt(receipt *contracttypes.TxReceipt) (string, error) {
 
-	events := make([]*txtypes.EventInfo, len(receipt.Logs))
+	events := make([]*contracttypes.EventInfo, len(receipt.Logs))
 	for i, log := range receipt.Logs {
 
-		eventInfo := txtypes.EventInfo{}
+		eventInfo := contracttypes.EventInfo{}
 		events[i] = &eventInfo
 
 		if log.Address != cm.contractAddress {
@@ -404,7 +409,7 @@ func (cm *ContractClient) TransactionData(hash common.Hash) ([]byte, error) {
 }
 
 // DecodeTransaction decodes raw transaction input data using the contract's ABI
-func (cm *ContractClient) DecodeTransaction(data []byte) (*txtypes.DecodedTransaction, error) {
+func (cm *ContractClient) DecodeTransaction(data []byte) (*contracttypes.DecodedTransaction, error) {
 	if len(data) < 4 {
 		return nil, errors.New("transaction data too short: must be at least 4 bytes for method selector")
 	}
@@ -425,14 +430,14 @@ func (cm *ContractClient) DecodeTransaction(data []byte) (*txtypes.DecodedTransa
 	}
 
 	// Build decoded parameters
-	params := make([]txtypes.DecodedParam, len(method.Inputs))
+	params := make([]contracttypes.DecodedParam, len(method.Inputs))
 	for i, input := range method.Inputs {
 		value := args[i]
 
 		// Convert special types for better JSON representation
 		value = convertValueForJSON(value, input.Type)
 
-		params[i] = txtypes.DecodedParam{
+		params[i] = contracttypes.DecodedParam{
 			Name:  input.Name,
 			Type:  input.Type.String(),
 			Value: value,
@@ -442,7 +447,7 @@ func (cm *ContractClient) DecodeTransaction(data []byte) (*txtypes.DecodedTransa
 	// Build method signature
 	signature := buildMethodSignature(method)
 
-	return &txtypes.DecodedTransaction{
+	return &contracttypes.DecodedTransaction{
 		ContractAddress: cm.contractAddress,
 		MethodName:      method.Name,
 		MethodSignature: signature,
@@ -452,7 +457,7 @@ func (cm *ContractClient) DecodeTransaction(data []byte) (*txtypes.DecodedTransa
 }
 
 // DecodeTransactionHex decodes hex-encoded transaction data
-func (cm *ContractClient) DecodeTransactionHex(hexData string) (*txtypes.DecodedTransaction, error) {
+func (cm *ContractClient) DecodeTransactionHex(hexData string) (*contracttypes.DecodedTransaction, error) {
 	// Remove 0x prefix if present
 	if len(hexData) >= 2 && hexData[:2] == "0x" {
 		hexData = hexData[2:]
@@ -467,7 +472,7 @@ func (cm *ContractClient) DecodeTransactionHex(hexData string) (*txtypes.Decoded
 }
 
 // DecodeByHash fetches a transaction by hash and decodes its input data
-func (cm *ContractClient) DecodeByHash(txHash common.Hash) (*txtypes.DecodedTransaction, error) {
+func (cm *ContractClient) DecodeByHash(txHash common.Hash) (*contracttypes.DecodedTransaction, error) {
 	tx, _, err := cm.client.TransactionByHash(context.Background(), txHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch transaction %s: %w", txHash.Hex(), err)

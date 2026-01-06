@@ -89,7 +89,7 @@ func (tl *TxListener) WaitForTransaction(txHash common.Hash) (*contracttypes.TxR
 			if receipt.Status == "0x0" {
 				return receipt, fmt.Errorf("%w: transaction %s status is 0x0", ErrTransactionFailed, txHash.Hex())
 			}
-
+			time.Sleep(500) // memo. RPC State Lag 문제 해결.
 			return receipt, nil
 		}
 	}

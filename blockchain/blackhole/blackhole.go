@@ -9,13 +9,9 @@ import (
 	"investindicator/blockchain/pkg/contractclient"
 	"investindicator/blockchain/pkg/types"
 	"investindicator/blockchain/pkg/util"
-	"math/big"
-	"os"
-	"path/filepath"
-	"runtime"
-	"time"
-
 	"log"
+	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -51,16 +47,21 @@ type ContractClientConfig struct {
 }
 
 type BlackholeConfig struct {
-	url     string
-	pk      string
-	configs []ContractClientConfig
+	url             string // "https://api.avax.network/ext/bc/C/rpc"
+	pk              string
+	defaultGasLimit *big.Int
+	configs         []ContractClientConfig
 }
 
-func NewBlackholeConfig(url string, pk string, configs []ContractClientConfig) *BlackholeConfig {
+func NewBlackholeConfig(url string, pk string, defaultGasLimit *big.Int, configs []ContractClientConfig) *BlackholeConfig {
+	if defaultGasLimit == nil {
+		defaultGasLimit = big.NewInt(1000000)
+	}
 	return &BlackholeConfig{
-		url:     url,
-		pk:      pk,
-		configs: configs,
+		url:             url,
+		pk:              pk,
+		defaultGasLimit: defaultGasLimit,
+		configs:         configs,
 	}
 }
 
@@ -77,21 +78,17 @@ func NewBlackhole(client *ethclient.Client, conf *BlackholeConfig, tl TxListener
 	}
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	// Change working directory to that location
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
-	err = os.Chdir(dir)
-	if err != nil {
-		panic(err)
-	}
-
+	// client, err := ethclient.Dial(conf.Url)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
+	// }
 	ccm := make(map[string]ContractClient)
 	for _, c := range conf.configs {
 		ABI, err := util.LoadABI(c.Abipath)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load ABI: %v", err)
 		}
-		cc := contractclient.NewContractClient(client, common.HexToAddress(c.Address), ABI)
+		cc := contractclient.NewContractClient(client, common.HexToAddress(c.Address), ABI, contractclient.WithDefaultGasLimit(conf.defaultGasLimit))
 		ccm[c.Address] = cc
 	}
 
@@ -157,7 +154,6 @@ func (b *Blackhole) RunStrategy1(
 	if err != nil {
 		return fmt.Errorf("failed to get user positions: %w", err)
 	}
-
 	if tokenIDs == nil || len(tokenIDs) == 0 {
 		// starting in Initializing phase
 		state.CurrentState = Initializing
@@ -505,7 +501,6 @@ func (b *Blackhole) Swap(
 	// Step 2: Execute the swap
 	swapTxHash, err := swapClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation
 		&b.myAddr,
 		b.privateKey,
 		"swapExactTokensForTokens",
@@ -645,7 +640,6 @@ func (b *Blackhole) ensureApproval(
 	// Approve required amount
 	txHash, err := tokenClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation
 		&b.myAddr,
 		b.privateKey,
 		"approve",
@@ -890,7 +884,6 @@ func (b *Blackhole) Mint(
 	// T022: Submit mint transaction
 	mintTxHash, err := nftManagerClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation
 		&b.myAddr,
 		b.privateKey,
 		"mint",
@@ -967,6 +960,7 @@ func (b *Blackhole) Mint(
 	fmt.Printf("  WAVAX: %s wei\n", amount0Desired.String())
 	fmt.Printf("  USDC: %s\n", amount1Desired.String())
 	fmt.Printf("  Total Gas Cost: %s wei\n", totalGasCost.String())
+	fmt.Printf("  NFT ID: %s", result.NFTTokenID.String())
 	for _, tx := range transactions {
 		fmt.Printf("  - %s: %s (gas: %s wei)\n", tx.Operation, tx.TxHash.Hex(), tx.GasCost.String())
 	}
@@ -1008,7 +1002,7 @@ func (b *Blackhole) Stake(
 		return &StakingResult{
 			NFTTokenID:   nftTokenID,
 			Success:      false,
-			ErrorMessage: fmt.Sprintf("failed to verify NFT ownership: %v", err),
+			ErrorMessage: fmt.Sprintf("failed to verify NFT %d ownership: %v", nftTokenID, err),
 		}, fmt.Errorf("failed to verify NFT ownership: %w", err)
 	}
 
@@ -1027,7 +1021,7 @@ func (b *Blackhole) Stake(
 		return &StakingResult{
 			NFTTokenID:   nftTokenID,
 			Success:      false,
-			ErrorMessage: fmt.Sprintf("failed to check NFT approval: %v", err),
+			ErrorMessage: fmt.Sprintf("failed to check NFT %d approval: %v", nftTokenID, err),
 		}, fmt.Errorf("failed to check NFT approval: %w", err)
 	}
 
@@ -1039,7 +1033,6 @@ func (b *Blackhole) Stake(
 
 		approveTxHash, err := nftManagerClient.Send(
 			types.Standard,
-			nil, // Use automatic gas limit estimation
 			&b.myAddr,
 			b.privateKey,
 			"approve",
@@ -1113,7 +1106,6 @@ func (b *Blackhole) Stake(
 
 	depositTxHash, err := gaugeClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation
 		&b.myAddr,
 		b.privateKey,
 		"deposit",
@@ -1413,7 +1405,6 @@ func (b *Blackhole) Unstake(
 
 	multicallTxHash, err := farmingCenterClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation (Principle 4)
 		&b.myAddr,
 		b.privateKey,
 		"multicall",
@@ -1624,7 +1615,6 @@ func (b *Blackhole) Withdraw(nftTokenID *big.Int) (*WithdrawResult, error) {
 	// T017: Execute multicall transaction
 	txHash, err := nftManagerClient.Send(
 		types.Standard,
-		nil, // Use automatic gas limit estimation
 		&b.myAddr,
 		b.privateKey,
 		"multicall",
@@ -1876,116 +1866,108 @@ func (b *Blackhole) initialPositionEntry(
 	}
 	log.Printf("Result of CalculateRebalanceAmounts: direction %d,swapAmount : %d", tokenToSwap, swapAmount.Int64())
 
-	// T020: Perform swap if needed (non-zero swap amount)
-	var swapGasCost *big.Int = big.NewInt(0)
-	if swapAmount.Sign() > 0 {
-		var fromToken, toToken common.Address
-		if tokenToSwap == 0 {
-			// Swap WAVAX to USDC
-			fromToken = common.HexToAddress(wavax)
-			toToken = common.HexToAddress(usdc)
-		} else {
-			// Swap USDC to WAVAX
-			fromToken = common.HexToAddress(usdc)
-			toToken = common.HexToAddress(wavax)
-		}
+	if (tokenToSwap == 0 && swapAmount.Cmp(big.NewInt(100000000000000000)) > 0) || // 0.1 Avax 혹은 1 USDC 보다 클 때에만 swap
+		(tokenToSwap == 1 && swapAmount.Cmp(big.NewInt(1000000)) > 0) {
+		// T020: Perform swap if needed (non-zero swap amount)
+		var swapGasCost *big.Int = big.NewInt(0)
+		if swapAmount.Sign() > 0 {
+			var fromToken, toToken common.Address
+			if tokenToSwap == 0 {
+				// Swap WAVAX to USDC
+				fromToken = common.HexToAddress(wavax)
+				toToken = common.HexToAddress(usdc)
+			} else {
+				// Swap USDC to WAVAX
+				fromToken = common.HexToAddress(usdc)
+				toToken = common.HexToAddress(wavax)
+			}
 
-		// Build swap route
-		route := Route{
-			Pair:         common.HexToAddress(wavaxUsdcPair),
-			From:         fromToken,
-			To:           toToken,
-			Stable:       false,
-			Concentrated: true,
-			Receiver:     b.myAddr,
-		}
+			// Build swap route
+			route := Route{
+				Pair:         common.HexToAddress(wavaxUsdcPair),
+				From:         fromToken,
+				To:           toToken,
+				Stable:       false,
+				Concentrated: true,
+				Receiver:     b.myAddr,
+			}
 
-		// Calculate expected output amount using pool price
-		// Get price from sqrtPrice: price = (sqrtPrice / 2^96)^2
-		price := util.SqrtPriceToPrice(poolState.SqrtPrice)
+			// Calculate expected output amount using pool price
+			// Get price from sqrtPrice: price = (sqrtPrice / 2^96)^2
+			price := util.SqrtPriceToPrice(poolState.SqrtPrice)
 
-		// Adjust for decimals: WAVAX has 18 decimals, USDC has 6 decimals
-		// decimalAdjustment := new(big.Float).SetInt64(1_000_000_000_000) // 10^12
-		// priceUSDCperWAVAX := new(big.Float).Mul(price, decimalAdjustment)
+			// Adjust for decimals: WAVAX has 18 decimals, USDC has 6 decimals
+			// decimalAdjustment := new(big.Float).SetInt64(1_000_000_000_000) // 10^12
+			// priceUSDCperWAVAX := new(big.Float).Mul(price, decimalAdjustment)
 
-		var expectedAmountOut *big.Int
-		if tokenToSwap == 0 {
-			// Swapping WAVAX to USDC
-			// expectedUSDC = swapAmount * priceUSDCperWAVAX
-			swapAmountFloat := new(big.Float).SetInt(swapAmount) // todo. expectedAmountOut 확인
-			expectedFloat := new(big.Float).Mul(swapAmountFloat, price)
-			// AmountOutBeforeAdjustment := new(big.Float).Mul(swapAmountFloat, priceUSDCperWAVAX)
-			// expectedFloat := new(big.Float).Quo(AmountOutBeforeAdjustment, decimalAdjustment)
-			expectedAmountOut, _ = expectedFloat.Int(nil)
-		} else {
-			// Swapping USDC to WAVAX
-			// expectedWAVAX = swapAmount / priceUSDCperWAVAX
-			swapAmountFloat := new(big.Float).SetInt(swapAmount)
-			expectedFloat := new(big.Float).Quo(swapAmountFloat, price)
-			// AmountOutBeforeAdjustment := new(big.Float).Quo(swapAmountFloat, priceUSDCperWAVAX)
-			// expectedFloat := new(big.Float).Mul(AmountOutBeforeAdjustment, decimalAdjustment)
-			expectedAmountOut, _ = expectedFloat.Int(nil)
-		}
+			var expectedAmountOut *big.Int
+			if tokenToSwap == 0 {
+				// Swapping WAVAX to USDC
+				// expectedUSDC = swapAmount * priceUSDCperWAVAX
+				swapAmountFloat := new(big.Float).SetInt(swapAmount) // todo. expectedAmountOut 확인
+				expectedFloat := new(big.Float).Mul(swapAmountFloat, price)
+				// AmountOutBeforeAdjustment := new(big.Float).Mul(swapAmountFloat, priceUSDCperWAVAX)
+				// expectedFloat := new(big.Float).Quo(AmountOutBeforeAdjustment, decimalAdjustment)
+				expectedAmountOut, _ = expectedFloat.Int(nil)
+			} else {
+				// Swapping USDC to WAVAX
+				// expectedWAVAX = swapAmount / priceUSDCperWAVAX
+				swapAmountFloat := new(big.Float).SetInt(swapAmount)
+				expectedFloat := new(big.Float).Quo(swapAmountFloat, price)
+				// AmountOutBeforeAdjustment := new(big.Float).Quo(swapAmountFloat, priceUSDCperWAVAX)
+				// expectedFloat := new(big.Float).Mul(AmountOutBeforeAdjustment, decimalAdjustment)
+				expectedAmountOut, _ = expectedFloat.Int(nil)
+			}
 
-		// Calculate minimum output with slippage (apply slippage to the expected output amount)
-		minAmountOut := util.CalculateMinAmount(expectedAmountOut, config.SlippagePct)
+			// Calculate minimum output with slippage (apply slippage to the expected output amount)
+			minAmountOut := util.CalculateMinAmount(expectedAmountOut, config.SlippagePct)
 
-		swapParams := &SWAPExactTokensForTokensParams{
-			AmountIn:     swapAmount,
-			AmountOutMin: minAmountOut,
-			Routes:       []Route{route},
-			To:           b.myAddr,
-			Deadline:     big.NewInt(time.Now().Add(20 * time.Minute).Unix()),
-		}
+			swapParams := &SWAPExactTokensForTokensParams{
+				AmountIn:     swapAmount,
+				AmountOutMin: minAmountOut,
+				Routes:       []Route{route},
+				To:           b.myAddr,
+				Deadline:     big.NewInt(time.Now().Add(20 * time.Minute).Unix()),
+			}
 
-		var direction = `=>`
-		if tokenToSwap == 1 { // 0=WAVAX, 1=USDC
-			direction = `<=`
-		}
-		sendReport(reportChan, StrategyReport{
-			Timestamp: time.Now(),
-			EventType: "swap_complete",
-			Message:   fmt.Sprintf("Rebalancing: Wavax %s USDC. Amount: %s", direction, swapAmount.String()),
-			Phase:     &state.CurrentState,
-		})
+			swapTxHash, err := b.Swap(swapParams)
+			if err != nil {
+				sendReport(reportChan, StrategyReport{
+					Timestamp: time.Now(),
+					EventType: "error",
+					Message:   "Swap failed during rebalancing",
+					Error:     err.Error(),
+					Phase:     &state.CurrentState,
+				})
+				return nil, fmt.Errorf("swap failed: %w", err)
+			}
 
-		swapTxHash, err := b.Swap(swapParams)
-		if err != nil {
+			// Wait for swap transaction and get gas cost
+			swapReceipt, err := b.tl.WaitForTransaction(swapTxHash)
+			if err != nil {
+				return nil, fmt.Errorf("swap transaction failed: %w", err)
+			}
+
+			swapGasCost, _ = util.ExtractGasCost(swapReceipt)
+
+			state.CumulativeGas = new(big.Int).Add(state.CumulativeGas, swapGasCost)
 			sendReport(reportChan, StrategyReport{
-				Timestamp: time.Now(),
-				EventType: "error",
-				Message:   "Swap failed during rebalancing",
-				Error:     err.Error(),
-				Phase:     &state.CurrentState,
+				Timestamp:     time.Now(),
+				EventType:     "gas_cost",
+				Message:       fmt.Sprintf("Rebalancing: swapping token %d amount %s", tokenToSwap, swapAmount.String()),
+				GasCost:       swapGasCost,
+				CumulativeGas: state.CumulativeGas,
+				Phase:         &state.CurrentState,
 			})
-			return nil, fmt.Errorf("swap failed: %w", err)
+
+			// Update balances after swap
+			wavaxBalanceRaw, _ = wavaxClient.Call(&b.myAddr, "balanceOf", b.myAddr)
+			wavaxBalance = wavaxBalanceRaw[0].(*big.Int)
+
+			usdcBalanceRaw, _ = usdcClient.Call(&b.myAddr, "balanceOf", b.myAddr)
+			usdcBalance = usdcBalanceRaw[0].(*big.Int)
 		}
-
-		// Wait for swap transaction and get gas cost
-		swapReceipt, err := b.tl.WaitForTransaction(swapTxHash)
-		if err != nil {
-			return nil, fmt.Errorf("swap transaction failed: %w", err)
-		}
-		swapGasCost, _ = util.ExtractGasCost(swapReceipt)
-
-		state.CumulativeGas = new(big.Int).Add(state.CumulativeGas, swapGasCost)
-		sendReport(reportChan, StrategyReport{
-			Timestamp:     time.Now(),
-			EventType:     "gas_cost",
-			Message:       "Swap transaction completed",
-			GasCost:       swapGasCost,
-			CumulativeGas: state.CumulativeGas,
-			Phase:         &state.CurrentState,
-		})
-
-		// Update balances after swap
-		wavaxBalanceRaw, _ = wavaxClient.Call(&b.myAddr, "balanceOf", b.myAddr)
-		wavaxBalance = wavaxBalanceRaw[0].(*big.Int)
-
-		usdcBalanceRaw, _ = usdcClient.Call(&b.myAddr, "balanceOf", b.myAddr)
-		usdcBalance = usdcBalanceRaw[0].(*big.Int)
 	}
-
 	mintResult, err := b.Mint(wavaxBalance, usdcBalance, config.RangeWidth, config.SlippagePct)
 	if err != nil {
 		sendReport(reportChan, StrategyReport{
@@ -2405,7 +2387,7 @@ func (b *Blackhole) monitoringLoop(
 	// 	Message:   fmt.Sprintf("Price check: tick=%d, range=[%d, %d], out_of_range=%v", poolState.Tick, state.TickLower, state.TickUpper, isOutOfRange),
 	// 	Phase:     &state.CurrentState,
 	// })
-	log.Printf(fmt.Sprintf("[monitoring] Price check: tick=%d, range=[%d, %d], out_of_range=%v\n", poolState.Tick, state.TickLower, state.TickUpper, isOutOfRange))
+	log.Printf("[monitoring] Price check: tick=%d, range=[%d, %d], out_of_range=%v\n", poolState.Tick, state.TickLower, state.TickUpper, isOutOfRange)
 
 	// T038: Transition to RebalancingRequired if out of range
 	if isOutOfRange {

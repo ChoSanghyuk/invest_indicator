@@ -20,10 +20,10 @@ type ContractClient interface {
 // TxSender defines methods for sending transactions to the blockchain
 type TxSender interface {
 	// Send executes a contract method with transaction
-	Send(priority types.Priority, fixedGasLimit *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error)
+	Send(priority types.Priority, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error)
 
 	// SendWithValue executes a contract method with transaction and native token value
-	SendWithValue(priority types.Priority, fixedGasLimit *big.Int, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error)
+	SendWithValue(priority types.Priority, value *big.Int, from *common.Address, privateKey *ecdsa.PrivateKey, method string, args ...interface{}) (common.Hash, error)
 }
 
 // TxReader defines methods for reading blockchain and contract state

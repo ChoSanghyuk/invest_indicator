@@ -44,7 +44,6 @@ func NewUniswapClientConfig(url string, pk string, urAddr string, pmAddr string,
 
 type UniswapClient struct {
 	pk     *ecdsa.PrivateKey
-	gl     *big.Int
 	myAddr common.Address
 	uo     *contractclient.ContractClient // universalrouter orchestrator
 	po     *contractclient.ContractClient // permit2 orchestrator
@@ -74,21 +73,20 @@ func NewUniswapClient(conf *UniswapClientConfig) (*UniswapClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	universalRouter := contractclient.NewContractClient(client, common.HexToAddress(conf.urAddr), &urAbi)
+	universalRouter := contractclient.NewContractClient(client, common.HexToAddress(conf.urAddr), &urAbi, contractclient.WithDefaultGasLimit(conf.gasLimit))
 
 	// permitRouter
 	permitAbi, err := abi.JSON(bytes.NewReader(permit2Json))
 	if err != nil {
 		return nil, err
 	}
-	permit2Orchestrator := contractclient.NewContractClient(client, common.HexToAddress(conf.pmAddr), &permitAbi)
+	permit2Orchestrator := contractclient.NewContractClient(client, common.HexToAddress(conf.pmAddr), &permitAbi, contractclient.WithDefaultGasLimit(conf.gasLimit))
 
 	return &UniswapClient{
 		pk:     privateKey,
 		myAddr: address,
 		uo:     universalRouter,
 		po:     permit2Orchestrator,
-		gl:     conf.gasLimit,
 	}, nil
 }
 
@@ -153,7 +151,7 @@ type Sweep struct {
 
 func (u *UniswapClient) Approve(token common.Address, spender common.Address, amount *big.Int, expiration *big.Int) (*common.Hash, error) {
 
-	tx, err := u.po.Send(txtypes.Standard, u.gl, &u.myAddr, u.pk, "approve", token, spender, amount, expiration) // todo. gasfee config?
+	tx, err := u.po.Send(txtypes.Standard, &u.myAddr, u.pk, "approve", token, spender, amount, expiration) // todo. gasfee config?
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +187,7 @@ func (u *UniswapClient) SwapNativeForToken(tokenOut common.Address, amountIn *bi
 	commands = append(commands, sweepCmd)
 	inputs = append(inputs, sweepInput)
 
-	tx, err := u.uo.SendWithValue(txtypes.Standard, u.gl, amountIn, &u.myAddr, u.pk, "execute", commands, inputs, big.NewInt(time.Now().Add(time.Hour*1).Unix()))
+	tx, err := u.uo.SendWithValue(txtypes.Standard, amountIn, &u.myAddr, u.pk, "execute", commands, inputs, big.NewInt(time.Now().Add(time.Hour*1).Unix()))
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +250,7 @@ func (u *UniswapClient) Swap(tokenIn common.Address, tokenOut common.Address, am
 	commands = append(commands, sweepCmd)
 	inputs = append(inputs, sweepInput)
 
-	tx, err := u.uo.Send(txtypes.Standard, u.gl, &u.myAddr, u.pk, "execute", commands, inputs, big.NewInt(time.Now().Add(time.Hour*1).Unix()))
+	tx, err := u.uo.Send(txtypes.Standard, &u.myAddr, u.pk, "execute", commands, inputs, big.NewInt(time.Now().Add(time.Hour*1).Unix()))
 	if err != nil {
 		return nil, err
 	}

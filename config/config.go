@@ -179,6 +179,7 @@ init:
 	return blackholedex.NewBlackholeConfig(
 		c.Blockchain.Uniswap.Url,
 		pk,
+		nil, // todo. 필요시 config.yaml에서 별도 설정.
 		configs,
 	)
 }

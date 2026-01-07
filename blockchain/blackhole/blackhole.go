@@ -997,7 +997,15 @@ func (b *Blackhole) Stake(
 	}
 
 	// Query NFT ownership
-	ownerResult, err := nftManagerClient.Call(&b.myAddr, "ownerOf", nftTokenID)
+	var ownerResult []interface{}
+	for _ = range 5 {
+		ownerResult, err = nftManagerClient.Call(&b.myAddr, "ownerOf", nftTokenID)
+		if err == nil {
+			break
+		} else {
+			time.Sleep(30 * time.Second)
+		}
+	}
 	if err != nil {
 		return &StakingResult{
 			NFTTokenID:   nftTokenID,

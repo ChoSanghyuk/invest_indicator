@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"investindicator/blockchain/pkg/types"
+	"math"
 	"math/big"
 	"strings"
 )
@@ -41,7 +42,8 @@ func CalculateTickBounds(currentTick int32, rangeWidth int, tickSpacing int) (in
 	const maxTick = 887272
 
 	halfWidth := rangeWidth / 2
-	tickIndex := int(currentTick) / tickSpacing
+	// tickIndex := int(currentTick) / tickSpacing
+	tickIndex := int(math.Round(float64(currentTick) / float64(tickSpacing)))
 
 	// Calculate raw bounds
 	rawTickLower := (tickIndex - halfWidth) * tickSpacing

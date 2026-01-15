@@ -378,6 +378,16 @@ type StrategyReport struct {
 }
 
 // PositionSnapshot captures position details at a point in time
+type CurrentAssetSnapshot struct {
+	Timestamp    time.Time
+	CurrentState StrategyPhase
+	TotalValue   *big.Int
+	AmountWavax  *big.Int
+	AmountUsdc   *big.Int
+	AmountBlack  *big.Int
+	AmountAvax   *big.Int
+}
+
 type PositionSnapshot struct {
 	NFTTokenID *big.Int  `json:"nft_token_id"`
 	TickLower  int32     `json:"tick_lower"`

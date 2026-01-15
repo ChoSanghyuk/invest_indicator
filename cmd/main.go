@@ -79,6 +79,7 @@ func main() {
 		client,
 		conf.BlackholeConfig(teleBot),
 		listener,
+		db,
 	)
 	if err != nil {
 		panic(err)

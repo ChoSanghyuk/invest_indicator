@@ -234,3 +234,76 @@ Liquidity L = constant relating amount0 & amount1 to P
 
 
 */
+
+// CalculateTokenAmountsFromLiquidity calculates token amounts from a given liquidity
+// This is the inverse of ComputeAmounts - given L, sqrtPrice, and tick bounds, calculate amounts
+// Inputs:
+//   - liquidity: The liquidity value from a position
+//   - sqrtPriceX96: current sqrt price (from safelyGetStateOfAMM)
+//   - tickLower, tickUpper: position tick bounds (int32 from Position struct)
+//
+// Returns: amount0, amount1, error
+func CalculateTokenAmountsFromLiquidity(
+	liquidity *big.Int,
+	sqrtPriceX96 *big.Int,
+	tickLower int32,
+	tickUpper int32,
+) (amount0 *big.Int, amount1 *big.Int, err error) {
+	if liquidity == nil || liquidity.Sign() == 0 {
+		return big.NewInt(0), big.NewInt(0), nil
+	}
+
+	// Convert tick bounds to sqrt prices
+	sqrtLower := TickToSqrtPriceX96(int(tickLower))
+	sqrtUpper := TickToSqrtPriceX96(int(tickUpper))
+
+	// Convert to big.Float for calculations
+	L := new(big.Float).SetInt(liquidity)
+	sqrtP := new(big.Float).SetInt(sqrtPriceX96)
+	sqrtL := new(big.Float).SetInt(sqrtLower)
+	sqrtU := new(big.Float).SetInt(sqrtUpper)
+	q96 := new(big.Float).SetInt(Q96)
+
+	// Determine which case based on current price vs tick bounds
+	// We need to compare sqrtPriceX96 with sqrtLower and sqrtUpper
+	if sqrtPriceX96.Cmp(sqrtLower) <= 0 {
+		// Price <= tickLower: only token0
+		// amount0 = L * (sqrtU - sqrtL) * Q96 / (sqrtL * sqrtU)
+		numer := new(big.Float).Mul(L, new(big.Float).Sub(sqrtU, sqrtL))
+		numer.Mul(numer, q96)
+		denom := new(big.Float).Mul(sqrtL, sqrtU)
+		amount0Float := new(big.Float).Quo(numer, denom)
+		amount0 = new(big.Int)
+		amount0Float.Int(amount0)
+		amount1 = big.NewInt(0)
+		return amount0, amount1, nil
+	}
+
+	if sqrtPriceX96.Cmp(sqrtUpper) >= 0 {
+		// Price >= tickUpper: only token1
+		// amount1 = L * (sqrtU - sqrtL) / Q96
+		amount1Float := new(big.Float).Mul(L, new(big.Float).Sub(sqrtU, sqrtL))
+		amount1Float.Quo(amount1Float, q96)
+		amount1 = new(big.Int)
+		amount1Float.Int(amount1)
+		amount0 = big.NewInt(0)
+		return amount0, amount1, nil
+	}
+
+	// Price in range: both tokens
+	// amount0 = L * (sqrtU - sqrtP) * Q96 / (sqrtP * sqrtU)
+	numer0 := new(big.Float).Mul(L, new(big.Float).Sub(sqrtU, sqrtP))
+	numer0.Mul(numer0, q96)
+	denom0 := new(big.Float).Mul(sqrtP, sqrtU)
+	amount0Float := new(big.Float).Quo(numer0, denom0)
+	amount0 = new(big.Int)
+	amount0Float.Int(amount0)
+
+	// amount1 = L * (sqrtP - sqrtL) / Q96
+	amount1Float := new(big.Float).Mul(L, new(big.Float).Sub(sqrtP, sqrtL))
+	amount1Float.Quo(amount1Float, q96)
+	amount1 = new(big.Int)
+	amount1Float.Int(amount1)
+
+	return amount0, amount1, nil
+}

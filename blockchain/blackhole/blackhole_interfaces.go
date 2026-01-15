@@ -62,3 +62,9 @@ type TxDecoder interface {
 type TxListener interface {
 	WaitForTransaction(txHash common.Hash) (*types.TxReceipt, error)
 }
+
+// TransactionRecorder defines methods for recording strategy reports and transaction results
+type TransactionRecorder interface {
+	// RecordReport saves a strategy report to storage
+	RecordReport(snapshot CurrentAssetSnapshot) error
+}

@@ -74,7 +74,7 @@ func WithDefaultGasLimit(gasLimit *big.Int) Option {
 
 func (cm *ContractClient) CallWithRetry(from *common.Address, method string, args ...interface{}) (rtn []interface{}, err error) {
 	for range 5 {
-		rtn, err = cm.Call(from, method, args)
+		rtn, err = cm.Call(from, method, args...)
 		if err == nil { // 성공 시, 바로 통과
 			break
 		}

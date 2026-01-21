@@ -77,7 +77,7 @@ func (b *Blackhole) GetAMMState(poolAddress common.Address) (*AMMState, error) {
 	}
 
 	// Call safelyGetStateOfAMM - this is a read-only operation
-	result, err := poolClient.Call(nil, "safelyGetStateOfAMM")
+	result, err := poolClient.CallWithRetry(nil, "safelyGetStateOfAMM")
 	if err != nil {
 		return nil, fmt.Errorf("failed to call safelyGetStateOfAMM: %w", err)
 	}
@@ -110,7 +110,7 @@ func (b *Blackhole) GetAMMState(poolAddress common.Address) (*AMMState, error) {
 // 	}
 
 // 	// Call getAmountOut(uint amountIn, address tokenIn) - this is a read-only operation
-// 	result, err := pairClient.Call(nil, "getAmountOut", amountIn, tokenIn)
+// 	result, err := pairClient.CallWithRetry(nil, "getAmountOut", amountIn, tokenIn)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("failed to call getAmountOut: %w", err)
 // 	}
@@ -139,14 +139,14 @@ func (b *Blackhole) validateBalances(requiredWAVAX, requiredUSDC *big.Int) error
 	}
 
 	// Query WAVAX balance
-	wavaxResult, err := wavaxClient.Call(&b.myAddr, "balanceOf", b.myAddr)
+	wavaxResult, err := wavaxClient.CallWithRetry(&b.myAddr, "balanceOf", b.myAddr)
 	if err != nil {
 		return fmt.Errorf("failed to get WAVAX balance: %w", err)
 	}
 	wavaxBalance := wavaxResult[0].(*big.Int)
 
 	// Query USDC balance
-	usdcResult, err := usdcClient.Call(&b.myAddr, "balanceOf", b.myAddr)
+	usdcResult, err := usdcClient.CallWithRetry(&b.myAddr, "balanceOf", b.myAddr)
 	if err != nil {
 		return fmt.Errorf("failed to get USDC balance: %w", err)
 	}
@@ -175,7 +175,7 @@ func (b *Blackhole) ensureApproval(
 	requiredAmount *big.Int,
 ) (common.Hash, error) {
 	// Check existing allowance
-	result, err := tokenClient.Call(&b.myAddr, "allowance", b.myAddr, spender)
+	result, err := tokenClient.CallWithRetry(&b.myAddr, "allowance", b.myAddr, spender)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("failed to check allowance: %w", err)
 	}
@@ -548,7 +548,7 @@ func (b *Blackhole) Stake(
 	}
 
 	// Query NFT ownership
-	ownerResult, err := nftManagerClient.Call(&b.myAddr, "ownerOf", nftTokenID)
+	ownerResult, err := nftManagerClient.CallWithRetry(&b.myAddr, "ownerOf", nftTokenID)
 	if err != nil {
 		return &StakingResult{
 			NFTTokenID:   nftTokenID,
@@ -567,7 +567,7 @@ func (b *Blackhole) Stake(
 	}
 
 	// T015-T023: NFT Approval Check and Execution
-	approvalResult, err := nftManagerClient.Call(&b.myAddr, "getApproved", nftTokenID)
+	approvalResult, err := nftManagerClient.CallWithRetry(&b.myAddr, "getApproved", nftTokenID)
 	if err != nil {
 		return &StakingResult{
 			NFTTokenID:   nftTokenID,
@@ -763,7 +763,7 @@ func (b *Blackhole) TokenOfOwnerByIndex(index *big.Int) (*big.Int, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get NFT manager client: %w", err)
 	}
-	rtnRaw, err := nftManagerClient.Call(nil, "tokenOfOwnerByIndex", b.myAddr, index)
+	rtnRaw, err := nftManagerClient.CallWithRetry(nil, "tokenOfOwnerByIndex", b.myAddr, index)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call tokenOfOwnerByIndex: %w", err)
 	}
@@ -780,7 +780,7 @@ func (b *Blackhole) GetUserPositions() ([]*big.Int, error) {
 	}
 
 	// Get the balance of NFTs owned by the user
-	balanceResult, err := nftManagerClient.Call(nil, "balanceOf", b.myAddr)
+	balanceResult, err := nftManagerClient.CallWithRetry(nil, "balanceOf", b.myAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get NFT balance: %w", err)
 	}
@@ -816,7 +816,7 @@ func (b *Blackhole) GetPositionDetails(tokenID *big.Int) (*Position, error) {
 	}
 
 	// Call positions(tokenId) function
-	positionResult, err := nftManagerClient.Call(nil, "positions", tokenID)
+	positionResult, err := nftManagerClient.CallWithRetry(nil, "positions", tokenID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get position details for token ID %s: %w", tokenID.String(), err)
 	}
@@ -873,7 +873,7 @@ func (b *Blackhole) Unstake(
 		}, fmt.Errorf("failed to get NFT manager client: %w", err)
 	}
 
-	ownerResult, err := nftManagerClient.Call(&b.myAddr, "ownerOf", nftTokenID)
+	ownerResult, err := nftManagerClient.CallWithRetry(&b.myAddr, "ownerOf", nftTokenID)
 	if err != nil {
 		return &UnstakeResult{
 			NFTTokenID:   nftTokenID,
@@ -901,7 +901,7 @@ func (b *Blackhole) Unstake(
 		}, fmt.Errorf("failed to get FarmingCenter client: %w", err)
 	}
 
-	depositsResult, err := farmingCenterClient.Call(&b.myAddr, "deposits", nftTokenID)
+	depositsResult, err := farmingCenterClient.CallWithRetry(&b.myAddr, "deposits", nftTokenID)
 	if err != nil {
 		return &UnstakeResult{
 			NFTTokenID:   nftTokenID,
@@ -1067,7 +1067,7 @@ func (b *Blackhole) Withdraw(nftTokenID *big.Int) (*WithdrawResult, error) {
 	}
 
 	// T010: Verify NFT ownership
-	ownerResult, err := nftManagerClient.Call(&b.myAddr, "ownerOf", nftTokenID)
+	ownerResult, err := nftManagerClient.CallWithRetry(&b.myAddr, "ownerOf", nftTokenID)
 	if err != nil {
 		return &WithdrawResult{
 			NFTTokenID:   nftTokenID,
@@ -1086,7 +1086,7 @@ func (b *Blackhole) Withdraw(nftTokenID *big.Int) (*WithdrawResult, error) {
 	}
 
 	// T011: Query position details to get liquidity amount
-	positionsResult, err := nftManagerClient.Call(&b.myAddr, "positions", nftTokenID)
+	positionsResult, err := nftManagerClient.CallWithRetry(&b.myAddr, "positions", nftTokenID)
 	if err != nil {
 		return &WithdrawResult{
 			NFTTokenID:   nftTokenID,

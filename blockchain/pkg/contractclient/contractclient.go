@@ -10,6 +10,7 @@ import (
 	contracttypes "investindicator/blockchain/pkg/types"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -69,6 +70,18 @@ func WithDefaultGasLimit(gasLimit *big.Int) Option {
 	return func(cc *ContractClient) {
 		cc.defaultGasLimit = gasLimit
 	}
+}
+
+func (cm *ContractClient) CallWithRetry(from *common.Address, method string, args ...interface{}) (rtn []interface{}, err error) {
+	for range 5 {
+		rtn, err = cm.Call(from, method, args)
+		if err == nil { // 성공 시, 바로 통과
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	return rtn, err
 }
 
 func (cm *ContractClient) Call(from *common.Address, method string, args ...interface{}) ([]interface{}, error) {

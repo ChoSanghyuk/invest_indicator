@@ -217,7 +217,7 @@ func (b *Blackhole) RunStrategy1(
 	sendReport(reportChan, StrategyReport{
 		Timestamp: time.Now(),
 		EventType: "strategy_start",
-		Message:   "RunStrategy1 starting - automated liquidity repositioning",
+		Message:   "RunStrategy1 starting",
 		Phase:     &state.CurrentState,
 	}) // State was just initialized, report it
 

@@ -423,6 +423,7 @@ nohup ./invest_indicator > $(date +%F).log 2>&1 &
 - 시장 지표: https://kr.investing.com/
 - 포트 개방: https://generalcoder.tistory.com/29
 
+
 ## 보안
 
 - API 키 및 로그인 정보는 암호화하여 DB 저장

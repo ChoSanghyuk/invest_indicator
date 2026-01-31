@@ -321,6 +321,32 @@ func (sp StrategyPhase) String() string {
 	}[sp]
 }
 
+// StrategyStep tracks precise substeps within each phase for checkpoint/resume capability
+type StrategyStep int
+
+const (
+	// Common step for phases that don't need substeps
+	Step_None StrategyStep = iota
+	Step_Init_MintCompleted
+	Step_Init_StakeCompleted
+
+	// RebalancingRequired phase steps
+	Step_Rebalance_UnstakeCompleted
+	Step_Rebalance_WithdrawCompleted
+)
+
+// String returns human-readable step name
+func (ss StrategyStep) String() string {
+	return [...]string{
+		"None",
+		// "Init_SwapCompleted",
+		"Init_MintCompleted",
+		"Init_StakeCompleted",
+		"Rebalance_UnstakeCompleted",
+		"Rebalance_WithdrawCompleted",
+	}[ss]
+}
+
 // StrategyConfig defines configuration parameters for RunStrategy1 execution
 type StrategyConfig struct {
 	// MonitoringInterval specifies time between pool price checks (default: 60s, minimum: 60s per constitution)
@@ -348,6 +374,7 @@ type StrategyConfig struct {
 // StrategyState tracks the current operational state and position information during strategy execution
 type StrategyState struct {
 	CurrentState      StrategyPhase // Current phase of execution
+	CurrentStep       StrategyStep  // Current substep within the phase (for checkpoint/resume)
 	NFTTokenID        *big.Int      // Active position NFT ID
 	TickLower         int32         // Active position lower bound
 	TickUpper         int32         // Active position upper bound

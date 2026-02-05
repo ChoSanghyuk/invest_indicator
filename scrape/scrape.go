@@ -25,13 +25,7 @@ type Scraper struct {
 		Rate float64
 		Date time.Time
 	}
-	kis struct {
-		appKey       string
-		appSecret    string
-		accessToken  string
-		tokenExpired string
-		account      string
-	}
+	kis *Kis
 	upbit struct {
 		token     string
 		isRunning bool
@@ -79,9 +73,7 @@ func WithKIS(conf *KisConfig) Option {
 			return errors.New("kis accoount 미존재")
 		}
 
-		s.kis.appKey = conf.AppKey
-		s.kis.appSecret = conf.AppSecret
-		s.kis.account = conf.Account
+		s.kis = NewKis(conf.AppKey, conf.AppSecret, conf.Account)
 
 		return nil
 	}
@@ -90,9 +82,9 @@ func WithKIS(conf *KisConfig) Option {
 func WithKisToken(token string) Option {
 
 	return func(s *Scraper) error {
-		s.kis.accessToken = token
-		s.kis.tokenExpired = time.Now().Add(time.Duration(1) * time.Hour).Format("2006-01-02 15:04:05")
-
+		if s.kis != nil {
+			s.kis.SetAccessToken(token)
+		}
 		return nil
 	}
 }
@@ -118,10 +110,10 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 	case m.Dollar:
 		return s.ExchageRate(), nil
 	case m.DomesticStock, m.Gold:
-		stock, err := s.kisDomesticStockPrice(code)
+		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.pp, err
 	case m.DomesticETF, m.DomesticStableETF:
-		stock, err := s.kisDomesticEtfPrice(code)
+		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.pp, err
 	case m.DomesticCoin:
 		pp, _, err := s.bithumbApi(code)
@@ -130,7 +122,7 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 		pp, err := alpacaCrypto(code)
 		return pp, err
 	case m.ForeignStock, m.ForeignETF:
-		pp, _, err := s.kisForeignPrice(code)
+		pp, _, err := s.kis.ForeignPrice(code)
 		return pp, err
 	}
 
@@ -142,10 +134,10 @@ func (s *Scraper) TopBottomPrice(category m.Category, code string) (hp float64, 
 	s.lg.Info().Msgf("Starting TopBottomPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.DomesticStock:
-		stock, err := s.kisDomesticStockPrice(code)
+		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.hp, stock.lp, err
 	case m.DomesticETF, m.DomesticStableETF:
-		stock, err := s.kisDomesticEtfPrice(code)
+		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.hp, stock.lp, err
 		// case model.DomesticCoin:
 		// 	return 0, 0, nil
@@ -159,10 +151,10 @@ func (s *Scraper) AvgPrice(category m.Category, code string) (float64, uint, err
 	s.lg.Info().Msgf("Starting AvgPrice with category: %v, code: %s", category, code)
 	switch category {
 	case m.DomesticStock:
-		stock, err := s.kisDomesticStockPrice(code)
+		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.ap, 200, err
 	case m.ForeignStock:
-		ap, n, err := s.kisForeignAvg(code)
+		ap, n, err := s.kis.ForeignAvg(code)
 		return ap, uint(n), err
 	}
 
@@ -178,16 +170,16 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 	case m.Dollar:
 		return s.ExchageRate(), nil
 	case m.DomesticStock, m.Gold:
-		stock, err := s.kisDomesticStockPrice(code)
+		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.op, err
 	case m.DomesticCoin:
 		_, cp, err = s.bithumbApi(code)
 		return cp, err
 	case m.DomesticETF, m.DomesticStableETF:
-		stock, err := s.kisDomesticEtfPrice(code)
+		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.op, err
 	case m.ForeignStock, m.ForeignETF:
-		_, cp, err := s.kisForeignPrice(code)
+		_, cp, err := s.kis.ForeignPrice(code)
 		return cp, err
 	}
 
@@ -262,12 +254,12 @@ func (s *Scraper) FearGreedIndex() (uint, error) {
 
 func (s *Scraper) Nasdaq() (float64, error) {
 	s.lg.Info().Msg("Starting Nasdaq")
-	return s.kisIndex(Nasdaq)
+	return s.kis.Index(Nasdaq)
 }
 
 func (s *Scraper) Sp500() (float64, error) {
 	s.lg.Info().Msg("Starting Sp500")
-	return s.kisIndex(Sp500)
+	return s.kis.Index(Sp500)
 }
 
 // todo. 현재로는 크롤링/API 못 찾음
@@ -414,7 +406,7 @@ func (s *Scraper) Buy(category m.Category, code string, qty uint) error {
 
 	switch category {
 	case m.ForeignStock, m.ForeignETF:
-		err := s.kisForeignBuy(code, qty)
+		err := s.kis.ForeignBuy(code, qty)
 		return err
 	}
 

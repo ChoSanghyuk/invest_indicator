@@ -27,7 +27,6 @@ func WithUpbitToken(accessKey string, secretKey string) Option {
 			return err
 		}
 		s.upbit.token = jwtToken
-		s.upbit.isRunning = true
 		return nil
 	}
 }
@@ -80,7 +79,7 @@ type UpbitMyOrders struct {
 	Error           error
 }
 
-func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
+func (s Scraper) upbitMyOrders(callback func(*UpbitMyOrders)) error {
 	headers := http.Header{}
 	headers.Add("Authorization", fmt.Sprintf("Bearer %s", s.upbit.token))
 
@@ -117,9 +116,9 @@ func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
 	if err != nil {
 		return err
 	}
-	var order UpbitMyOrders
 	// Read messages
 	for {
+		var order UpbitMyOrders
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			return err
@@ -131,7 +130,7 @@ func (s Scraper) upbitMyOrders(c chan<- UpbitMyOrders) error {
 		if order.State == "done" {
 			code, _ := strings.CutPrefix(order.Code, "KRW-")
 			order.Code = code
-			c <- order
+			callback(&order)
 		}
 	}
 	return nil

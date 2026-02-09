@@ -203,20 +203,12 @@ func (e InvestIndicator) RecordInvest(invest m.Invest) error {
 func (e InvestIndicator) runRecordMyOrdersEvent() {
 
 	oc := make(chan m.MyOrder) // order channel
-
 	go func() {
-		t := time.Now()
-
 		for {
-			err := e.rt.StreamMyOrders(oc)
-			e.lg.Error().Err(err).Msg("my orders streaming event 오류")
-			e.ms.SendMessage(fmt.Errorf("my orders streaming event 오류 발생. 오류 내역: %w", err).Error())
-			if t.After(time.Now().Add(-5 * time.Minute)) { // 5분 이내로 오류 반복 발생 시, shutdown
-				e.ms.SendMessage("my orders streaming event shutdown")
-				break
-			} else {
-				t = time.Now()
-			}
+			err := e.rt.StreamCoinOrders(oc)
+			e.lg.Error().Err(err).Msg("StreamCoinOrders 오류")
+			e.ms.SendMessage(fmt.Errorf("StreamCoinOrders 오류 발생. 오류 내역: %w", err).Error())
+			time.Sleep(time.Minute)
 		}
 	}()
 

@@ -25,10 +25,9 @@ type Scraper struct {
 		Rate float64
 		Date time.Time
 	}
-	kis *Kis
+	kis   *Kis
 	upbit struct {
-		token     string
-		isRunning bool
+		token string
 	}
 	lg zerolog.Logger
 	t  transmitter // todo. 이거 제거 하자. 다 그냥 필드로 들고 있는 것으로.
@@ -488,31 +487,15 @@ func (s *Scraper) AirdropEventBithumb() ([]string, []string, error) {
 	return titles, urls, nil
 }
 
-func (s *Scraper) StreamMyOrders(c chan<- m.MyOrder) error {
-
-	upCh := make(chan UpbitMyOrders)
-
-	if s.upbit.isRunning {
-		go func() {
-			err := s.upbitMyOrders(upCh)
-			s.lg.Error().Err(err).Msg("upbitMyOrders 오류 발생")
-			upCh <- UpbitMyOrders{Error: err}
-		}()
-	}
-
-	for true {
-		select {
-		case upOrder := <-upCh:
-			if upOrder.Error != nil {
-				return upOrder.Error
-			}
-
-			c <- m.MyOrder{
-				Code:  upOrder.Code,
-				Price: upOrder.Price,
-				Count: upOrder.Volume,
-			}
+func (s *Scraper) StreamCoinOrders(c chan<- m.MyOrder) error {
+	if err := s.upbitMyOrders(func(upOrder *UpbitMyOrders) {
+		c <- m.MyOrder{
+			Code:  upOrder.Code,
+			Price: upOrder.Price,
+			Count: upOrder.Volume,
 		}
+	}); err != nil {
+		return err
 	}
 
 	return nil

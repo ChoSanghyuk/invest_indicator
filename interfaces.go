@@ -13,7 +13,7 @@ type rtPoller interface { // realtime poller
 	GoldPriceDollar() (float64, error)
 	AirdropEventUpbit() ([]string, []string, error)
 	AirdropEventBithumb() ([]string, []string, error)
-	StreamMyOrders(chan<- m.MyOrder) error
+	StreamCoinOrders(c chan<- m.MyOrder) error
 }
 
 type dailyPoller interface {

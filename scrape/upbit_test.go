@@ -100,17 +100,11 @@ func TestUpbitWebSocktMyOrders(t *testing.T) {
 	s := Scraper{}
 	s.upbit.token = jwtToken
 
-	c := make(chan UpbitMyOrders)
+	err = s.upbitMyOrders(func(upOrder *UpbitMyOrders) {
+		fmt.Printf("%v\n", upOrder)
+	})
+	fmt.Println(err)
 
-	go func() {
-		err = s.upbitMyOrders(c)
-		fmt.Println(err)
-	}()
-
-	for true {
-		msg := <-c
-		fmt.Printf("%v\n", msg)
-	}
 }
 
 func TestUnmarshalTest(t *testing.T) {

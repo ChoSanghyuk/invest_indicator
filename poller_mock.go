@@ -36,7 +36,7 @@ func (m RtPollerMock) AirdropEventBithumb() ([]string, []string, error) {
 	return nil, nil, nil
 }
 
-func (m RtPollerMock) StreamMyOrders(chan<- md.MyOrder) error {
+func (m RtPollerMock) StreamCoinOrders(chan<- md.MyOrder) error {
 	if m.err != nil {
 		return m.err
 	}

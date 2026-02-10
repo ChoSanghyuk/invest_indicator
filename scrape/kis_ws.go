@@ -153,7 +153,7 @@ func (k *Kis) CloseWebSocket() error {
 // SubscribeRealTimeExecution subscribes to real-time execution notifications
 // htsID is the HTS ID for the subscription
 // callback is called for each notification received
-func (k *Kis) SubscribeRealTimeExecution(htsID string, callback func(*RealTimeExecutionNotification)) error {
+func (k *Kis) SubscribeRealTimeExecution(callback func(*RealTimeExecutionNotification)) error {
 	k.wsMutex.Lock()
 	if k.wsConn == nil {
 		k.wsMutex.Unlock()
@@ -162,7 +162,7 @@ func (k *Kis) SubscribeRealTimeExecution(htsID string, callback func(*RealTimeEx
 	k.wsMutex.Unlock()
 
 	k.lg.Debug().
-		Str("htsID", htsID).
+		Str("htsID", k.htsId).
 		Msg("SubscribeRealTimeExecution called")
 
 	// Determine TR_ID based on environment
@@ -182,7 +182,7 @@ func (k *Kis) SubscribeRealTimeExecution(htsID string, callback func(*RealTimeEx
 		Body: WebSocketSubscribeRequestBody{
 			Input: WebSocketSubscribeRequestInput{
 				TrID:  trID,
-				TrKey: htsID,
+				TrKey: k.htsId,
 			},
 		},
 	}
@@ -238,7 +238,7 @@ func (k *Kis) SubscribeRealTimeExecution(htsID string, callback func(*RealTimeEx
 		Msg("Subscription successful, starting to receive notifications")
 
 	// Start receiving notifications in a goroutine
-	go k.receiveRealTimeExecutionNotifications(callback)
+	k.receiveRealTimeExecutionNotifications(callback)
 
 	return nil
 }
@@ -267,6 +267,19 @@ func (k *Kis) receiveRealTimeExecutionNotifications(callback func(*RealTimeExecu
 		k.lg.Debug().
 			Str("message", messageStr).
 			Msg("Received WebSocket message")
+
+		// // Check for PINGPONG message and respond with pong
+		if strings.Contains(messageStr, "PINGPONG") {
+			k.lg.Debug().Msg("Received PINGPONG message, sending pong")
+			k.wsMutex.Lock()
+			// err := k.wsConn.WriteJSON(message)
+			err := k.wsConn.WriteMessage(websocket.PingMessage, nil)
+			k.wsMutex.Unlock()
+			if err != nil {
+				k.lg.Error().Err(err).Msg("Failed to send pong message")
+			}
+			continue
+		}
 
 		// Parse real-time message format: encrypted|TR_ID|count|data
 		parts := strings.Split(messageStr, "|")
@@ -441,7 +454,7 @@ func (k *Kis) SubscribeOverseasRealTimeExecution(htsID string, callback func(*Ov
 		Msg("Subscription successful, starting to receive notifications")
 
 	// Start receiving notifications in a goroutine
-	go k.receiveOverseasRealTimeExecutionNotifications(callback)
+	k.receiveOverseasRealTimeExecutionNotifications(callback)
 
 	return nil
 }
@@ -470,6 +483,23 @@ func (k *Kis) receiveOverseasRealTimeExecutionNotifications(callback func(*Overs
 		k.lg.Debug().
 			Str("message", messageStr).
 			Msg("Received WebSocket message")
+
+		// Check for PINGPONG message and respond with pong
+		if strings.Contains(messageStr, "PINGPONG") {
+			k.lg.Debug().Msg("Received PINGPONG message, sending pong")
+			k.wsMutex.Lock()
+			pongMsg := map[string]interface{}{
+				"header": map[string]string{
+					"tr_id": "PONG",
+				},
+			}
+			err := k.wsConn.WriteJSON(pongMsg)
+			k.wsMutex.Unlock()
+			if err != nil {
+				k.lg.Error().Err(err).Msg("Failed to send pong message")
+			}
+			continue
+		}
 
 		// Parse real-time message format: encrypted|TR_ID|count|data
 		parts := strings.Split(messageStr, "|")

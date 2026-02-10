@@ -57,6 +57,7 @@ type KisConfig struct {
 	AppKey    string
 	AppSecret string
 	Account   string
+	HtsId     string
 }
 
 func WithKIS(conf *KisConfig) Option {
@@ -71,8 +72,11 @@ func WithKIS(conf *KisConfig) Option {
 		if conf.Account == "" {
 			return errors.New("kis accoount 미존재")
 		}
+		if conf.HtsId == "" {
+			return errors.New("kis HTS ID 미존재")
+		}
 
-		s.kis = NewKis(conf.AppKey, conf.AppSecret, conf.Account)
+		s.kis = NewKis(conf.AppKey, conf.AppSecret, conf.Account, conf.HtsId)
 
 		return nil
 	}
@@ -493,6 +497,74 @@ func (s *Scraper) StreamCoinOrders(c chan<- m.MyOrder) error {
 			Code:  upOrder.Code,
 			Price: upOrder.Price,
 			Count: upOrder.Volume,
+		}
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Scraper) StreamDomesticStockOrders(c chan<- m.MyOrder) error {
+
+	if s.kis.wsConn == nil {
+		// Step 1: Issue WebSocket approval key
+		approvalResp, err := s.kis.IssueWebSocketApprovalKey()
+		if err != nil {
+			return fmt.Errorf("Failed to issue WebSocket approval key: %w", err)
+		}
+
+		// Step 2: Connect to WebSocket
+		err = s.kis.ConnectWebSocket(approvalResp.ApprovalKey)
+		if err != nil {
+		}
+	}
+	defer s.kis.CloseWebSocket()
+
+	if err := s.kis.SubscribeRealTimeExecution(func(kisOrder *RealTimeExecutionNotification) {
+		if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
+			price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+			count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
+			if kisOrder.SellBuyDiv == "01" { // 01=Sell, 02=Buy
+				count *= -1
+			}
+			c <- m.MyOrder{
+				Code:  kisOrder.StockCode,
+				Price: price,
+				Count: count,
+			}
+		}
+
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Scraper) StreamOverseasStockOrders(c chan<- m.MyOrder) error {
+
+	if s.kis.wsConn == nil {
+		// Step 1: Issue WebSocket approval key
+		approvalResp, err := s.kis.IssueWebSocketApprovalKey()
+		if err != nil {
+			return fmt.Errorf("Failed to issue WebSocket approval key: %w", err)
+		}
+
+		// Step 2: Connect to WebSocket
+		err = s.kis.ConnectWebSocket(approvalResp.ApprovalKey)
+		if err != nil {
+		}
+	}
+	defer s.kis.CloseWebSocket()
+
+	if err := s.kis.SubscribeOverseasRealTimeExecution("", func(kisOrder *OverseasRealTimeExecutionNotification) {
+		price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+		count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
+		c <- m.MyOrder{
+			Code:  kisOrder.StockShortCode,
+			Price: price,
+			Count: count,
 		}
 	}); err != nil {
 		return err

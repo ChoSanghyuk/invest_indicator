@@ -237,6 +237,7 @@ init:
 		AppKey:    appKey,
 		AppSecret: appSecret,
 		Account:   *c.KIS["account"],
+		HtsId:     *c.KIS["htsId"],
 	}
 }
 

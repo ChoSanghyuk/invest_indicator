@@ -14,6 +14,7 @@ type rtPoller interface { // realtime poller
 	AirdropEventUpbit() ([]string, []string, error)
 	AirdropEventBithumb() ([]string, []string, error)
 	StreamCoinOrders(c chan<- m.MyOrder) error
+	StreamDomesticStockOrders(c chan<- m.MyOrder) error
 }
 
 type dailyPoller interface {

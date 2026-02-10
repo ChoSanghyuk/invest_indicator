@@ -28,6 +28,7 @@ type Kis struct {
 	appKey       string
 	appSecret    string
 	accessToken  string
+	htsId        string
 	tokenExpired string
 	account      string
 	isMock       bool // true for mock/test environment
@@ -48,11 +49,12 @@ type TokenResponse struct {
 }
 
 // NewKis creates a new Kis instance
-func NewKis(appKey, appSecret, account string) *Kis {
+func NewKis(appKey, appSecret, account, htsId string) *Kis {
 	return &Kis{
 		appKey:    appKey,
 		appSecret: appSecret,
 		account:   account,
+		htsId:     htsId,
 		lg:        zerolog.New(os.Stdout).With().Str("Module", "Kis").Timestamp().Logger(),
 	}
 }

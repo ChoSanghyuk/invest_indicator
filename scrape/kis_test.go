@@ -134,6 +134,7 @@ func TestKisWs(t *testing.T) {
 		appkey,
 		appsecret,
 		"",
+		htsID,
 	)
 
 	// Step 1: Issue WebSocket approval key
@@ -160,7 +161,7 @@ func TestKisWs(t *testing.T) {
 		notificationCount := 0
 		maxNotifications := 2 // Limit for testing
 
-		err = k.SubscribeRealTimeExecution(htsID, func(notification *RealTimeExecutionNotification) {
+		err = k.SubscribeRealTimeExecution(func(notification *RealTimeExecutionNotification) {
 			notificationCount++
 			t.Logf("Notification #%d received:", notificationCount)
 			t.Logf("  Order No: %s", notification.OrderNo)

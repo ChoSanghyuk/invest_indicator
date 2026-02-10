@@ -200,17 +200,35 @@ func (e InvestIndicator) RecordInvest(invest m.Invest) error {
 ********************************************* Always On Events *******************************************************
 **********************************************************************************************************************/
 
+// Coin Streaming과 주식 Streaming의 공통 작업 모듈화. job으로 각각의 streaming 및 오류 처리 로직 입력 받음.
+func loopWithInterval(job func()) {
+	backoff := time.Minute
+	lastErrTime := time.Now()
+	for {
+		job()
+		time.Sleep(backoff)
+		backoff *= 2
+		if time.Now().Sub(lastErrTime) > time.Hour*24 {
+			backoff = time.Minute
+		}
+		lastErrTime = time.Now()
+	}
+}
+
 func (e InvestIndicator) runRecordMyOrdersEvent() {
 
 	oc := make(chan m.MyOrder) // order channel
-	go func() {
-		for {
-			err := e.rt.StreamCoinOrders(oc)
-			e.lg.Error().Err(err).Msg("StreamCoinOrders 오류")
-			e.ms.SendMessage(fmt.Errorf("StreamCoinOrders 오류 발생. 오류 내역: %w", err).Error())
-			time.Sleep(time.Minute)
-		}
-	}()
+	go loopWithInterval(func() {
+		err := e.rt.StreamCoinOrders(oc)
+		e.lg.Error().Err(err).Msg("StreamCoinOrders 오류")
+		e.ms.SendMessage(fmt.Errorf("StreamCoinOrders 오류 발생. 오류 내역: %w", err).Error())
+	})
+
+	go loopWithInterval(func() {
+		err := e.rt.StreamDomesticStockOrders(oc)
+		e.lg.Error().Err(err).Msg("StreamDomesticStockOrders 오류")
+		e.ms.SendMessage(fmt.Errorf("StreamDomesticStockOrders 오류 발생. 오류 내역: %w", err).Error())
+	})
 
 	for {
 		myOrder := <-oc

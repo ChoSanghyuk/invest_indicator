@@ -36,19 +36,16 @@ func main() {
 	*/
 	zerolog.SetGlobalLevel(level) // todo. 글로벌로 설정하면, 다른 모든 logger들에 적용되는지 확인. config로 이동
 
-	botConf, err := conf.BotConfig()
+	botConfs, err := conf.BotConfigs()
 	if err != nil {
 		panic(err)
 	}
 
-	teleBot, err := bot.NewTeleBot(botConf)
-	if err != nil {
-		panic(err)
-	}
+	teleBotGroup := bot.NewTeleBotGroup(botConfs)
 
 	scraper, err := scrape.NewScraper(conf,
-		scrape.WithKIS(conf.KisConfig(teleBot)), // todo. 여기에 봇을 집어넣고, config struct 반환
-		scrape.WithUpbitToken(conf.UpbitConfig(teleBot)),
+		scrape.WithKIS(conf.KisConfig(teleBotGroup.Bot(0))), // todo. 여기에 봇을 집어넣고, config struct 반환
+		scrape.WithUpbitToken(conf.UpbitConfig(teleBotGroup.Bot(0))),
 	)
 	if err != nil {
 		panic(err)
@@ -70,14 +67,14 @@ func main() {
 		txlistener.WithTimeout(5*time.Minute),
 	)
 
-	us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBot))
+	us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBotGroup.Bot(0)))
 	if err != nil {
 		panic(err)
 	}
 
 	bd, err := blackhole.NewBlackhole(
 		client,
-		conf.BlackholeConfig(teleBot),
+		conf.BlackholeConfig(teleBotGroup.Bot(0)),
 		listener,
 		db,
 	)
@@ -87,12 +84,10 @@ func main() {
 
 	bt := blockchain.NewBlockChainTrader(us, bd, conf.ToStrategyConfig())
 
-	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, teleBot)
+	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, teleBotGroup)
 	eventHandler.Run()
 
-	go func() {
-		app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler)
-	}()
+	teleBotGroup.RunAll(conf.App.Port, conf.App.Passkey) // todo. telegram login
 
-	teleBot.Run(conf.App.Port, conf.App.Passkey) // todo. telegram login
+	app.Run(conf.App.Port, conf.App.JwtKey, conf.App.Passkey, db, scraper, eventHandler)
 }

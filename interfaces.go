@@ -76,6 +76,6 @@ type bcTrader interface { // blockchain trader
 }
 
 type messenger interface {
-	SendMessage(msg string)
-	SendButtonsAndGetResult(prompt string, options ...string) (answer string, err error)
+	SendMessage(idx int, msg string)
+	SendButtonsAndGetResult(idx int, prompt string, options ...string) (answer string, err error)
 }

@@ -28,7 +28,7 @@ type Config struct {
 		Passkey string `yaml:"passkey"`
 	} `yaml:"app"`
 	ApiKey   map[string]string `yaml:"api-key"`
-	Telegram struct {
+	Telegram []struct {
 		ChatId string `yaml:"chatId"`
 		Token  string `yaml:"token"`
 	} `yaml:"telegram"`
@@ -113,17 +113,21 @@ func (c Config) LogLevel() (zerolog.Level, error) {
 	return level, nil
 }
 
-func (c Config) BotConfig() (*bot.TeleBotConfig, error) {
+func (c Config) BotConfigs() ([]*bot.TeleBotConfig, error) {
 
-	chatId, err := strconv.ParseInt(c.Telegram.ChatId, 10, 64)
-	if err != nil {
-		return nil, err
+	confs := make([]*bot.TeleBotConfig, len(c.Telegram))
+	for i := range c.Telegram {
+		chatId, err := strconv.ParseInt(c.Telegram[i].ChatId, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		confs[i] = &bot.TeleBotConfig{
+			Token:  c.Telegram[i].Token,
+			ChatId: chatId,
+		}
 	}
 
-	return &bot.TeleBotConfig{
-		Token:  c.Telegram.Token,
-		ChatId: chatId,
-	}, nil
+	return confs, nil
 }
 
 func (c *Config) UniswapConfig(keyPasser KeyPasser) *uniswap.UniswapClientConfig {
@@ -276,8 +280,12 @@ func (c Config) Key(target string) string {
 }
 
 func decode(conf *Config) {
-	util.Decode(&conf.Telegram.ChatId)
-	util.Decode(&conf.Telegram.Token)
+	for i := range conf.Telegram {
+		util.Decode(&conf.Telegram[i].ChatId)
+		util.Decode(&conf.Telegram[i].Token)
+	}
+	// util.Decode(&conf.Telegram.ChatId)
+	// util.Decode(&conf.Telegram.Token)
 	util.Decode(&conf.App.JwtKey)
 	util.Decode(&conf.App.Passkey)
 }

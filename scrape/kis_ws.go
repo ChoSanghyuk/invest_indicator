@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -240,7 +241,7 @@ func (k *Kis) SubscribeRealTimeExecution(callback func(*RealTimeExecutionNotific
 	// Start receiving notifications in a goroutine
 	k.receiveRealTimeExecutionNotifications(callback)
 
-	return nil
+	return errors.New("receiveRealTimeExecutionNotifications exited unexpectedly")
 }
 
 // receiveRealTimeExecutionNotifications receives and processes real-time execution notifications

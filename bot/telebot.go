@@ -65,7 +65,7 @@ func (t TeleBot) Run(port int, passkey string) {
 	for update := range t.updates {
 		if update.Message != nil {
 			txt := update.Message.Text
-			if txt[0] != '/' {
+			if txt[0] == '/' {
 				switch txt {
 				case "/help":
 					t.SendMessage(helpMsg)

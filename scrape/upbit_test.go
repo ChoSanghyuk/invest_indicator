@@ -101,10 +101,9 @@ func TestUpbitWebSocktMyOrders(t *testing.T) {
 	s.upbit.token = jwtToken
 
 	err = s.upbitMyOrders(func(upOrder *UpbitMyOrders) {
-		fmt.Printf("%v\n", upOrder)
+		fmt.Printf("%+v\n", upOrder)
 	})
 	fmt.Println(err)
-
 }
 
 func TestUnmarshalTest(t *testing.T) {

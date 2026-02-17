@@ -492,11 +492,15 @@ func (s *Scraper) AirdropEventBithumb() ([]string, []string, error) {
 }
 
 func (s *Scraper) StreamCoinOrders(c chan<- m.MyOrder) error {
-	if err := s.upbitMyOrders(func(upOrder *UpbitMyOrders) {
-		c <- m.MyOrder{
-			Code:  upOrder.Code,
-			Price: upOrder.Price,
-			Count: upOrder.Volume,
+	if err := s.upbitMyOrders(func(order *UpbitMyOrders) {
+		if order.State == "trade" {
+			code, _ := strings.CutPrefix(order.Code, "KRW-")
+			order.Code = code
+			c <- m.MyOrder{
+				Code:  order.Code,
+				Price: order.Price,
+				Count: order.ExecutedVolume,
+			}
 		}
 	}); err != nil {
 		return err

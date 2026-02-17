@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -88,7 +87,7 @@ func (s Scraper) upbitMyOrders(callback func(*UpbitMyOrders)) error {
 		headers,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("connectioin 실패. %w", err)
 	}
 	defer conn.Close()
 
@@ -127,11 +126,7 @@ func (s Scraper) upbitMyOrders(callback func(*UpbitMyOrders)) error {
 		if err != nil {
 			return err
 		}
-		if order.State == "done" {
-			code, _ := strings.CutPrefix(order.Code, "KRW-")
-			order.Code = code
-			callback(&order)
-		}
+		callback(&order)
 	}
 	return nil
 }

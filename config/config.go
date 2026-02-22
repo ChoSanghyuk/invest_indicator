@@ -165,7 +165,7 @@ init:
 	if c.decryptKey == "" { // 키 등록이 안 된 경우에는 키 입력 받기
 		key = keyPasser.InitKey(err)
 	}
-	pk, err = util.Decrypt([]byte(key), c.Blockchain.Uniswap.Pk)
+	pk, err = util.Decrypt([]byte(key), c.Blockchain.Blackhole.Pk)
 	if err != nil { // 오류인 경우, 키 입력 반복
 		goto init
 	}

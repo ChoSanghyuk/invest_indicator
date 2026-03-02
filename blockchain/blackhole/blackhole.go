@@ -3,36 +3,43 @@ package blackholedex
 import (
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 	"investindicator/blockchain/pkg/contractclient"
 	"investindicator/blockchain/pkg/util"
 	"log"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
-	// # Contract addresses
-	routerv2                   = "0x04E1dee021Cd12bBa022A72806441B43d8212Fec"
-	usdc                       = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E"
-	wavax                      = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"
-	black                      = "0xcd94a87696fac69edae3a70fe5725307ae1c43f6"
-	wavaxBlackPair             = "0x14e4a5bed2e5e688ee1a5ca3a4914250d1abd573"
-	wavaxUsdcPair              = "0xA02Ec3Ba8d17887567672b2CDCAF525534636Ea0"
-	deployer                   = "0x5d433a94a4a2aa8f9aa34d8d15692dc2e9960584"
-	nonfungiblePositionManager = "0x3fED017EC0f5517Cdf2E8a9a4156c64d74252146"
-	gauge                      = "0x3ADE52f9779c07471F4B6d5997444C3c2124C1c0"
-	farmingCenter              = "0xa47Ad2C95FaE476a73b85A355A5855aDb4b3A449"
-	algebraPool                = "0x41100c6d2c6920b10d12cd8d59c8a9aa2ef56fc7"
+	// # Contract names (used to lookup clients in the contract client map)
+	routerv2                   = "routerv2"
+	usdc                       = "usdc"
+	wavax                      = "wavax"
+	black                      = "black"
+	wavaxUsdcPair              = "wavaxUsdcPair"
+	deployer                   = "deployer"
+	nonfungiblePositionManager = "nonfungiblePositionManager"
+	gauge                      = "gauge"
+	farmingCenter              = "farmingCenter"
+)
+
+type PoolType int
+
+const (
+	CL1 PoolType = iota
+	CL200
 )
 
 // Blackhole manages interactions with Blackhole DEX contracts
 type Blackhole struct {
+	poolType   PoolType
 	privateKey *ecdsa.PrivateKey
 	myAddr     common.Address
 	client     *ethclient.Client
@@ -42,6 +49,7 @@ type Blackhole struct {
 }
 
 type ContractClientConfig struct {
+	Name    string
 	Address string
 	Abipath string
 }
@@ -50,17 +58,20 @@ type BlackholeConfig struct {
 	url             string // "https://api.avax.network/ext/bc/C/rpc"
 	pk              string
 	defaultGasLimit *big.Int
+	poolType        PoolType
 	configs         []ContractClientConfig
 }
 
-func NewBlackholeConfig(url string, pk string, defaultGasLimit *big.Int, configs []ContractClientConfig) *BlackholeConfig {
+func NewBlackholeConfig(url string, pk string, defaultGasLimit *big.Int, pool PoolType, configs []ContractClientConfig) *BlackholeConfig {
 	if defaultGasLimit == nil {
 		defaultGasLimit = big.NewInt(1000000)
 	}
+
 	return &BlackholeConfig{
 		url:             url,
 		pk:              pk,
 		defaultGasLimit: defaultGasLimit,
+		poolType:        pool,
 		configs:         configs,
 	}
 }
@@ -78,18 +89,19 @@ func NewBlackhole(client *ethclient.Client, conf *BlackholeConfig, tl TxListener
 	}
 	address := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	// client, err := ethclient.Dial(conf.Url)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Failed to connect to RPC: %v", err)
-	// }
 	ccm := make(map[string]ContractClient)
 	for _, c := range conf.configs {
-		ABI, err := util.LoadABI(c.Abipath)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to load ABI: %v", err)
+		var ABI *abi.ABI
+		if c.Abipath == "excluded" {
+			ABI = nil
+		} else {
+			ABI, err = util.LoadABI(c.Abipath)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to load ABI: %s. %v", c.Abipath, err)
+			}
 		}
 		cc := contractclient.NewContractClient(client, common.HexToAddress(c.Address), ABI, contractclient.WithDefaultGasLimit(conf.defaultGasLimit))
-		ccm[c.Address] = cc
+		ccm[c.Name] = cc
 	}
 
 	return &Blackhole{
@@ -174,8 +186,8 @@ func (b *Blackhole) RunStrategy1(
 		}
 
 		// Validate that this is a WAVAX/USDC position
-		wavaxAddr := common.HexToAddress(wavax)
-		usdcAddr := common.HexToAddress(usdc)
+		wavaxAddr, _ := b.GetAddress(wavax)
+		usdcAddr, _ := b.GetAddress(usdc)
 		if (position.Token0 != wavaxAddr && position.Token1 != wavaxAddr) ||
 			(position.Token0 != usdcAddr && position.Token1 != usdcAddr) {
 			return fmt.Errorf("position token ID %s is not a WAVAX/USDC pair (token0=%s, token1=%s)",
@@ -218,7 +230,7 @@ func (b *Blackhole) RunStrategy1(
 	sendReport(reportChan, StrategyReport{
 		Timestamp: time.Now(),
 		EventType: "strategy_start",
-		Message:   "RunStrategy1 starting",
+		Message:   "RunStrategy1 starting - automated liquidity repositioning",
 		Phase:     &state.CurrentState,
 	}) // State was just initialized, report it
 
@@ -234,7 +246,7 @@ func (b *Blackhole) RunStrategy1(
 	b.RecordCurrentAssetSnapshot(state.CurrentState)
 
 	// Nonce for unstaking (should be queried from contract in production)
-	nonce := big.NewInt(3) // Default nonce for the incentive program
+	nonce := b.poolNonce()
 	// T058-T070: Main strategy loop
 	for {
 		select {
@@ -278,6 +290,7 @@ func (b *Blackhole) RunStrategy1(
 
 				// T063: Transition back to ActiveMonitoring
 				state.CurrentState = ActiveMonitoring
+				state.CurrentStep = Step_None // Reset step for new phase
 				log.Printf("Position re-entry successful: NFT ID %s", mintResult.NFTTokenID.String())
 
 				// Record snapshot after completing Initializing phase
@@ -398,13 +411,31 @@ func (b *Blackhole) RunStrategy1(
 	}
 }
 
-func (b Blackhole) Client(address string) (ContractClient, error) {
+func (b Blackhole) Client(name string) (ContractClient, error) {
 
-	c := b.ccm[address]
+	c := b.ccm[name]
 	if c == nil {
-		return nil, errors.New("no mapped client") // todo. 없으면 생성.
+		return nil, fmt.Errorf("no mapped client for name: %s", name)
 	}
 	return c, nil
+}
+
+func (b Blackhole) ClientByAddress(address string) (ContractClient, error) {
+	for _, c := range b.ccm {
+		if strings.ToLower(address) == strings.ToLower(c.ContractAddress().Hex()) {
+			return c, nil
+		}
+	}
+	return nil, fmt.Errorf("no mapped client for address: %s", address)
+}
+
+// GetAddress retrieves the contract address for a given contract name
+func (b *Blackhole) GetAddress(name string) (common.Address, error) {
+	client, err := b.Client(name)
+	if err != nil {
+		return common.Address{}, err
+	}
+	return *client.ContractAddress(), nil
 }
 
 // initialPositionEntry orchestrates the creation of the initial balanced liquidity position (T019-T024)
@@ -439,7 +470,8 @@ func (b *Blackhole) initialPositionEntry(
 	usdcBalance := usdcBalanceRaw[0].(*big.Int)
 
 	// Get current pool state for price
-	poolState, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+	// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+	poolState, err := b.GetAMMState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool state: %w", err)
 	}
@@ -463,19 +495,22 @@ func (b *Blackhole) initialPositionEntry(
 		var swapGasCost *big.Int = big.NewInt(0)
 		if swapAmount.Sign() > 0 {
 			var fromToken, toToken common.Address
+			wavaxAddr, _ := b.GetAddress(wavax)
+			usdcAddr, _ := b.GetAddress(usdc)
 			if tokenToSwap == 0 {
 				// Swap WAVAX to USDC
-				fromToken = common.HexToAddress(wavax)
-				toToken = common.HexToAddress(usdc)
+				fromToken = wavaxAddr
+				toToken = usdcAddr
 			} else {
 				// Swap USDC to WAVAX
-				fromToken = common.HexToAddress(usdc)
-				toToken = common.HexToAddress(wavax)
+				fromToken = usdcAddr
+				toToken = wavaxAddr
 			}
 
 			// Build swap route
+			wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
 			route := Route{
-				Pair:         common.HexToAddress(wavaxUsdcPair),
+				Pair:         wavaxUsdcPairAddr,
 				From:         fromToken,
 				To:           toToken,
 				Stable:       false,
@@ -614,6 +649,11 @@ func (b *Blackhole) initialPositionEntry(
 		NFTTokenID: mintResult.NFTTokenID,
 		TickLower:  mintResult.FinalTickLower,
 		TickUpper:  mintResult.FinalTickUpper,
+		Liquidity:  big.NewInt(0), // Will be populated in future enhancements
+		Amount0:    mintResult.ActualAmount0,
+		Amount1:    mintResult.ActualAmount1,
+		FeeGrowth0: big.NewInt(0),
+		FeeGrowth1: big.NewInt(0),
 		Timestamp:  time.Now(),
 	}
 
@@ -800,6 +840,10 @@ func (b *Blackhole) executeRebalancing(
 	workflow.Duration = time.Since(workflow.StartTime)
 	workflow.Success = true
 
+	// Reset step counter for next phase
+	state.CurrentStep = Step_None
+	log.Printf("[Phase Complete] RebalancingRequired phase completed, resetting step to None")
+
 	return workflow, nil
 }
 
@@ -820,7 +864,8 @@ func (b *Blackhole) monitoringLoop(
 	}
 
 	// T036: Get current pool state
-	poolState, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+	// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+	poolState, err := b.GetAMMState()
 	if err != nil {
 		return false, fmt.Errorf("failed to get pool state: %w", err)
 	}
@@ -880,7 +925,8 @@ func (b *Blackhole) stabilityLoop(
 	}
 
 	// T043: Get current pool price
-	poolState, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+	// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+	poolState, err := b.GetAMMState()
 	if err != nil {
 		return false, fmt.Errorf("failed to get pool state: %w", err)
 	}
@@ -1010,13 +1056,14 @@ func (b *Blackhole) GetCurrentAssetSnapshot(state StrategyPhase) (*CurrentAssetS
 		}
 
 		// Only count positions for WAVAX/USDC pair
-		wavaxAddr := common.HexToAddress(wavax)
-		usdcAddr := common.HexToAddress(usdc)
+		wavaxAddr, _ := b.GetAddress(wavax)
+		usdcAddr, _ := b.GetAddress(usdc)
 		if (position.Token0 == wavaxAddr || position.Token1 == wavaxAddr) &&
 			(position.Token0 == usdcAddr || position.Token1 == usdcAddr) {
 
 			// Get current pool state for price calculation
-			poolState, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+			// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+			poolState, err := b.GetAMMState()
 			if err != nil {
 				log.Printf("Warning: failed to get pool state: %v", err)
 				continue
@@ -1043,7 +1090,8 @@ func (b *Blackhole) GetCurrentAssetSnapshot(state StrategyPhase) (*CurrentAssetS
 
 	// Calculate total value in USDC (6 decimals)
 	// Get current WAVAX/USDC pool price
-	poolState, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+	// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+	poolState, err := b.GetAMMState()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pool state for price: %w", err)
 	}
@@ -1081,4 +1129,26 @@ func (b *Blackhole) GetCurrentAssetSnapshot(state StrategyPhase) (*CurrentAssetS
 	}
 
 	return snapshot, nil
+}
+
+func (b *Blackhole) poolNonce() *big.Int {
+	switch b.poolType {
+	case CL1:
+		return big.NewInt(1)
+	case CL200:
+		return big.NewInt(3)
+	default:
+		return big.NewInt(3)
+	}
+}
+
+func (b *Blackhole) tickSpacing() int {
+	switch b.poolType {
+	case CL1:
+		return 20 // memo. CL1에 대해선 20만큼 조정해서 진입. 조정 없을 시, 바로 아웃오브레인지 되는 경우가 많음
+	case CL200:
+		return 200
+	default:
+		return 200
+	}
 }

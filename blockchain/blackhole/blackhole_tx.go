@@ -28,7 +28,7 @@ func (b *Blackhole) Swap(
 	}
 
 	fromTokenAddress := params.Routes[0].From.Hex()
-	tokenClient, err := b.Client(fromTokenAddress)
+	tokenClient, err := b.ClientByAddress(fromTokenAddress)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("failed to get from client for token %s: %w", fromTokenAddress, err)
 	}
@@ -70,10 +70,10 @@ func (b *Blackhole) Swap(
 
 // GetAMMState retrieves the current state of an AMM pool
 // This is a read-only operation that does not create a transaction
-func (b *Blackhole) GetAMMState(poolAddress common.Address) (*AMMState, error) {
-	poolClient, err := b.Client(poolAddress.Hex())
+func (b *Blackhole) GetAMMState() (*AMMState, error) {
+	poolClient, err := b.Client(wavaxUsdcPair)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pool client for %s: %w", poolAddress.Hex(), err)
+		return nil, fmt.Errorf("failed to get pool client for %s: %w", wavaxUsdcPair, err)
 	}
 
 	// Call safelyGetStateOfAMM - this is a read-only operation
@@ -216,7 +216,7 @@ func (b *Blackhole) Mint(
 	rangeWidth int,
 	slippagePct int,
 ) (*StakingResult, error) {
-	const tickSpacing = 200
+	tickSpacing := b.tickSpacing()
 
 	// T012: Input validation
 	if err := util.ValidateStakingRequest(maxWAVAX, maxUSDC, rangeWidth, slippagePct); err != nil {
@@ -230,7 +230,8 @@ func (b *Blackhole) Mint(
 	var transactions []TransactionRecord
 
 	// T013: Query pool state
-	state, err := b.GetAMMState(common.HexToAddress(wavaxUsdcPair))
+	// wavaxUsdcPairAddr, _ := b.GetAddress(wavaxUsdcPair)
+	state, err := b.GetAMMState()
 	if err != nil {
 		return &StakingResult{
 			Success:      false,
@@ -313,7 +314,7 @@ func (b *Blackhole) Mint(
 		}, fmt.Errorf("failed to get USDC client: %w", err)
 	}
 
-	nftManagerAddr := common.HexToAddress(nonfungiblePositionManager)
+	nftManagerAddr, _ := b.GetAddress(nonfungiblePositionManager)
 
 	// T018: WAVAX approval
 	wavaxApproveTxHash, err := b.ensureApproval(wavaxClient, nftManagerAddr, amount0Desired)
@@ -409,10 +410,13 @@ func (b *Blackhole) Mint(
 
 	// T020: Construct MintParams
 	deadline := big.NewInt(time.Now().Add(20 * time.Minute).Unix())
+	wavaxAddr, _ := b.GetAddress(wavax)
+	usdcAddr, _ := b.GetAddress(usdc)
+	deployerAddr, _ := b.GetAddress(deployer)
 	mintParams := &MintParams{
-		Token0:         common.HexToAddress(wavax),
-		Token1:         common.HexToAddress(usdc),
-		Deployer:       common.HexToAddress(deployer),
+		Token0:         wavaxAddr,
+		Token1:         usdcAddr,
+		Deployer:       deployerAddr,
 		TickLower:      big.NewInt(int64(tickLower)),
 		TickUpper:      big.NewInt(int64(tickUpper)),
 		Amount0Desired: amount0Desired,
@@ -579,15 +583,16 @@ func (b *Blackhole) Stake(
 	currentApproval := approvalResult[0].(common.Address)
 
 	// Only approve if not already approved for this gauge
-	if currentApproval.Hex() != gauge {
-		log.Printf("Approving NFT %s for gauge %s", nftTokenID.String(), gauge)
+	gaugeAddr, _ := b.GetAddress(gauge)
+	if currentApproval != gaugeAddr {
+		log.Printf("Approving NFT %s for gauge %s", nftTokenID.String(), gaugeAddr.Hex())
 
 		approveTxHash, err := nftManagerClient.Send(
 			types.Standard,
 			&b.myAddr,
 			b.privateKey,
 			"approve",
-			common.HexToAddress(gauge),
+			gaugeAddr,
 			nftTokenID,
 		)
 		if err != nil {
@@ -653,7 +658,7 @@ func (b *Blackhole) Stake(
 	}
 
 	// Submit deposit transaction
-	log.Printf("Depositing NFT %s into gauge %s", nftTokenID.String(), gauge)
+	log.Printf("Depositing NFT %s into gauge %s", nftTokenID.String(), gaugeAddr.Hex())
 
 	depositTxHash, err := gaugeClient.Send(
 		types.Standard,
@@ -743,7 +748,7 @@ func (b *Blackhole) Stake(
 	// T038-T043: Logging and User Feedback
 	fmt.Printf("✓ NFT staked successfully\n")
 	fmt.Printf("  Token ID: %s\n", nftTokenID.String())
-	fmt.Printf("  Gauge: %s\n", gauge)
+	fmt.Printf("  Gauge: %s\n", gaugeAddr.Hex())
 	fmt.Printf("  Total Gas Cost: %s wei\n", totalGasCost.String())
 	for _, tx := range transactions {
 		fmt.Printf("  - %s: %s (gas: %s wei)\n", tx.Operation, tx.TxHash.Hex(), tx.GasCost.String())
@@ -922,10 +927,12 @@ func (b *Blackhole) Unstake(
 	// T010: Build multicall data - encode exitFarming call
 	var multicallData [][]byte
 
+	blackAddr, _ := b.GetAddress(black)
+	algebraPoolAddr, _ := b.GetAddress(wavaxUsdcPair)
 	incentiveKey := IncentiveKey{
-		RewardToken:      common.HexToAddress(black),
-		BonusRewardToken: common.HexToAddress(black),
-		Pool:             common.HexToAddress(algebraPool),
+		RewardToken:      blackAddr,
+		BonusRewardToken: blackAddr,
+		Pool:             algebraPoolAddr,
 		Nonce:            nonce,
 	}
 
@@ -941,7 +948,7 @@ func (b *Blackhole) Unstake(
 	multicallData = append(multicallData, exitFarmingData)
 
 	// T011: Conditionally encode collectRewards call
-	collectRewardsData, err := farmingCenterABI.Pack("claimReward", common.HexToAddress(black), b.myAddr, big.NewInt(0)) // todo. reward 0원인거 확인.
+	collectRewardsData, err := farmingCenterABI.Pack("claimReward", blackAddr, b.myAddr, big.NewInt(0)) // todo. reward 0원인거 확인.
 	if err != nil {
 		return &UnstakeResult{
 			NFTTokenID:   nftTokenID,
@@ -952,7 +959,8 @@ func (b *Blackhole) Unstake(
 	multicallData = append(multicallData, collectRewardsData)
 
 	// T012: Execute multicall transaction
-	log.Printf("Unstaking NFT %s from FarmingCenter %s", nftTokenID.String(), farmingCenter)
+	farmingCenterAddr, _ := b.GetAddress(farmingCenter)
+	log.Printf("Unstaking NFT %s from FarmingCenter %s", nftTokenID.String(), farmingCenterAddr.Hex())
 
 	multicallTxHash, err := farmingCenterClient.Send(
 		types.Standard,
@@ -1032,7 +1040,7 @@ func (b *Blackhole) Unstake(
 	// T016: Logging with troubleshooting context
 	fmt.Printf("✓ NFT unstaked successfully\n")
 	fmt.Printf("  Token ID: %s\n", nftTokenID.String())
-	fmt.Printf("  FarmingCenter: %s\n", farmingCenter)
+	fmt.Printf("  FarmingCenter: %s\n", farmingCenterAddr.Hex())
 	if rewards != nil {
 		fmt.Printf("  Rewards: %s / %s\n", rewards.Reward.String(), rewards.BonusReward.String())
 	}

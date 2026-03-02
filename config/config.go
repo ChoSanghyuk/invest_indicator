@@ -60,13 +60,21 @@ type Config struct {
 			GasLimit        int    `yaml:"gaslimit"`
 		} `yaml:"uniswap"`
 		Blackhole struct {
-			Url              string                            `yaml:"url"`
-			Pk               string                            `yaml:"pk"`
-			ContractClient   map[string]ContractClientYAMLData `yaml:"contract_client"`
-			StrategyYAMLData StrategyYAMLData                  `yaml:"strategy"`
+			Url              string                `yaml:"url"`
+			Pk               string                `yaml:"pk"`
+			ActivePool       string                `yaml:"active_pool"`
+			ContractClient   ContractClientSection `yaml:"contract_client"`
+			StrategyYAMLData StrategyYAMLData      `yaml:"strategy"`
 		} `yaml:"blackhole"`
 	} `yaml:"blockchain"`
 	decryptKey string
+}
+
+// ContractClientSection represents the contract_client section with common and pool-specific configs
+type ContractClientSection struct {
+	Common map[string]ContractClientYAMLData `yaml:"common"`
+	CL200  map[string]ContractClientYAMLData `yaml:"cl200"`
+	CL1    map[string]ContractClientYAMLData `yaml:"cl1"`
 }
 
 // ContractClientYAMLData represents a single contract configuration from YAML
@@ -173,17 +181,45 @@ init:
 
 	var configs []blackholedex.ContractClientConfig
 
-	for _, data := range c.Blockchain.Blackhole.ContractClient {
+	for name, data := range c.Blockchain.Blackhole.ContractClient.Common {
 		configs = append(configs, blackholedex.ContractClientConfig{
+			Name:    name,
+			Address: data.Address,
+			Abipath: data.ABI,
+		})
+	}
+	// Add pool-specific contracts based on active_pool
+	var poolContracts map[string]ContractClientYAMLData
+	switch c.Blockchain.Blackhole.ActivePool {
+	case "cl1":
+		poolContracts = c.Blockchain.Blackhole.ContractClient.CL1
+	case "cl200":
+		poolContracts = c.Blockchain.Blackhole.ContractClient.CL200
+	}
+
+	for name, data := range poolContracts {
+		configs = append(configs, blackholedex.ContractClientConfig{
+			Name:    name,
 			Address: data.Address,
 			Abipath: data.ABI,
 		})
 	}
 
+	var pool blackholedex.PoolType
+	switch c.Blockchain.Blackhole.ActivePool {
+	case "cl1":
+		pool = blackholedex.CL1
+	case "cl200":
+		pool = blackholedex.CL200
+	default:
+		pool = blackholedex.CL200 // default to CL200 if unknown
+	}
+
 	return blackholedex.NewBlackholeConfig(
-		c.Blockchain.Uniswap.Url,
+		c.Blockchain.Blackhole.Url,
 		pk,
 		nil, // todo. 필요시 config.yaml에서 별도 설정.
+		pool,
 		configs,
 	)
 }

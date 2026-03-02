@@ -225,9 +225,9 @@ func (e InvestIndicator) runRecordMyOrdersEvent() {
 	})
 
 	go loopWithInterval(func() {
-		err := e.rt.StreamDomesticStockOrders(oc)
-		e.lg.Error().Err(err).Msg("StreamDomesticStockOrders 오류")
-		e.ms.SendMessage(0, fmt.Errorf("StreamDomesticStockOrders 오류 발생. 오류 내역: %w", err).Error())
+		err := e.rt.StreamStockOrders(oc)
+		e.lg.Error().Err(err).Msg("StreamStockOrders 오류")
+		e.ms.SendMessage(0, fmt.Errorf("StreamStockOrders 오류 발생. 오류 내역: %w", err).Error())
 	})
 
 	for {

@@ -37,8 +37,8 @@ type Kis struct {
 	// WebSocket fields
 	wsConn        *websocket.Conn
 	wsMutex       sync.Mutex
-	wsAESKey      string
-	wsAESIV       string
+	wsAESKeys     map[string]string // AES keys per TR_ID prefix (e.g., "H0STCNI", "H0GSCNI")
+	wsAESIVs      map[string]string // AES IVs per TR_ID prefix (e.g., "H0STCNI", "H0GSCNI")
 	wsApprovalKey string
 }
 
@@ -56,6 +56,8 @@ func NewKis(appKey, appSecret, account, htsId string) *Kis {
 		account:   account,
 		htsId:     htsId,
 		lg:        zerolog.New(os.Stdout).With().Str("Module", "Kis").Timestamp().Logger(),
+		wsAESKeys: make(map[string]string),
+		wsAESIVs:  make(map[string]string),
 	}
 }
 

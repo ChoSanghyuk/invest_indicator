@@ -161,22 +161,23 @@ func TestKisWs(t *testing.T) {
 		notificationCount := 0
 		maxNotifications := 2 // Limit for testing
 
-		err = k.SubscribeRealTimeExecution(func(notification *RealTimeExecutionNotification) {
-			notificationCount++
-			t.Logf("Notification #%d received:", notificationCount)
-			t.Logf("  Order No: %s", notification.OrderNo)
-			t.Logf("  Stock Code: %s", notification.StockCode)
-			t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy)", notification.SellBuyDiv)
-			t.Logf("  Exec Qty: %s", notification.ExecQty)
-			t.Logf("  Exec Price: %s", notification.ExecPrice)
-			t.Logf("  Exec Time: %s", notification.StockExecTime)
-			t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
-			t.Logf("  Stock Name: %s", notification.ExecStockName)
+		err = k.SubscribeMultipleRealTimeExecution(true, false, &RealTimeExecutionCallbacks{
+			DomesticCallback: func(notification *RealTimeExecutionNotification) {
+				notificationCount++
+				t.Logf("Notification #%d received:", notificationCount)
+				t.Logf("  Order No: %s", notification.OrderNo)
+				t.Logf("  Stock Code: %s", notification.StockCode)
+				t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy)", notification.SellBuyDiv)
+				t.Logf("  Exec Qty: %s", notification.ExecQty)
+				t.Logf("  Exec Price: %s", notification.ExecPrice)
+				t.Logf("  Exec Time: %s", notification.StockExecTime)
+				t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
+				t.Logf("  Stock Name: %s", notification.ExecStockName)
 
-			if notificationCount >= maxNotifications {
-				t.Logf("Received %d notifications, test complete", notificationCount)
-			}
-		})
+				if notificationCount >= maxNotifications {
+					t.Logf("Received %d notifications, test complete", notificationCount)
+				}
+			}})
 
 		if err != nil {
 			t.Fatalf("Failed to subscribe to real-time execution: %v", err)
@@ -189,23 +190,70 @@ func TestKisWs(t *testing.T) {
 		notificationCount := 0
 		maxNotifications := 5 // Limit for testing
 
-		err = k.SubscribeOverseasRealTimeExecution(htsID, func(notification *OverseasRealTimeExecutionNotification) {
-			notificationCount++
-			t.Logf("Notification #%d received:", notificationCount)
-			t.Logf("  Order No: %s", notification.OrderNo)
-			t.Logf("  Stock Code: %s", notification.StockShortCode)
-			t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy, 03=Full Sell, 04=Return Buy)", notification.SellBuyDiv)
-			t.Logf("  Exec Qty: %s", notification.ExecQty)
-			t.Logf("  Exec Price: %s", notification.ExecPrice)
-			t.Logf("  Exec Time: %s", notification.StockExecTime)
-			t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
-			t.Logf("  Stock Name: %s", notification.ExecStockName)
-			t.Logf("  Overseas Stock Division: %s", notification.OverseasStockDiv)
+		err = k.SubscribeMultipleRealTimeExecution(false, true, &RealTimeExecutionCallbacks{
+			OverseasCallback: func(notification *OverseasRealTimeExecutionNotification) {
+				notificationCount++
+				t.Logf("Notification #%d received:", notificationCount)
+				t.Logf("  Order No: %s", notification.OrderNo)
+				t.Logf("  Stock Code: %s", notification.StockShortCode)
+				t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy, 03=Full Sell, 04=Return Buy)", notification.SellBuyDiv)
+				t.Logf("  Exec Qty: %s", notification.ExecQty)
+				t.Logf("  Exec Price: %s", notification.ExecPrice)
+				t.Logf("  Exec Time: %s", notification.StockExecTime)
+				t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
+				t.Logf("  Stock Name: %s", notification.ExecStockName)
+				t.Logf("  Overseas Stock Division: %s", notification.OverseasStockDiv)
 
-			if notificationCount >= maxNotifications {
-				t.Logf("Received %d notifications, test complete", notificationCount)
-			}
-		})
+				if notificationCount >= maxNotifications {
+					t.Logf("Received %d notifications, test complete", notificationCount)
+				}
+			}})
+
+		if err != nil {
+			t.Fatalf("Failed to subscribe to overseas real-time execution: %v", err)
+		}
+	})
+
+	t.Run("realtime domestic and overseas", func(t *testing.T) {
+		t.Log("Step 3: Subscribing to domestic and overseas real-time execution notifications...")
+
+		notificationCount := 0
+		maxNotifications := 5 // Limit for testing
+
+		err = k.SubscribeMultipleRealTimeExecution(true, true, &RealTimeExecutionCallbacks{
+			DomesticCallback: func(notification *RealTimeExecutionNotification) {
+				notificationCount++
+				t.Logf("Notification #%d received:", notificationCount)
+				t.Logf("  Order No: %s", notification.OrderNo)
+				t.Logf("  Stock Code: %s", notification.StockCode)
+				t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy)", notification.SellBuyDiv)
+				t.Logf("  Exec Qty: %s", notification.ExecQty)
+				t.Logf("  Exec Price: %s", notification.ExecPrice)
+				t.Logf("  Exec Time: %s", notification.StockExecTime)
+				t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
+				t.Logf("  Stock Name: %s", notification.ExecStockName)
+
+				if notificationCount >= maxNotifications {
+					t.Logf("Received %d notifications, test complete", notificationCount)
+				}
+			},
+			OverseasCallback: func(notification *OverseasRealTimeExecutionNotification) {
+				notificationCount++
+				t.Logf("Notification #%d received:", notificationCount)
+				t.Logf("  Order No: %s", notification.OrderNo)
+				t.Logf("  Stock Code: %s", notification.StockShortCode)
+				t.Logf("  Sell/Buy: %s (01=Sell, 02=Buy, 03=Full Sell, 04=Return Buy)", notification.SellBuyDiv)
+				t.Logf("  Exec Qty: %s", notification.ExecQty)
+				t.Logf("  Exec Price: %s", notification.ExecPrice)
+				t.Logf("  Exec Time: %s", notification.StockExecTime)
+				t.Logf("  Exec YN: %s (1=Order/Revise/Cancel, 2=Execution)", notification.ExecYN)
+				t.Logf("  Stock Name: %s", notification.ExecStockName)
+				t.Logf("  Overseas Stock Division: %s", notification.OverseasStockDiv)
+
+				if notificationCount >= maxNotifications {
+					t.Logf("Received %d notifications, test complete", notificationCount)
+				}
+			}})
 
 		if err != nil {
 			t.Fatalf("Failed to subscribe to overseas real-time execution: %v", err)

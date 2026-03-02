@@ -42,7 +42,7 @@ func (m RtPollerMock) StreamCoinOrders(chan<- md.MyOrder) error {
 	}
 	return nil
 }
-func (m RtPollerMock) StreamDomesticStockOrders(chan<- md.MyOrder) error {
+func (m RtPollerMock) StreamStockOrders(chan<- md.MyOrder) error {
 	if m.err != nil {
 		return m.err
 	}

@@ -509,7 +509,7 @@ func (s *Scraper) StreamCoinOrders(c chan<- m.MyOrder) error {
 	return nil
 }
 
-func (s *Scraper) StreamDomesticStockOrders(c chan<- m.MyOrder) error {
+func (s *Scraper) StreamStockOrders(c chan<- m.MyOrder) error {
 
 	if s.kis.wsConn == nil {
 		// Step 1: Issue WebSocket approval key
@@ -521,58 +521,83 @@ func (s *Scraper) StreamDomesticStockOrders(c chan<- m.MyOrder) error {
 		// Step 2: Connect to WebSocket
 		err = s.kis.ConnectWebSocket(approvalResp.ApprovalKey)
 		if err != nil {
+			return err
 		}
 	}
 	defer s.kis.CloseWebSocket()
 
-	if err := s.kis.SubscribeRealTimeExecution(func(kisOrder *RealTimeExecutionNotification) {
-		if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
-			price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
-			count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
-			if kisOrder.SellBuyDiv == "01" { // 01=Sell, 02=Buy
-				count *= -1
+	if err := s.kis.SubscribeMultipleRealTimeExecution(true, true, &RealTimeExecutionCallbacks{
+		DomesticCallback: func(kisOrder *RealTimeExecutionNotification) {
+			if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
+				price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+				count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
+				if kisOrder.SellBuyDiv == "01" { // 01=Sell, 02=Buy
+					count *= -1
+				}
+				c <- m.MyOrder{
+					Code:  kisOrder.StockCode,
+					Price: price,
+					Count: count,
+				}
 			}
-			c <- m.MyOrder{
-				Code:  kisOrder.StockCode,
-				Price: price,
-				Count: count,
-			}
-		}
+		},
+		OverseasCallback: func(kisOrder *OverseasRealTimeExecutionNotification) {
+			if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
+				price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+				count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
+				if kisOrder.SellBuyDiv == "01" { // 01=Sell, 02=Buy
+					count *= -1
+				}
+				var prefix string
+				switch kisOrder.OverseasStockDiv {
+				case "6":
+					prefix = "NAS-"
+				case "7":
+					prefix = "NYS-"
+				case "8":
+					prefix = "AMS-"
+				}
 
-	}); err != nil {
+				c <- m.MyOrder{
+					Code:  prefix + kisOrder.ExecStockName, // todo. market 정보 prefix 추가 필요.
+					Price: price,
+					Count: count,
+				}
+			}
+		}}); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Scraper) StreamOverseasStockOrders(c chan<- m.MyOrder) error {
+// func (s *Scraper) StreamOverseasStockOrders(c chan<- m.MyOrder) error {
 
-	if s.kis.wsConn == nil {
-		// Step 1: Issue WebSocket approval key
-		approvalResp, err := s.kis.IssueWebSocketApprovalKey()
-		if err != nil {
-			return fmt.Errorf("Failed to issue WebSocket approval key: %w", err)
-		}
+// 	if s.kis.wsConn == nil {
+// 		// Step 1: Issue WebSocket approval key
+// 		approvalResp, err := s.kis.IssueWebSocketApprovalKey()
+// 		if err != nil {
+// 			return fmt.Errorf("Failed to issue WebSocket approval key: %w", err)
+// 		}
 
-		// Step 2: Connect to WebSocket
-		err = s.kis.ConnectWebSocket(approvalResp.ApprovalKey)
-		if err != nil {
-		}
-	}
-	defer s.kis.CloseWebSocket()
+// 		// Step 2: Connect to WebSocket
+// 		err = s.kis.ConnectWebSocket(approvalResp.ApprovalKey)
+// 		if err != nil {
+// 		}
+// 	}
+// 	defer s.kis.CloseWebSocket()
 
-	if err := s.kis.SubscribeOverseasRealTimeExecution("", func(kisOrder *OverseasRealTimeExecutionNotification) {
-		price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
-		count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
-		c <- m.MyOrder{
-			Code:  kisOrder.StockShortCode,
-			Price: price,
-			Count: count,
-		}
-	}); err != nil {
-		return err
-	}
+// 	if err := s.kis.SubscribeOverseasRealTimeExecution("", func(kisOrder *OverseasRealTimeExecutionNotification) {
+// 		price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+// 		count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
+// 		c <- m.MyOrder{
+// 			Code:  kisOrder.StockShortCode,
+// 			Price: price,
+// 			Count: count,
+// 		}
+// 	}); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

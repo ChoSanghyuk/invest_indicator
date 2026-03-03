@@ -528,6 +528,7 @@ func (s *Scraper) StreamStockOrders(c chan<- m.MyOrder) error {
 
 	if err := s.kis.SubscribeMultipleRealTimeExecution(true, true, &RealTimeExecutionCallbacks{
 		DomesticCallback: func(kisOrder *RealTimeExecutionNotification) {
+			s.lg.Info().Msgf("Received domestic execution notification: %+v", kisOrder)
 			if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
 				price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
 				count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
@@ -542,6 +543,7 @@ func (s *Scraper) StreamStockOrders(c chan<- m.MyOrder) error {
 			}
 		},
 		OverseasCallback: func(kisOrder *OverseasRealTimeExecutionNotification) {
+			s.lg.Info().Msgf("Received overseas execution notification: %+v", kisOrder)
 			if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
 				price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
 				count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
@@ -559,7 +561,7 @@ func (s *Scraper) StreamStockOrders(c chan<- m.MyOrder) error {
 				}
 
 				c <- m.MyOrder{
-					Code:  prefix + kisOrder.ExecStockName, // todo. market 정보 prefix 추가 필요.
+					Code:  prefix + kisOrder.StockShortCode, // todo. market 정보 prefix 추가 필요.
 					Price: price,
 					Count: count,
 				}

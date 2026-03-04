@@ -105,6 +105,7 @@ func NewBlackhole(client *ethclient.Client, conf *BlackholeConfig, tl TxListener
 	}
 
 	return &Blackhole{
+		poolType:   conf.poolType,
 		privateKey: privateKey,
 		myAddr:     address,
 		client:     client,

@@ -406,13 +406,14 @@ type StrategyReport struct {
 
 // PositionSnapshot captures position details at a point in time
 type CurrentAssetSnapshot struct {
-	Timestamp    time.Time
-	CurrentState StrategyPhase
-	TotalValue   *big.Int
-	AmountWavax  *big.Int
-	AmountUsdc   *big.Int
-	AmountBlack  *big.Int
-	AmountAvax   *big.Int
+	Timestamp     time.Time
+	CurrentState  StrategyPhase
+	TotalValue    *big.Int
+	EstimatedAvax *big.Int // Estimated AVAX amount calculated from TotalValue
+	AmountWavax   *big.Int
+	AmountUsdc    *big.Int
+	AmountBlack   *big.Int
+	AmountAvax    *big.Int
 }
 
 type PositionSnapshot struct {

@@ -1119,14 +1119,21 @@ func (b *Blackhole) GetCurrentAssetSnapshot(state StrategyPhase) (*CurrentAssetS
 	totalValue = new(big.Int).Add(totalValue, avaxValueInUSDC)
 	totalValue = new(big.Int).Add(totalValue, blackValueInUSDC)
 
+	// Calculate EstimatedAvax from TotalValue using current price
+	// EstimatedAvax = TotalValue / price
+	totalValueFloat := new(big.Float).SetInt(totalValue)
+	estimatedAvaxFloat := new(big.Float).Quo(totalValueFloat, price)
+	estimatedAvax, _ := estimatedAvaxFloat.Int(nil)
+
 	snapshot := &CurrentAssetSnapshot{
-		Timestamp:    time.Now(),
-		CurrentState: state,
-		TotalValue:   totalValue,
-		AmountWavax:  wavaxBalance,
-		AmountUsdc:   usdcBalance,
-		AmountBlack:  blackBalance,
-		AmountAvax:   avaxBalance,
+		Timestamp:     time.Now(),
+		CurrentState:  state,
+		TotalValue:    totalValue,
+		EstimatedAvax: estimatedAvax,
+		AmountWavax:   wavaxBalance,
+		AmountUsdc:    usdcBalance,
+		AmountBlack:   blackBalance,
+		AmountAvax:    avaxBalance,
 	}
 
 	return snapshot, nil
@@ -1146,7 +1153,7 @@ func (b *Blackhole) poolNonce() *big.Int {
 func (b *Blackhole) tickSpacing() int {
 	switch b.poolType {
 	case CL1:
-		return 50 // memo. CL1에 대해선 50만큼 조정해서 진입. 조정 없을 시, 바로 아웃오브레인지 되는 경우가 많음
+		return 20 // memo. CL1에 대해선 20만큼 조정해서 진입. 조정 없을 시, 바로 아웃오브레인지 되는 경우가 많음
 	case CL200:
 		return 200
 	default:

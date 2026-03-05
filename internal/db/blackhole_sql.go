@@ -11,16 +11,17 @@ import (
 
 // AssetSnapshotRecord represents the database model for CurrentAssetSnapshot
 type AssetSnapshotRecord struct {
-	ID           uint      `gorm:"primaryKey;autoIncrement"`
-	Timestamp    time.Time `gorm:"index;not null"`
-	CurrentState int       `gorm:"not null;comment:Strategy phase as integer"`
-	TotalValue   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountWavax  string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountUsdc   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountBlack  string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountAvax   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	CreatedAt    time.Time `gorm:"autoCreateTime"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
+	ID            uint      `gorm:"primaryKey;autoIncrement"`
+	Timestamp     time.Time `gorm:"index;not null"`
+	CurrentState  int       `gorm:"not null;comment:Strategy phase as integer"`
+	TotalValue    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	EstimatedAvax string    `gorm:"type:varchar(78);not null;comment:big.Int as string - Estimated AVAX from TotalValue"`
+	AmountWavax   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountUsdc    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountBlack   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountAvax    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
 }
 
 // TableName specifies the table name for GORM
@@ -59,13 +60,14 @@ func NewStorageWithDB(db *gorm.DB) (*Storage, error) {
 // RecordReport implements TransactionRecorder interface
 func (r *Storage) RecordReport(snapshot blackholedex.CurrentAssetSnapshot) error {
 	record := AssetSnapshotRecord{
-		Timestamp:    snapshot.Timestamp,
-		CurrentState: int(snapshot.CurrentState),
-		TotalValue:   bigIntToString(snapshot.TotalValue),
-		AmountWavax:  bigIntToString(snapshot.AmountWavax),
-		AmountUsdc:   bigIntToString(snapshot.AmountUsdc),
-		AmountBlack:  bigIntToString(snapshot.AmountBlack),
-		AmountAvax:   bigIntToString(snapshot.AmountAvax),
+		Timestamp:     snapshot.Timestamp,
+		CurrentState:  int(snapshot.CurrentState),
+		TotalValue:    bigIntToString(snapshot.TotalValue),
+		EstimatedAvax: bigIntToString(snapshot.EstimatedAvax),
+		AmountWavax:   bigIntToString(snapshot.AmountWavax),
+		AmountUsdc:    bigIntToString(snapshot.AmountUsdc),
+		AmountBlack:   bigIntToString(snapshot.AmountBlack),
+		AmountAvax:    bigIntToString(snapshot.AmountAvax),
 	}
 
 	result := r.db.Create(&record)

@@ -55,6 +55,7 @@ type storage interface {
 	RetrieveLatestHighYieldSpread() (*m.HighYieldSpread, error)
 	SaveHighYieldSpread(hy *m.HighYieldSpread) error
 	RetrieveLatestSP500Entry() (*m.SP500Company, error)
+	SaveSP500Entry(sp500 *m.SP500Company) error
 
 	RetreiveLatestEma(assetId uint) (*m.EmaHist, error)
 	SaveEmaHist(newEma *m.EmaHist) error

@@ -536,6 +536,13 @@ func (e InvestIndicator) runFindNewSP500Event() {
 		e.ms.SendMessage(0, "New SP500 Entry")
 		jsonBytes, _ := json.MarshalIndent(entry, "", "  ")
 		e.ms.SendMessage(0, string(jsonBytes))
+
+		// Save the new entry to database
+		err := e.stg.SaveSP500Entry(&entry)
+		if err != nil {
+			e.lg.Error().Err(err).Msg("SaveSP500Entry 시 오류 발생")
+			e.ms.SendMessage(0, fmt.Sprintf("SaveSP500Entry 시 오류 발생. %s", err.Error()))
+		}
 	}
 
 	e.lg.Info().Msg("FindNewSP500Event completed")

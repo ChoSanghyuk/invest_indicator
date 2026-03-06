@@ -587,6 +587,17 @@ func (s Storage) RetrieveLatestSP500Entry() (*m.SP500Company, error) {
 	return &sp500, nil
 }
 
+func (s Storage) SaveSP500Entry(sp500 *m.SP500Company) error {
+
+	result := s.db.Create(sp500)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	s.lg.Info().Msgf("Saved SP500 entry for %s", sp500.Symbol)
+	return nil
+}
+
 // func (s Storage) RetrieveInitAmountofAsset(fundId, assetId uint) (float64, error) {
 
 // 	var invests []m.Invest

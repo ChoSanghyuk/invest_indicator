@@ -150,3 +150,7 @@ func (m StorageMock) SetCache(key string, value interface{}, exp time.Duration) 
 func (m StorageMock) GetCache(key string) *redis.StringCmd {
 	return nil
 }
+
+func (m StorageMock) SaveSP500Entry(sp500 *m.SP500Company) error {
+	return nil
+}

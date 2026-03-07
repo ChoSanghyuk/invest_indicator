@@ -45,52 +45,6 @@ func crawl(url string, cssPath string) (string, error) {
 	return v, nil
 }
 
-func crawlWithHeader(url string, cssPath string) (string, error) {
-
-	// Send the request
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("Accept-Language", "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3")
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error requesting\n%w", err)
-	}
-	defer res.Body.Close()
-
-	// Check the response status
-	if res.StatusCode != 200 {
-		return "", fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status)
-	}
-
-	// Create a goquery document from the response body
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	if err != nil {
-		return "", fmt.Errorf("error creating document\n%w", err)
-	}
-	// fmt.Println(doc.Text())
-
-	// fmt.Println(doc.Text())
-
-	var v string
-	// Find the elements by the CSS selector
-	doc.Find(cssPath).Each(func(i int, s *goquery.Selection) {
-		// Extract and print the data
-		v = s.Text()
-	})
-
-	return v, nil
-}
-
 func crawlSpaBody(url string) (*goquery.Document, error) {
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -164,6 +118,85 @@ func crawlSpaBodyAvoidingClaudFlare(url string) (*goquery.Document, error) {
 	return doc, nil
 }
 
+// crawlDocument fetches a URL and returns a goquery document for further processing
+func crawlDocument(url string) (*goquery.Document, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	// Set headers to avoid 403 Forbidden
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error making request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("status code error: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error creating document: %w", err)
+	}
+
+	return doc, nil
+}
+
+// deprecated
+func crawlWithHeader(url string, cssPath string) (string, error) {
+
+	// Send the request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("Accept-Language", "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error requesting\n%w", err)
+	}
+	defer res.Body.Close()
+
+	// Check the response status
+	if res.StatusCode != 200 {
+		return "", fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status)
+	}
+
+	// Create a goquery document from the response body
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return "", fmt.Errorf("error creating document\n%w", err)
+	}
+	// fmt.Println(doc.Text())
+
+	// fmt.Println(doc.Text())
+
+	var v string
+	// Find the elements by the CSS selector
+	doc.Find(cssPath).Each(func(i int, s *goquery.Selection) {
+		// Extract and print the data
+		v = s.Text()
+	})
+
+	return v, nil
+}
+
+// deprecated
 func selectAllMatched(doc *goquery.Document, cssPath string) []string {
 
 	matched := make([]string, 0)
@@ -175,6 +208,7 @@ func selectAllMatched(doc *goquery.Document, cssPath string) []string {
 	return matched
 }
 
+// deprecated
 func selectAllMatchedWithChildPath(doc *goquery.Document, cssPath string, pathChild ...string) [][]string {
 
 	matched := make([][]string, 0)

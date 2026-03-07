@@ -2,7 +2,6 @@ package scrape
 
 import (
 	"bytes"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	m "investindicator/internal/model"
@@ -352,7 +351,7 @@ func (s *Scraper) HighYieldSpread() (date string, spread float64, err error) {
 }
 
 const (
-	sp500ListUrl = "https://datahub-next-new.vercel.app/core/s-and-p-500-companies/_r/-/data/constituents.csv"
+	sp500ListUrl = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 )
 
 func (s *Scraper) RecentSP500Entries(targetDate string) ([]m.SP500Company, error) {
@@ -362,43 +361,56 @@ func (s *Scraper) RecentSP500Entries(targetDate string) ([]m.SP500Company, error
 		return nil, errors.New("invalid date format")
 	}
 
-	resp, err := http.Get(sp500ListUrl)
+	doc, err := crawlDocument(sp500ListUrl)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	csvReader := csv.NewReader(resp.Body)
-	// scanner := bufio.NewScanner(resp.Body)
 	var latestEntry []m.SP500Company
 
-	csvReader.Read() // skip header
-	for {
-		line, err := csvReader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
+	// Find the first table (S&P 500 component stocks table)
+	doc.Find("table.wikitable").First().Find("tr").Each(func(i int, row *goquery.Selection) {
+		// Skip header row
+		if i == 0 {
+			return
 		}
 
-		if strings.Compare(targetDate, line[5]) < 0 {
-			date, err := time.Parse("2006-01-02", line[5])
-			if err != nil {
-				return nil, err
-			}
+		cells := row.Find("td")
+		if cells.Length() < 8 {
+			return
+		}
+
+		// Extract data from table cells
+		symbol := strings.TrimSpace(cells.Eq(0).Text())
+		security := strings.TrimSpace(cells.Eq(1).Text())
+		gicsSector := strings.TrimSpace(cells.Eq(2).Text())
+		gicsSubIndustry := strings.TrimSpace(cells.Eq(3).Text())
+		headquartersLocation := strings.TrimSpace(cells.Eq(4).Text())
+		dateAddedStr := strings.TrimSpace(cells.Eq(5).Text())
+		cik := strings.TrimSpace(cells.Eq(6).Text())
+		founded := strings.TrimSpace(cells.Eq(7).Text())
+
+		// Parse date added
+		dateAdded, err := time.Parse("2006-01-02", dateAddedStr)
+		if err != nil {
+			// Skip if date cannot be parsed
+			return
+		}
+
+		// Filter entries after targetDate
+		if strings.Compare(targetDate, dateAddedStr) < 0 {
 			latestEntry = append(latestEntry, m.SP500Company{
-				Symbol:                line[0],
-				Security:              line[1],
-				GICS_Sector:           line[2],
-				GICS_Sub_Industry:     line[3],
-				Headquarters_Location: line[4],
-				Date_added:            date,
-				CIK:                   line[6],
-				Founded:               line[7],
+				Symbol:                symbol,
+				Security:              security,
+				GICS_Sector:           gicsSector,
+				GICS_Sub_Industry:     gicsSubIndustry,
+				Headquarters_Location: headquartersLocation,
+				Date_added:            dateAdded,
+				CIK:                   cik,
+				Founded:               founded,
 			})
 		}
-	}
+	})
 
 	return latestEntry, nil
 }

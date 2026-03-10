@@ -21,7 +21,7 @@ import (
 func TestAssetHandler(t *testing.T) {
 
 	app := fiber.New()
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(app, nil)
 
 	readerMock := AssetRetrieverMock{}
 	writerMock := &AssetInfoSaverMock{}

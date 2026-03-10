@@ -13,11 +13,11 @@ import (
 
 // todo. 결국 app 패키지가 구현체에 의존하는 구조 개선 필요
 // todo. 비지니스 로직을 밖으로 빼는 작업이 필요. 로직이 handler에 가니 불필요하게 객체들이 많이 넘어감
-func Run(port int, authKey, passKey string, stg *db.Storage, scraper *scrape.Scraper, eh *investind.InvestIndicator) {
+func Run(port int, authKey, passKey string, allowIp []string, stg *db.Storage, scraper *scrape.Scraper, eh *investind.InvestIndicator) {
 
 	app := fiber.New()
 
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(app, allowIp)
 
 	handler.NewAuthHandler(stg, authKey, passKey).InitRoute(app)
 	handler.NewAssetHandler(stg, stg, scraper).InitRoute(app)

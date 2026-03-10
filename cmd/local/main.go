@@ -3,17 +3,11 @@ package main
 import (
 	investind "investindicator"
 	app "investindicator/app"
-	"investindicator/blockchain"
-	blackhole "investindicator/blockchain/blackhole"
-	"investindicator/blockchain/pkg/txlistener"
-	"investindicator/blockchain/uniswap"
 	"investindicator/bot"
 	"investindicator/config"
 	"investindicator/internal/db"
 	"investindicator/scrape"
-	"time"
 
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rs/zerolog"
 )
 
@@ -57,35 +51,35 @@ func main() {
 	}
 
 	/* blockchain */
-	client, err := ethclient.Dial(conf.Blockchain.Blackhole.Url)
-	if err != nil {
-		panic(err)
-	}
-	listener := txlistener.NewTxListener(
-		client,
-		txlistener.WithPollInterval(2*time.Second),
-		txlistener.WithTimeout(5*time.Minute),
-	)
+	// client, err := ethclient.Dial(conf.Blockchain.Blackhole.Url)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// listener := txlistener.NewTxListener(
+	// 	client,
+	// 	txlistener.WithPollInterval(2*time.Second),
+	// 	txlistener.WithTimeout(5*time.Minute),
+	// )
 
-	us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBotGroup.Bot(0)))
-	if err != nil {
-		panic(err)
-	}
+	// us, err := uniswap.NewUniswapClient(conf.UniswapConfig(teleBotGroup.Bot(0)))
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	bd, err := blackhole.NewBlackhole(
-		client,
-		conf.BlackholeConfig(teleBotGroup.Bot(0)),
-		listener,
-		db,
-	)
-	if err != nil {
-		panic(err)
-	}
+	// bd, err := blackhole.NewBlackhole(
+	// 	client,
+	// 	conf.BlackholeConfig(teleBotGroup.Bot(0)),
+	// 	listener,
+	// 	db,
+	// )
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	bt := blockchain.NewBlockChainTrader(us, bd, conf.ToStrategyConfig())
+	// bt := blockchain.NewBlockChainTrader(us, bd, conf.ToStrategyConfig())
 
-	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, bt, teleBotGroup)
-	eventHandler.Run()
+	eventHandler := investind.NewInvestIndicator(db, scraper, scraper, nil, teleBotGroup)
+	// eventHandler.Run()
 
 	teleBotGroup.RunAll(conf.App.Port, conf.App.Passkey) // todo. telegram login
 

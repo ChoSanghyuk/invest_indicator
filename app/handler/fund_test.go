@@ -15,7 +15,7 @@ import (
 func TestFundHandler(t *testing.T) {
 
 	app := fiber.New()
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(app, nil)
 
 	readerMock := &FundRetrieverMock{}
 	writerMock := &FundWriterMock{}

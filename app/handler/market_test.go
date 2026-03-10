@@ -15,7 +15,7 @@ import (
 func TestMarketHandler(t *testing.T) {
 
 	app := fiber.New()
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(app, nil)
 
 	readerMock := MaketRetrieverMock{}
 	writerMock := MarketSaverMock{}

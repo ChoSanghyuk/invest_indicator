@@ -15,7 +15,7 @@ func TestInvestGetHandler(t *testing.T) {
 	const dollarPrice float64 = 1400
 
 	app := fiber.New()
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(app, nil)
 
 	readerMock := NewADefaultssetRetrieverMock()
 	writerMock := NewInvestSaverMock(initAmount)

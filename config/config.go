@@ -23,9 +23,10 @@ var configByte []byte
 type Config struct {
 	Log string `yaml:"log"`
 	App struct {
-		Port    int    `yaml:"port"`
-		JwtKey  string `yaml:"jwtkey"`
-		Passkey string `yaml:"passkey"`
+		Port    int      `yaml:"port"`
+		AllowIp []string `yaml:"allowIp"`
+		JwtKey  string   `yaml:"jwtkey"`
+		Passkey string   `yaml:"passkey"`
 	} `yaml:"app"`
 	ApiKey   map[string]string `yaml:"api-key"`
 	Telegram []struct {

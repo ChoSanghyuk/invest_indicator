@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	blackholedex "investindicator/blockchain/blackhole"
 	"investindicator/blockchain/uniswap"
 	"investindicator/bot"
 	"investindicator/internal/db"
@@ -13,6 +12,8 @@ import (
 	"investindicator/scrape"
 	"strconv"
 
+	"github.com/ChoSanghyuk/blackholedex"
+	blacktype "github.com/ChoSanghyuk/blackholedex/pkg/types"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 )
@@ -206,14 +207,14 @@ init:
 		})
 	}
 
-	var pool blackholedex.PoolType
+	var pool blacktype.PoolType
 	switch c.Blockchain.Blackhole.ActivePool {
 	case "cl1":
-		pool = blackholedex.CL1
+		pool = blacktype.CL1
 	case "cl200":
-		pool = blackholedex.CL200
+		pool = blacktype.CL200
 	default:
-		pool = blackholedex.CL200 // default to CL200 if unknown
+		pool = blacktype.CL200 // default to CL200 if unknown
 	}
 
 	return blackholedex.NewBlackholeConfig(
@@ -225,8 +226,8 @@ init:
 	)
 }
 
-func (c *Config) ToStrategyConfig() *blackholedex.StrategyConfig {
-	return &blackholedex.StrategyConfig{
+func (c *Config) ToStrategyConfig() *blacktype.StrategyConfig {
+	return &blacktype.StrategyConfig{
 		MonitoringInterval:      time.Duration(c.Blockchain.Blackhole.StrategyYAMLData.MonitoringInterval) * time.Second,
 		StabilityThreshold:      c.Blockchain.Blackhole.StrategyYAMLData.StabilityThreshold,
 		StabilityIntervals:      c.Blockchain.Blackhole.StrategyYAMLData.StabilityIntervals,

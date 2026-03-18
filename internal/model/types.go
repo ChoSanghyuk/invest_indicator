@@ -120,3 +120,21 @@ type MyOrder struct {
 	Price float64
 	Count float64
 }
+
+type AssetSnapshotRecord struct {
+	ID            uint      `gorm:"primaryKey;autoIncrement"`
+	Timestamp     time.Time `gorm:"index;not null"`
+	CurrentState  int       `gorm:"not null;comment:Strategy phase as integer"`
+	TotalValue    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	EstimatedAvax string    `gorm:"type:varchar(78);not null;comment:big.Int as string - Estimated AVAX from TotalValue"`
+	AmountWavax   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountUsdc    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountBlack   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	AmountAvax    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+}
+
+func (AssetSnapshotRecord) TableName() string {
+	return "asset_snapshots"
+}

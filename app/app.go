@@ -26,6 +26,7 @@ func Run(port int, authKey, passKey string, allowIp []string, stg *db.Storage, s
 	handler.NewMarketHandler(stg, stg).InitRoute(app)
 	handler.NewCategoryHandler().InitRoute(app)
 	handler.NewEventHandler(eh, eh, eh).InitRoute(app)
+	handler.NewBlackholeHandler(stg, nil).InitRoute(app) // todo. swap executor 구현 후, nil 제거
 
 	app.Get("/shutdown", func(c *fiber.Ctx) error {
 

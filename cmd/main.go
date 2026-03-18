@@ -4,8 +4,6 @@ import (
 	investind "investindicator"
 	app "investindicator/app"
 	"investindicator/blockchain"
-	blackhole "investindicator/blockchain/blackhole"
-	"investindicator/blockchain/pkg/txlistener"
 	"investindicator/blockchain/uniswap"
 	"investindicator/bot"
 	"investindicator/config"
@@ -13,6 +11,8 @@ import (
 	"investindicator/scrape"
 	"time"
 
+	"github.com/ChoSanghyuk/blackholedex"
+	"github.com/ChoSanghyuk/blackholedex/pkg/txlistener"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rs/zerolog"
 )
@@ -72,7 +72,7 @@ func main() {
 		panic(err)
 	}
 
-	bd, err := blackhole.NewBlackhole(
+	bd, err := blackholedex.NewBlackhole(
 		client,
 		conf.BlackholeConfig(teleBotGroup.Bot(0)),
 		listener,

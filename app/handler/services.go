@@ -3,6 +3,7 @@ package handler
 import (
 	investind "investindicator"
 	m "investindicator/internal/model"
+	"time"
 )
 
 type FundRetriever interface {
@@ -80,4 +81,13 @@ type UserRetrierver interface {
 
 type InvestStatusIndicator interface {
 	InvestAvailableAmount(fundId int) (float64, error)
+}
+
+type BlackholeSnapshotRetriever interface {
+	GetLatestSnapshot() (*m.AssetSnapshotRecord, error)
+	GetSnapshotByDate(date time.Time) (*m.AssetSnapshotRecord, error)
+}
+
+type BlackholeSwapExecutor interface {
+	SwapAll(swapAll int) error
 }

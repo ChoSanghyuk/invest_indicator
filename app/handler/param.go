@@ -144,3 +144,15 @@ type JWTResponse struct {
 	Token  string `json:"token"`
 	Expiry int64  `json:"expiry"`
 }
+
+type ProfitResponse struct {
+	BaseTotalAsset    string  `json:"baseTotalAsset"`
+	CurrentTotalAsset string  `json:"currentTotalAsset"`
+	ProfitRate        float64 `json:"profitRate"`
+	ProfitAmtAvax     string  `json:"profitAmtAvax"`
+	ProfitAmtUsdc     string  `json:"profitAmtUsdc"`
+}
+
+type SwapAllRequest struct {
+	SwapAll int `json:"swapAll" validate:"required"`
+}

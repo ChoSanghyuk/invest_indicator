@@ -18,7 +18,7 @@ func (s Storage) initTables() error {
 	err := s.db.AutoMigrate(&m.Fund{}, &m.Asset{}, &m.EmaHist{},
 		&m.Invest{}, &m.InvestSummary{}, &m.Market{},
 		&m.DailyIndex{}, &m.CliIndex{}, &m.HighYieldSpread{},
-		&m.User{}, &m.Event{}, &m.SP500Company{}, &AssetSnapshotRecord{})
+		&m.User{}, &m.Event{}, &m.SP500Company{}, &m.AssetSnapshotRecord{})
 	if err != nil {
 		panic("failed to migrate database")
 	}

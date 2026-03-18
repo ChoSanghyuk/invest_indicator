@@ -2,32 +2,14 @@ package db
 
 import (
 	"fmt"
-	blackholedex "investindicator/blockchain/blackhole"
+	m "investindicator/internal/model"
 	"math/big"
 	"time"
 
+	"github.com/ChoSanghyuk/blackholedex/pkg/types"
+
 	"gorm.io/gorm"
 )
-
-// AssetSnapshotRecord represents the database model for CurrentAssetSnapshot
-type AssetSnapshotRecord struct {
-	ID            uint      `gorm:"primaryKey;autoIncrement"`
-	Timestamp     time.Time `gorm:"index;not null"`
-	CurrentState  int       `gorm:"not null;comment:Strategy phase as integer"`
-	TotalValue    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	EstimatedAvax string    `gorm:"type:varchar(78);not null;comment:big.Int as string - Estimated AVAX from TotalValue"`
-	AmountWavax   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountUsdc    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountBlack   string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	AmountAvax    string    `gorm:"type:varchar(78);not null;comment:big.Int as string"`
-	CreatedAt     time.Time `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
-}
-
-// TableName specifies the table name for GORM
-func (AssetSnapshotRecord) TableName() string {
-	return "asset_snapshots"
-}
 
 // // NewStorage creates a new Storage instance
 // // dsn format: "user:password@tcp(host:port)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
@@ -50,7 +32,7 @@ func (AssetSnapshotRecord) TableName() string {
 // NewStorageWithDB creates a new Storage with an existing GORM DB instance
 func NewStorageWithDB(db *gorm.DB) (*Storage, error) {
 	// Auto migrate the schema
-	if err := db.AutoMigrate(&AssetSnapshotRecord{}); err != nil {
+	if err := db.AutoMigrate(&m.AssetSnapshotRecord{}); err != nil {
 		return nil, fmt.Errorf("failed to migrate schema: %w", err)
 	}
 
@@ -58,8 +40,8 @@ func NewStorageWithDB(db *gorm.DB) (*Storage, error) {
 }
 
 // RecordReport implements TransactionRecorder interface
-func (r *Storage) RecordReport(snapshot blackholedex.CurrentAssetSnapshot) error {
-	record := AssetSnapshotRecord{
+func (r *Storage) RecordReport(snapshot types.CurrentAssetSnapshot) error {
+	record := m.AssetSnapshotRecord{
 		Timestamp:     snapshot.Timestamp,
 		CurrentState:  int(snapshot.CurrentState),
 		TotalValue:    bigIntToString(snapshot.TotalValue),
@@ -101,8 +83,8 @@ func bigIntToString(value *big.Int) string {
 }
 
 // GetLatestSnapshot retrieves the most recent snapshot from the database
-func (r *Storage) GetLatestSnapshot() (*AssetSnapshotRecord, error) {
-	var record AssetSnapshotRecord
+func (r *Storage) GetLatestSnapshot() (*m.AssetSnapshotRecord, error) {
+	var record m.AssetSnapshotRecord
 	result := r.db.Order("timestamp DESC").First(&record)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get latest snapshot: %w", result.Error)
@@ -111,8 +93,8 @@ func (r *Storage) GetLatestSnapshot() (*AssetSnapshotRecord, error) {
 }
 
 // GetSnapshotsByTimeRange retrieves snapshots within a time range
-func (r *Storage) GetSnapshotsByTimeRange(start, end time.Time) ([]AssetSnapshotRecord, error) {
-	var records []AssetSnapshotRecord
+func (r *Storage) GetSnapshotsByTimeRange(start, end time.Time) ([]m.AssetSnapshotRecord, error) {
+	var records []m.AssetSnapshotRecord
 	result := r.db.Where("timestamp BETWEEN ? AND ?", start, end).
 		Order("timestamp ASC").
 		Find(&records)
@@ -123,8 +105,8 @@ func (r *Storage) GetSnapshotsByTimeRange(start, end time.Time) ([]AssetSnapshot
 }
 
 // GetSnapshotsByPhase retrieves all snapshots for a specific strategy phase
-func (r *Storage) GetSnapshotsByPhase(phase blackholedex.StrategyPhase) ([]AssetSnapshotRecord, error) {
-	var records []AssetSnapshotRecord
+func (r *Storage) GetSnapshotsByPhase(phase types.StrategyPhase) ([]m.AssetSnapshotRecord, error) {
+	var records []m.AssetSnapshotRecord
 	result := r.db.Where("current_state = ?", int(phase)).
 		Order("timestamp ASC").
 		Find(&records)
@@ -137,9 +119,27 @@ func (r *Storage) GetSnapshotsByPhase(phase blackholedex.StrategyPhase) ([]Asset
 // CountSnapshots returns the total number of snapshots in the database
 func (r *Storage) CountSnapshots() (int64, error) {
 	var count int64
-	result := r.db.Model(&AssetSnapshotRecord{}).Count(&count)
+	result := r.db.Model(&m.AssetSnapshotRecord{}).Count(&count)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to count snapshots: %w", result.Error)
 	}
 	return count, nil
+}
+
+// GetSnapshotByDate retrieves the snapshot closest to the given date
+func (r *Storage) GetSnapshotByDate(date time.Time) (*m.AssetSnapshotRecord, error) {
+	var record m.AssetSnapshotRecord
+
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	result := r.db.Where("timestamp >= ? AND timestamp < ?", startOfDay, endOfDay).
+		Order("timestamp ASC").
+		First(&record)
+
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get snapshot by date: %w", result.Error)
+	}
+
+	return &record, nil
 }

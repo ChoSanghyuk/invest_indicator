@@ -3,21 +3,22 @@ package blockchain
 import (
 	"context"
 	"fmt"
-	blackholedex "investindicator/blockchain/blackhole"
 	"investindicator/blockchain/uniswap"
 	"math/big"
 	"time"
 
+	"github.com/ChoSanghyuk/blackholedex"
+	blacktype "github.com/ChoSanghyuk/blackholedex/pkg/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type BlockChainTrader struct {
 	us  *uniswap.UniswapClient
 	bd  *blackholedex.Blackhole
-	bdc *blackholedex.StrategyConfig // blackholedex config
+	bdc *blacktype.StrategyConfig // blackholedex config
 }
 
-func NewBlockChainTrader(us *uniswap.UniswapClient, bd *blackholedex.Blackhole, bdc *blackholedex.StrategyConfig) *BlockChainTrader {
+func NewBlockChainTrader(us *uniswap.UniswapClient, bd *blackholedex.Blackhole, bdc *blacktype.StrategyConfig) *BlockChainTrader {
 	return &BlockChainTrader{
 		us:  us,
 		bd:  bd,
@@ -66,7 +67,7 @@ func (b *BlockChainTrader) SwapUsdtUsdc(isUsdcIn bool) error {
 
 func (b *BlockChainTrader) RunBlackholeDexStrategy(reportChan chan<- string) error {
 
-	err := b.bd.RunStrategy1(
+	err := b.bd.RunAutoPositionStrategy(
 		context.Background(),
 		reportChan,
 		b.bdc,

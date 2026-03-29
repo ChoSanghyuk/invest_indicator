@@ -63,11 +63,11 @@ func (h *BlackholeHandler) Profit(c *fiber.Ctx) error {
 	)
 
 	response := ProfitResponse{
-		BaseTotalAsset:    baseTotalAsset.String(),
-		CurrentTotalAsset: currentTotalAsset.String(),
+		BaseTotalAsset:    bigIntToFloat(baseTotalAsset, 6),
+		CurrentTotalAsset: bigIntToFloat(currentTotalAsset, 6),
 		ProfitRate:        profitRate,
-		ProfitAmtAvax:     profitAmtAvax.String(),
-		ProfitAmtUsdc:     profitAmtUsdc.String(),
+		ProfitAmtAvax:     bigIntToFloat(profitAmtAvax, 18),
+		ProfitAmtUsdc:     bigIntToFloat(profitAmtUsdc, 6),
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
@@ -77,6 +77,23 @@ func stringToBigInt(s string) *big.Int {
 	val := new(big.Int)
 	val.SetString(s, 10)
 	return val
+}
+
+func bigIntToFloat(value *big.Int, decimals int) float64 {
+	// Convert big.Int to big.Float
+	valueFloat := new(big.Float).SetInt(value)
+
+	// Create divisor (10^decimals)
+	divisor := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil))
+
+	// Divide to get the actual value
+	result := new(big.Float).Quo(valueFloat, divisor)
+
+	// Convert to float64
+	resultFloat, _ := result.Float64()
+
+	// Round to 2 decimal places
+	return float64(int(resultFloat*100+0.5)) / 100
 }
 
 func (h *BlackholeHandler) Swap(c *fiber.Ctx) error {

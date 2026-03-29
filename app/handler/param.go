@@ -146,11 +146,11 @@ type JWTResponse struct {
 }
 
 type ProfitResponse struct {
-	BaseTotalAsset    string  `json:"baseTotalAsset"`
-	CurrentTotalAsset string  `json:"currentTotalAsset"`
+	BaseTotalAsset    float64 `json:"baseTotalAsset"`
+	CurrentTotalAsset float64 `json:"currentTotalAsset"`
 	ProfitRate        float64 `json:"profitRate"`
-	ProfitAmtAvax     string  `json:"profitAmtAvax"`
-	ProfitAmtUsdc     string  `json:"profitAmtUsdc"`
+	ProfitAmtAvax     float64 `json:"profitAmtAvax"`
+	ProfitAmtUsdc     float64 `json:"profitAmtUsdc"`
 }
 
 type SwapAllRequest struct {

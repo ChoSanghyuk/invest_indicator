@@ -3,7 +3,7 @@ module investindicator
 go 1.25.8
 
 require (
-	github.com/ChoSanghyuk/blackholedex v1.0.0
+	github.com/ChoSanghyuk/blackholedex v1.0.2
 	github.com/PuerkitoBio/goquery v1.9.2
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.6.0
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476

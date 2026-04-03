@@ -46,7 +46,7 @@ func (e InvestIndicator) Run() {
 	c.Start()
 
 	go e.runRecordMyOrdersEvent()
-	go e.runBlackholeDexStrategy()
+	// go e.runBlackholeDexStrategy()
 
 	e.lg.Info().Msg("EventHandler Run completed")
 }

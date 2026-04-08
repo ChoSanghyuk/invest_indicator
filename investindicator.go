@@ -965,7 +965,7 @@ func (e InvestIndicator) updateAsset(priceMap map[uint]float64, ivsmLi *[]m.Inve
 
 	// 등록 자산 매수/매도 기준 충족 시, 채널로 메시지 전달
 	for _, a := range assetList {
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(100 * time.Microsecond) // memo. 초당 거래건수 초과 방지
 		msg, err := e.buySellMsg(a.ID, priceMap)
 		if err != nil {
 			e.lg.Error().Err(err).Msg("[assetUpdate] buySellMsg시, 에러 발생")

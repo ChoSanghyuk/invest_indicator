@@ -312,14 +312,14 @@ func (e InvestIndicator) runAssetEvent() {
 	e.updateAsset(priceMap, &ivsmLi)
 
 	// 현재 시장 단계 이하로 변동 자산을 가지고 있는지 확인. (알림 전송)
-	msg, err := e.genPortfolioMsg(ivsmLi, priceMap)
-	if err != nil {
-		e.lg.Error().Err(err).Msg("[AssetEvent] portfolioMsg시, 에러 발생")
-		e.ms.SendMessage(0, fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err))
-	}
-	if msg != "" {
-		e.ms.SendMessage(0, msg)
-	}
+	// msg, err := e.genPortfolioMsg(ivsmLi, priceMap) // memo. genPortfolioMsg 일시 중단. todo. 안전/변동 2분법적인 구분 대신, 자산 종류별 포트폴리오 메시지로 전환 예정.
+	// if err != nil {
+	// 	e.lg.Error().Err(err).Msg("[AssetEvent] portfolioMsg시, 에러 발생")
+	// 	e.ms.SendMessage(0, fmt.Sprintf("[AssetEvent] portfolioMsg시, 에러 발생. %s", err))
+	// }
+	// if msg != "" {
+	// 	e.ms.SendMessage(0, msg)
+	// }
 
 	e.lg.Info().Msg("AssetEvent completed")
 }

@@ -4,3 +4,5 @@ config/*.yaml
 docker-compose.yml
 
 README_backup.md
+memo.md
+thumbnail.svg

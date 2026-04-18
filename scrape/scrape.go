@@ -557,7 +557,12 @@ func (s *Scraper) StreamStockOrders(c chan<- m.MyOrder) error {
 		OverseasCallback: func(kisOrder *OverseasRealTimeExecutionNotification) {
 			s.lg.Info().Msgf("Received overseas execution notification: %+v", kisOrder)
 			if kisOrder.ExecYN == "2" { // 1=Order/Revise/Cancel, 2=Execution
-				price, _ := strconv.ParseFloat(kisOrder.ExecPrice, 64)
+				// Insert decimal point at 4th position from the right
+				priceStr := kisOrder.ExecPrice
+				if len(priceStr) > 4 {
+					priceStr = priceStr[:len(priceStr)-4] + "." + priceStr[len(priceStr)-4:]
+				}
+				price, _ := strconv.ParseFloat(priceStr, 64)
 				count, _ := strconv.ParseFloat(kisOrder.ExecQty, 64)
 				if kisOrder.SellBuyDiv == "01" { // 01=Sell, 02=Buy
 					count *= -1

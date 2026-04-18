@@ -114,7 +114,7 @@ func (s *Scraper) PresentPrice(category m.Category, code string) (pp float64, er
 	case m.DomesticStock, m.Gold:
 		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.pp, err
-	case m.DomesticETF, m.DomesticStableETF:
+	case m.DomesticETF, m.DomesticGoldETF:
 		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.pp, err
 	case m.DomesticCoin:
@@ -138,7 +138,7 @@ func (s *Scraper) TopBottomPrice(category m.Category, code string) (hp float64, 
 	case m.DomesticStock:
 		stock, err := s.kis.DomesticStockPrice(code)
 		return stock.hp, stock.lp, err
-	case m.DomesticETF, m.DomesticStableETF:
+	case m.DomesticETF, m.DomesticGoldETF:
 		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.hp, stock.lp, err
 		// case model.DomesticCoin:
@@ -177,7 +177,7 @@ func (s *Scraper) ClosingPrice(category m.Category, code string) (cp float64, er
 	case m.DomesticCoin:
 		_, cp, err = s.bithumbApi(code)
 		return cp, err
-	case m.DomesticETF, m.DomesticStableETF:
+	case m.DomesticETF, m.DomesticGoldETF:
 		stock, err := s.kis.DomesticEtfPrice(code)
 		return stock.op, err
 	case m.ForeignStock, m.ForeignETF:

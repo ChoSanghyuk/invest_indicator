@@ -108,11 +108,11 @@ func (h *FundHandler) FundAssets(c *fiber.Ctx) error {
 		}
 
 		fundAsset := fundAssetsResponse{
-			Name: iv.Asset.Name,
-			// ProfitRate: "", // todo ProfitRate 계산 로직 추가
-			Division: iv.Asset.Category.String(),
-			Quantity: fmt.Sprintf("%.2f", iv.Count),
-			IsStable: iv.Asset.Category.IsStable(),
+			Name:           iv.Asset.Name,
+			MajorCategory:  iv.Asset.Category.GetMajorCategory(),
+			MiddleCategory: iv.Asset.Category.GetMiddleCategory(),
+			SmallCategory:  iv.Asset.Category.GetSmallCategory(),
+			Quantity:       fmt.Sprintf("%.2f", iv.Count),
 		}
 
 		if iv.Asset.Currency == model.KRW.String() {

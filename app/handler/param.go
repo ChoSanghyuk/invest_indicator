@@ -101,15 +101,16 @@ type fundAssetsResponse struct {
 	// AssetName    string  `json:"asset_name"`
 	// Count        float64 `json:"count"`
 	// Sum          float64 `json:"sum"`
-	Name         string `json:"name"`
-	Amount       string `json:"amount"`
-	AmountDollar string `json:"amount_dollar"`
-	ProfitRate   string `json:"profit_rate"`
-	Division     string `json:"division"`
-	Quantity     string `json:"quantity"`
-	Price        string `json:"price"`
-	PriceDollar  string `json:"price_dollar"`
-	IsStable     bool   `json:"isStable"`
+	Name            string `json:"name"`
+	Amount          string `json:"amount"`
+	AmountDollar    string `json:"amount_dollar"`
+	ProfitRate      string `json:"profit_rate"`
+	MajorCategory   string `json:"major_category"`
+	MiddleCategory  string `json:"middle_category"`
+	SmallCategory   string `json:"small_category"`
+	Quantity        string `json:"quantity"`
+	Price           string `json:"price"`
+	PriceDollar     string `json:"price_dollar"`
 }
 
 type fundPortionResponse struct {

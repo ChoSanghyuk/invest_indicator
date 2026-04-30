@@ -442,7 +442,9 @@ func alpacaCrypto(symbol string) (float64, error) {
 }
 
 const upbitNotice = "https://upbit.com/service_center/notice"
-const upbitNoticeCssPath = "#UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr > td.css-1kasbu5.css-1j9r824 > a > span" //
+const upbitNoticeCssPath = "#UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr > td.css-d1s6vu > a > span"
+
+// #UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr:nth-child(6) > td.css-d1s6vu > a > span
 
 func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
 
@@ -455,8 +457,11 @@ func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
 		return nil, nil, err
 	}
 
+	isVisited := false
+
 	// 2. 공지 타이틀 및 url 추출하기
 	doc.Find(upbitNoticeCssPath).Each(func(_ int, s *goquery.Selection) {
+		isVisited = true
 		title := s.Text()
 		matched, err := regexp.MatchString("에어드랍|퀴즈|받아가", title)
 		if err != nil {
@@ -468,6 +473,10 @@ func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
 			urls = append(urls, s.Parent().AttrOr("href", ""))
 		}
 	})
+
+	if !isVisited {
+		return nil, nil, errors.New("업비트 공지 크롤링 실패 - cssPath 변경 여부 확인 필요")
+	}
 
 	return titles, urls, nil
 }

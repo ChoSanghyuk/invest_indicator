@@ -95,9 +95,6 @@ func TestCrwal(t *testing.T) {
 		t.Log(urls)
 	})
 
-	/*
-		음...
-	*/
 	t.Run("upbit_airdrop_test", func(t *testing.T) {
 		// url := "https://upbit.com/service_center/notice"
 		// cssPath := "#UpbitLayout > div.subMain > div > section > article > div.css-tev1mt > table > tbody > tr > td.css-1kasbu5.css-1j9r824 > a > span" //tr::nth-child(2)

@@ -887,7 +887,7 @@ bithumb:
 	for i, event := range bitEvents {
 		isExist, _ := e.stg.GetCache("bithumb" + bitUrls[i]).Bool()
 		if !isExist {
-			e.ms.SendMessage(0, fmt.Sprintf("[New Bitthumb Event] %s", event))
+			e.ms.SendMessage(0, fmt.Sprintf("[New Bithumb Event] %s", event))
 			e.stg.SetCache("bithumb"+bitUrls[i], true, time.Hour*24*30*3)
 		}
 	}

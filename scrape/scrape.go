@@ -475,7 +475,7 @@ func (s *Scraper) AirdropEventUpbit() ([]string, []string, error) {
 	})
 
 	if !isVisited {
-		return nil, nil, errors.New("업비트 공지 크롤링 실패 - cssPath 변경 여부 확인 필요")
+		// return nil, nil, errors.New("업비트 공지 크롤링 실패 - cssPath 변경 여부 확인 필요")
 	}
 
 	return titles, urls, nil
